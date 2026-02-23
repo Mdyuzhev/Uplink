@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: uplink-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - uplink-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: uplink-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - uplink-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: uplink-synapse
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      SYNAPSE_CONFIG_DIR: /data
+    volumes:
+      - ./synapse:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  synapse-admin:
+    image: awesometechnologies/synapse-admin:latest
+    container_name: uplink-synapse-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      synapse:
+        condition: service_healthy
+
+volumes:
+  uplink-postgres-data:
+  uplink-redis-data:

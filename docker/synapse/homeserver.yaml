@@ -1,0 +1,49 @@
+server_name: "uplink.local"
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: synapse_poc_pass
+    database: synapse
+    host: postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+
+log_config: "/data/uplink.local.log.config"
+
+media_store_path: /data/media_store
+max_upload_size: 50M
+
+enable_registration: false
+enable_registration_without_verification: false
+
+registration_shared_secret: "A2GGP+gI+hrjsD/i8yudRSPhLo0hkkZYjSPQjonrhC4="
+
+macaroon_secret_key: "xFFHoHY6X48DpQtITMyfDnRTtrYU0T+cfETsqpaAsQE="
+form_secret: "Gvn9IOP9KG+q1kMuCzmQlScAmHS76TRHEkABvn6XLHw="
+
+signing_key_path: "/data/uplink.local.signing.key"
+
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+suppress_key_server_warning: true
+
+report_stats: false
