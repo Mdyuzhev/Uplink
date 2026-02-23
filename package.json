@@ -1,0 +1,139 @@
+{
+  "name": "uplink",
+  "displayName": "Uplink",
+  "description": "Контекстный мессенджер и звонилка для разработчиков, встроенные в VS Code",
+  "version": "0.1.0",
+  "publisher": "rostelecom-qa",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "uplink.openChat",
+        "title": "Uplink: Открыть чат",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "uplink.sendSnippet",
+        "title": "Uplink: Отправить код в чат",
+        "icon": "$(code)"
+      },
+      {
+        "command": "uplink.startCall",
+        "title": "Uplink: Начать звонок",
+        "icon": "$(call-outgoing)"
+      },
+      {
+        "command": "uplink.disconnect",
+        "title": "Uplink: Отключиться"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "uplink",
+          "title": "Uplink",
+          "icon": "media/uplink-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "uplink": [
+        {
+          "id": "uplink.channels",
+          "name": "Каналы"
+        },
+        {
+          "id": "uplink.contacts",
+          "name": "Контакты"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "uplink.sendSnippet",
+          "group": "uplink@1",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Uplink",
+      "properties": {
+        "uplink.matrix.homeserver": {
+          "type": "string",
+          "default": "http://localhost:8008",
+          "description": "URL Matrix Synapse сервера"
+        },
+        "uplink.matrix.userId": {
+          "type": "string",
+          "default": "",
+          "description": "Matrix User ID (@user:domain)"
+        },
+        "uplink.livekit.url": {
+          "type": "string",
+          "default": "ws://localhost:7880",
+          "description": "URL LiveKit сервера"
+        },
+        "uplink.autoConnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Подключаться автоматически при запуске VS Code"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "uplink.openChat",
+        "key": "ctrl+shift+u",
+        "mac": "cmd+shift+u"
+      },
+      {
+        "command": "uplink.sendSnippet",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "editorHasSelection"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts,tsx",
+    "test": "node ./out/test/runTest.js",
+    "build:webview": "webpack --config webpack.config.js",
+    "build:webview:watch": "webpack --config webpack.config.js --watch"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vscode/test-electron": "^2.3.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.0",
+    "ts-loader": "^9.5.0",
+    "css-loader": "^6.8.0",
+    "style-loader": "^3.3.0",
+    "mocha": "^10.2.0",
+    "glob": "^10.3.0"
+  },
+  "dependencies": {
+    "matrix-js-sdk": "^31.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
