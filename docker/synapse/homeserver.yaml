@@ -48,6 +48,35 @@ suppress_key_server_warning: true
 
 report_stats: false
 
+# Отключаем rate limiting для PoC (не для production!)
+rc_login:
+  address:
+    per_second: 100
+    burst_count: 100
+  account:
+    per_second: 100
+    burst_count: 100
+  failed_attempts:
+    per_second: 100
+    burst_count: 100
+rc_message:
+  per_second: 100
+  burst_count: 100
+rc_joins:
+  local:
+    per_second: 100
+    burst_count: 100
+  remote:
+    per_second: 100
+    burst_count: 100
+rc_invites:
+  per_room:
+    per_second: 100
+    burst_count: 100
+  per_user:
+    per_second: 100
+    burst_count: 100
+
 # E2E шифрование по умолчанию для всех новых комнат
 encryption_enabled_by_default_for_room_type: all
 allow_device_name_lookup_over_federation: false
