@@ -1,84 +1,176 @@
 import * as vscode from 'vscode';
+import { AuthManager } from './matrix/auth';
+import { MatrixService } from './matrix/client';
+import { CryptoStoreManager } from './matrix/cryptoStore';
+import { RoomsManager } from './matrix/rooms';
 import { ChannelsProvider } from './providers/channelsProvider';
 import { ContactsProvider } from './providers/contactsProvider';
+import { getCodeContext } from './context/codeContext';
+import { getConfig } from './utils/config';
 import { logger } from './utils/logger';
 
 /**
  * Активация расширения Uplink.
- * Вызывается VS Code при первом использовании команды или при запуске (onStartupFinished).
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     logger.info('Расширение активировано');
 
-    // Регистрация команды: открыть чат
-    const openChatCmd = vscode.commands.registerCommand('uplink.openChat', () => {
-        vscode.window.showInformationMessage('Uplink: чат будет здесь');
-        // TODO: открыть WebView панель чата
-    });
+    // Сервисы
+    const authManager = new AuthManager(context.secrets);
+    const matrixService = new MatrixService();
+    const cryptoStorePath = CryptoStoreManager.getCryptoStorePath(context);
 
-    // Регистрация команды: отправить выделенный код
-    const sendSnippetCmd = vscode.commands.registerCommand('uplink.sendSnippet', () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showWarningMessage('Uplink: нет активного редактора');
-            return;
-        }
-        const selection = editor.selection;
-        const text = editor.document.getText(selection);
-        if (!text) {
-            vscode.window.showWarningMessage('Uplink: выделите код для отправки');
-            return;
-        }
-        // TODO: отправить сниппет в Matrix
-        vscode.window.showInformationMessage(`Uplink: отправка ${text.split('\n').length} строк кода`);
-    });
-
-    // Регистрация команды: начать звонок
-    const startCallCmd = vscode.commands.registerCommand('uplink.startCall', () => {
-        vscode.window.showInformationMessage('Uplink: звонки будут здесь');
-        // TODO: инициировать LiveKit звонок
-    });
-
-    // Регистрация команды: отключиться
-    const disconnectCmd = vscode.commands.registerCommand('uplink.disconnect', () => {
-        vscode.window.showInformationMessage('Uplink: отключено');
-        // TODO: отключиться от Matrix и LiveKit
-    });
-
-    // Sidebar: каналы и контакты
-    const channelsProvider = new ChannelsProvider();
-    const contactsProvider = new ContactsProvider();
-
+    // Провайдеры sidebar
+    const channelsProvider = new ChannelsProvider(matrixService);
+    const contactsProvider = new ContactsProvider(matrixService);
     vscode.window.registerTreeDataProvider('uplink.channels', channelsProvider);
     vscode.window.registerTreeDataProvider('uplink.contacts', contactsProvider);
 
-    // Статус-бар
-    const statusBarItem = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left,
-        100
-    );
-    statusBarItem.text = '$(plug) Uplink';
-    statusBarItem.tooltip = 'Uplink: нажмите для подключения';
-    statusBarItem.command = 'uplink.openChat';
-    statusBarItem.show();
+    // Status bar
+    const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    statusBar.command = 'uplink.openChat';
+    updateStatusBar(statusBar, false);
+    statusBar.show();
 
+    // Подписки на события Matrix
+    matrixService.onConnectionChanged((connected) => {
+        updateStatusBar(statusBar, connected);
+        if (connected) {
+            channelsProvider.refresh();
+            contactsProvider.refresh();
+        }
+    });
+    matrixService.onRoomsUpdated(() => channelsProvider.refresh());
+    matrixService.onNewMessage(() => channelsProvider.refresh());
+    matrixService.onPresenceChanged(() => contactsProvider.refresh());
+
+    // Автологин по сохранённому токену
+    const config = getConfig();
+    const savedCreds = await authManager.getCredentials();
+
+    if (savedCreds && config.autoConnect) {
+        try {
+            await matrixService.loginWithToken(
+                config.homeserver,
+                savedCreds.userId,
+                savedCreds.token,
+                savedCreds.deviceId,
+                cryptoStorePath
+            );
+            await matrixService.startSync();
+            logger.info('Автологин успешен');
+        } catch (_err) {
+            logger.warn('Автологин не удался, требуется повторная авторизация');
+            await authManager.clearCredentials();
+        }
+    }
+
+    // Команда: открыть чат / логин
     context.subscriptions.push(
-        openChatCmd,
-        sendSnippetCmd,
-        startCallCmd,
-        disconnectCmd,
-        statusBarItem
+        vscode.commands.registerCommand('uplink.openChat', async () => {
+            if (!matrixService.isConnected) {
+                const loginData = await authManager.promptLogin();
+                if (!loginData) { return; }
+
+                try {
+                    const creds = await matrixService.login(
+                        loginData.homeserver,
+                        loginData.userId,
+                        loginData.password,
+                        cryptoStorePath
+                    );
+                    await authManager.saveCredentials(creds.userId, creds.accessToken, creds.deviceId);
+                    await matrixService.startSync();
+                    vscode.window.showInformationMessage(`Uplink: подключено как ${creds.userId}`);
+                } catch (err) {
+                    vscode.window.showErrorMessage(`Uplink: ошибка подключения — ${(err as Error).message}`);
+                }
+            } else {
+                vscode.window.showInformationMessage('Uplink: чат будет здесь (задача 004)');
+            }
+        })
     );
 
+    // Команда: отправить выделенный код
+    context.subscriptions.push(
+        vscode.commands.registerCommand('uplink.sendSnippet', async () => {
+            if (!matrixService.isConnected) {
+                vscode.window.showWarningMessage('Uplink: сначала подключитесь к серверу');
+                return;
+            }
+
+            const codeCtx = getCodeContext();
+            if (!codeCtx) {
+                vscode.window.showWarningMessage('Uplink: выделите код для отправки');
+                return;
+            }
+
+            const roomsManager = new RoomsManager(matrixService.matrixClient);
+            const { channels, directs } = roomsManager.getGroupedRooms();
+            const allRooms = [...channels, ...directs];
+
+            const picked = await vscode.window.showQuickPick(
+                allRooms.map(r => ({
+                    label: r.type === 'channel' ? `# ${r.name}` : r.name,
+                    description: r.encrypted ? '🔒' : '',
+                    roomId: r.id,
+                })),
+                { placeHolder: 'Выберите канал для отправки кода' }
+            );
+            if (!picked) { return; }
+
+            try {
+                await matrixService.sendCodeSnippet(picked.roomId, {
+                    code: codeCtx.selectedText,
+                    language: codeCtx.languageId,
+                    fileName: codeCtx.relativePath,
+                    lineStart: codeCtx.lineStart,
+                    lineEnd: codeCtx.lineEnd,
+                    gitBranch: codeCtx.gitBranch,
+                });
+                vscode.window.showInformationMessage(`Uplink: код отправлен в ${picked.label}`);
+            } catch (err) {
+                vscode.window.showErrorMessage(`Uplink: ошибка отправки — ${(err as Error).message}`);
+            }
+        })
+    );
+
+    // Команда: начать звонок (заглушка)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('uplink.startCall', () => {
+            vscode.window.showInformationMessage('Uplink: звонки будут в задаче 005');
+        })
+    );
+
+    // Команда: отключиться
+    context.subscriptions.push(
+        vscode.commands.registerCommand('uplink.disconnect', async () => {
+            await matrixService.logout();
+            await authManager.clearCredentials();
+            CryptoStoreManager.clearCryptoStore(context);
+            channelsProvider.refresh();
+            contactsProvider.refresh();
+            vscode.window.showInformationMessage('Uplink: отключено');
+        })
+    );
+
+    context.subscriptions.push(statusBar);
     logger.info('Все команды зарегистрированы');
 }
 
-/**
- * Деактивация расширения.
- * Вызывается при закрытии VS Code или отключении расширения.
- */
+function updateStatusBar(item: vscode.StatusBarItem, connected: boolean) {
+    if (connected) {
+        item.text = '$(check) Uplink';
+        item.tooltip = 'Uplink: подключено';
+        item.backgroundColor = undefined;
+    } else {
+        item.text = '$(plug) Uplink';
+        item.tooltip = 'Uplink: нажмите для подключения';
+        item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+    }
+}
+
 export function deactivate() {
     logger.info('Расширение деактивировано');
     logger.dispose();
-    // TODO: отключиться от Matrix, закрыть LiveKit, cleanup
 }

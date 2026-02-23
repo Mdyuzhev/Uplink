@@ -47,3 +47,7 @@ trusted_key_servers:
 suppress_key_server_warning: true
 
 report_stats: false
+
+# E2E шифрование по умолчанию для всех новых комнат
+encryption_enabled_by_default_for_room_type: all
+allow_device_name_lookup_over_federation: false

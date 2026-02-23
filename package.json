@@ -7,7 +7,9 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -113,26 +115,26 @@
     "build:webview:watch": "webpack --config webpack.config.js --watch"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/node": "^20.0.0",
     "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@vscode/test-electron": "^2.3.0",
-    "typescript": "^5.3.0",
-    "eslint": "^8.56.0",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.0",
-    "ts-loader": "^9.5.0",
+    "@vscode/test-electron": "^2.3.0",
     "css-loader": "^6.8.0",
-    "style-loader": "^3.3.0",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.0",
     "mocha": "^10.2.0",
-    "glob": "^10.3.0"
+    "style-loader": "^3.3.0",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.3.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.0"
   },
   "dependencies": {
-    "matrix-js-sdk": "^31.0.0",
+    "matrix-js-sdk": "^31.6.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }
