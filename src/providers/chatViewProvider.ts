@@ -83,6 +83,12 @@ export class ChatViewProvider {
         }
     }
 
+    /** Открыть конкретную комнату в WebView. */
+    openRoom(roomId: string): void {
+        this.activeRoomId = roomId;
+        this.postMessage({ type: 'openRoom', roomId });
+    }
+
     /** Закрыть панель. */
     dispose(): void {
         this.panel?.dispose();
@@ -225,6 +231,7 @@ export class ChatViewProvider {
           content="default-src 'none';
                    style-src ${webview.cspSource} 'unsafe-inline';
                    script-src 'nonce-${nonce}';
+                   worker-src ${webview.cspSource} blob:;
                    img-src ${webview.cspSource} https:;
                    font-src ${webview.cspSource};">
     <title>Uplink Chat</title>

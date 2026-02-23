@@ -216,9 +216,97 @@ async function main() {
     await sleep(500);
   }
 
+  // 10. DM (личные сообщения)
+  console.log('\n=== ШАГ 9: Личные сообщения ===');
+
+  // Удалить старые DM-комнаты (не публичные каналы)
+  const knownRoomIds = new Set(Object.values(rooms));
+  const allRooms = await api('/_synapse/admin/v1/rooms?limit=100', { token: adminToken });
+  for (const r of (allRooms.rooms || [])) {
+    if (!knownRoomIds.has(r.room_id) && !r.canonical_alias) {
+      // Это не публичный канал — удаляем (старые DM)
+      await api(`/_synapse/admin/v1/rooms/${r.room_id}`, {
+        method: 'DELETE', token: adminToken,
+        body: { purge: true }
+      });
+      console.log(`  Удалена старая комната ${r.room_id} (${r.name || 'без имени'})`);
+      await sleep(200);
+    }
+  }
+
+  // Очистить m.direct данные у всех пользователей
+  for (const u of users) {
+    const uid = `@${u.username}:uplink.local`;
+    await api(`/_matrix/client/v3/user/${uid}/account_data/m.direct`, {
+      method: 'PUT', token: tokens[u.username],
+      body: {}
+    });
+  }
+  console.log('  Очищены старые m.direct данные');
+
+  const dmPairs = [
+    { from: 'alice', to: 'bob', messages: [
+      { user: 'alice', text: 'Привет! Можешь глянуть мой PR по Sidebar?' },
+      { user: 'bob', text: 'Да, сейчас посмотрю. Скинь ссылку' },
+      { user: 'alice', text: 'https://github.com/uplink/pr/42 — там небольшой рефакторинг TreeView' },
+    ]},
+    { from: 'alice', to: 'eve', messages: [
+      { user: 'eve', text: 'Alice, как дела с responsive версией?' },
+      { user: 'alice', text: 'Почти готово, осталось поправить sidebar на мобилке' },
+    ]},
+    { from: 'bob', to: 'charlie', messages: [
+      { user: 'bob', text: 'Charlie, результаты регресса есть?' },
+      { user: 'charlie', text: '12/12 тестов прошли, всё ок' },
+      { user: 'bob', text: 'Супер, тогда мержим' },
+    ]},
+  ];
+
+  for (const dm of dmPairs) {
+    const fromId = `@${dm.from}:uplink.local`;
+    const toId = `@${dm.to}:uplink.local`;
+
+    // Создать DM комнату без шифрования (для PoC в браузере без crypto)
+    const createResp = await api('/_matrix/client/v3/createRoom', {
+      method: 'POST', token: tokens[dm.from],
+      body: {
+        is_direct: true,
+        invite: [toId],
+        preset: 'private_chat',
+        initial_state: [],
+      }
+    });
+    const dmRoomId = createResp.room_id;
+    console.log(`  DM ${dm.from} ↔ ${dm.to} → ${dmRoomId}`);
+
+    // Принять invite
+    await joinRoom(tokens[dm.to], dmRoomId);
+
+    // Установить m.direct account data для обоих
+    for (const [user, peer] of [[dm.from, toId], [dm.to, fromId]]) {
+      const existing = await api('/_matrix/client/v3/user/' + `@${user}:uplink.local` + '/account_data/m.direct', {
+        token: tokens[user]
+      });
+      const directMap = (existing && !existing.errcode) ? existing : {};
+      if (!directMap[peer]) directMap[peer] = [];
+      if (!directMap[peer].includes(dmRoomId)) directMap[peer].push(dmRoomId);
+      await api('/_matrix/client/v3/user/' + `@${user}:uplink.local` + '/account_data/m.direct', {
+        method: 'PUT', token: tokens[user],
+        body: directMap
+      });
+    }
+
+    // Отправить сообщения
+    for (const msg of dm.messages) {
+      await sendMessage(tokens[msg.user], dmRoomId, msg.text);
+      console.log(`    [${msg.user}] ${msg.text.slice(0, 50)}`);
+      await sleep(300);
+    }
+  }
+
   console.log('\n=== ГОТОВО ===');
   console.log('Пользователи: alice, bob, charlie, diana, eve (пароль: test123)');
   console.log(`Комнаты: #general (${rooms.general}), #backend (${rooms.backend}), #frontend (${rooms.frontend})`);
+  console.log('DM: alice↔bob, alice↔eve, bob↔charlie');
 }
 
 main().catch(err => {

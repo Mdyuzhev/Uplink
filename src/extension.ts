@@ -139,6 +139,40 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     );
 
+    // Команда: написать пользователю (DM)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('uplink.startDirectMessage', async (userId: string, displayName: string) => {
+            if (!matrixService.isConnected) {
+                vscode.window.showWarningMessage('Uplink: сначала подключитесь к серверу');
+                return;
+            }
+
+            try {
+                const roomsManager = new RoomsManager(matrixService.matrixClient);
+                const { directs } = roomsManager.getGroupedRooms();
+                let existingRoom = directs.find(r => r.peerId === userId);
+
+                let roomId: string;
+                if (existingRoom) {
+                    roomId = existingRoom.id;
+                } else {
+                    roomId = await roomsManager.createDirectMessage(userId);
+                    // Обновляем m.direct account data
+                    const directMap = matrixService.matrixClient
+                        .getAccountData('m.direct')?.getContent() || {};
+                    const updated = { ...directMap, [userId]: [...((directMap as Record<string, string[]>)[userId] || []), roomId] };
+                    await matrixService.matrixClient.setAccountData('m.direct', updated);
+                }
+
+                chatProvider.show();
+                chatProvider.openRoom(roomId);
+                logger.info(`DM открыт с ${displayName} (${userId})`);
+            } catch (err) {
+                vscode.window.showErrorMessage(`Uplink: не удалось начать чат с ${displayName} — ${(err as Error).message}`);
+            }
+        })
+    );
+
     // Команда: начать звонок (заглушка)
     context.subscriptions.push(
         vscode.commands.registerCommand('uplink.startCall', () => {

@@ -1,0 +1,44 @@
+:root {
+    --uplink-bg: #1a1d23;
+    --uplink-sidebar-bg: #14161a;
+    --uplink-sidebar-text: #d1d2d3;
+    --uplink-sidebar-text-muted: #8b8d90;
+    --uplink-sidebar-active: rgba(255, 255, 255, 0.08);
+    --uplink-sidebar-hover: rgba(255, 255, 255, 0.04);
+    --uplink-border: #2e3136;
+    --uplink-text: #dcddde;
+    --uplink-text-muted: #72767d;
+    --uplink-accent: #4a9eff;
+    --uplink-accent-hover: #3a8eef;
+    --uplink-danger: #ed4245;
+    --uplink-success: #3ba55d;
+    --uplink-input-bg: #2a2d33;
+    --uplink-code-bg: #2b2d31;
+    --uplink-message-hover: rgba(255, 255, 255, 0.02);
+    --uplink-scrollbar: #1a1c20;
+    --uplink-scrollbar-thumb: #4f545c;
+    --uplink-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --uplink-font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    --uplink-radius: 4px;
+    --uplink-sidebar-width: 260px;
+    --uplink-avatar-size: 36px;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --uplink-bg: #ffffff;
+        --uplink-sidebar-bg: #f2f3f5;
+        --uplink-sidebar-text: #1a1d23;
+        --uplink-sidebar-text-muted: #5c5e66;
+        --uplink-sidebar-active: rgba(0, 0, 0, 0.06);
+        --uplink-sidebar-hover: rgba(0, 0, 0, 0.03);
+        --uplink-border: #e3e5e8;
+        --uplink-text: #2e3136;
+        --uplink-text-muted: #747680;
+        --uplink-input-bg: #ebedef;
+        --uplink-code-bg: #f2f3f5;
+        --uplink-message-hover: rgba(0, 0, 0, 0.02);
+        --uplink-scrollbar: #f2f3f5;
+        --uplink-scrollbar-thumb: #c1c3c7;
+    }
+}

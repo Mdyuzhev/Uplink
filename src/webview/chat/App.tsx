@@ -44,6 +44,13 @@ export const App: React.FC = () => {
                     setConnected(msg.connected);
                     if (msg.userId) { setCurrentUser(msg.userId); }
                     break;
+                case 'openRoom':
+                    setActiveRoomId(msg.roomId);
+                    setMessages([]);
+                    vscodeApi.setState({ activeRoomId: msg.roomId });
+                    vscodeApi.postMessage({ type: 'selectRoom', roomId: msg.roomId });
+                    vscodeApi.postMessage({ type: 'requestRooms' });
+                    break;
             }
         };
         window.addEventListener('message', handler);

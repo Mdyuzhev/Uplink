@@ -2,7 +2,7 @@
   "name": "uplink",
   "displayName": "Uplink",
   "description": "Контекстный мессенджер и звонилка для разработчиков, встроенные в VS Code",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "publisher": "rostelecom-qa",
   "engines": {
     "vscode": "^1.85.0"
@@ -13,7 +13,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./out/extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -34,6 +34,11 @@
       {
         "command": "uplink.disconnect",
         "title": "Uplink: Отключиться"
+      },
+      {
+        "command": "uplink.startDirectMessage",
+        "title": "Uplink: Написать пользователю",
+        "icon": "$(mail)"
       }
     ],
     "viewsContainers": {
@@ -106,13 +111,16 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts,tsx",
     "test": "node ./out/test/runTest.js",
-    "build:webview": "webpack --config webpack.config.js",
-    "build:webview:watch": "webpack --config webpack.config.js --watch"
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "build:watch": "webpack --mode development --watch",
+    "package": "npm run build && vsce package --no-dependencies",
+    "install:vsix": "code --install-extension uplink-*.vsix"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.0",
@@ -123,6 +131,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^3.7.1",
     "css-loader": "^6.8.0",
     "eslint": "^8.56.0",
     "glob": "^10.3.0",

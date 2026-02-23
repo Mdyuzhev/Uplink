@@ -1,0 +1,109 @@
+.login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 16px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--uplink-sidebar-bg);
+    border: 1px solid var(--uplink-border);
+    border-radius: 8px;
+    padding: 32px;
+}
+
+.login-card__header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-card__logo {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--uplink-accent);
+    margin-bottom: 4px;
+}
+
+.login-card__subtitle {
+    font-size: 13px;
+    color: var(--uplink-text-muted);
+}
+
+.login-card__field {
+    margin-bottom: 16px;
+}
+
+.login-card__label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--uplink-sidebar-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.login-card__input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--uplink-input-bg);
+    border: 1px solid var(--uplink-border);
+    border-radius: var(--uplink-radius);
+    color: var(--uplink-text);
+    font-size: 15px;
+    font-family: var(--uplink-font);
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.login-card__input:focus {
+    border-color: var(--uplink-accent);
+}
+
+.login-card__input::placeholder {
+    color: var(--uplink-text-muted);
+}
+
+.login-card__button {
+    width: 100%;
+    padding: 11px;
+    margin-top: 8px;
+    background: var(--uplink-accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--uplink-radius);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--uplink-font);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.login-card__button:hover:not(:disabled) {
+    background: var(--uplink-accent-hover);
+}
+
+.login-card__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.login-card__error {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(237, 66, 69, 0.1);
+    border: 1px solid var(--uplink-danger);
+    border-radius: var(--uplink-radius);
+    color: var(--uplink-danger);
+    font-size: 13px;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 24px 20px;
+    }
+}

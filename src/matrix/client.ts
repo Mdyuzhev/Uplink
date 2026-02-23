@@ -96,26 +96,29 @@ export class MatrixService {
         }
     }
 
-    /** Инициализация E2E шифрования. */
+    /** Инициализация E2E шифрования с таймаутом. */
     private async initCrypto(): Promise<void> {
         if (!this.client) { return; }
 
+        const timeout = (ms: number) => new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Crypto init timeout')), ms)
+        );
+
         try {
-            await this.client.initRustCrypto();
+            await Promise.race([
+                this.client.initRustCrypto(),
+                timeout(5000),
+            ]);
             logger.info('Крипто-бэкенд: Rust (matrix-sdk-crypto-wasm)');
         } catch (_rustErr) {
-            logger.warn('Rust crypto недоступен, пробуем Olm...');
-            try {
-                await this.client.initCrypto();
-                logger.info('Крипто-бэкенд: Olm');
-            } catch (_olmErr) {
-                logger.error('E2E шифрование недоступно! Encrypted-комнаты будут нечитаемы.');
-            }
+            logger.warn('Rust crypto недоступен или timeout, пробуем без E2E...');
+            // PoC: работаем без шифрования — на localhost это допустимо
+            logger.info('PoC-режим: E2E шифрование отключено, чат работает без крипто');
+            return;
         }
 
         const crypto = this.client.getCrypto();
         if (crypto) {
-            // PoC: автодоверие устройствам
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (crypto as any).globalBlacklistUnverifiedDevices = false;
             logger.info('PoC-режим: автодоверие устройствам включено');

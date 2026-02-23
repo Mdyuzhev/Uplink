@@ -57,6 +57,11 @@ export class ContactsProvider implements vscode.TreeDataProvider<vscode.TreeItem
             item.description = isOnline ? 'в сети' : 'не в сети';
             item.tooltip = `${u.displayName}\n${u.userId}\n${isOnline ? '🟢 В сети' : '⚪ Не в сети'}`;
             item.contextValue = 'contact';
+            item.command = {
+                command: 'uplink.startDirectMessage',
+                title: 'Написать',
+                arguments: [u.userId, u.displayName],
+            };
             return item;
         }));
     }
