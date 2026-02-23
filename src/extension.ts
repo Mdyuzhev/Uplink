@@ -5,6 +5,7 @@ import { CryptoStoreManager } from './matrix/cryptoStore';
 import { RoomsManager } from './matrix/rooms';
 import { ChannelsProvider } from './providers/channelsProvider';
 import { ContactsProvider } from './providers/contactsProvider';
+import { ChatViewProvider } from './providers/chatViewProvider';
 import { getCodeContext } from './context/codeContext';
 import { getConfig } from './utils/config';
 import { logger } from './utils/logger';
@@ -25,6 +26,9 @@ export async function activate(context: vscode.ExtensionContext) {
     const contactsProvider = new ContactsProvider(matrixService);
     vscode.window.registerTreeDataProvider('uplink.channels', channelsProvider);
     vscode.window.registerTreeDataProvider('uplink.contacts', contactsProvider);
+
+    // Chat WebView
+    const chatProvider = new ChatViewProvider(context.extensionUri, matrixService);
 
     // Status bar
     const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -84,10 +88,10 @@ export async function activate(context: vscode.ExtensionContext) {
                     vscode.window.showInformationMessage(`Uplink: подключено как ${creds.userId}`);
                 } catch (err) {
                     vscode.window.showErrorMessage(`Uplink: ошибка подключения — ${(err as Error).message}`);
+                    return;
                 }
-            } else {
-                vscode.window.showInformationMessage('Uplink: чат будет здесь (задача 004)');
             }
+            chatProvider.show();
         })
     );
 
