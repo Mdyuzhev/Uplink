@@ -335,7 +335,11 @@ export class MatrixService {
 
     /**
      * Найти существующую DM-комнату с пользователем.
-     * Проверяет account data m.direct и membership.
+     *
+     * Стратегия:
+     * 1. Проверить m.direct account data
+     * 2. Если m.direct указывает на мёртвую комнату — сканировать ВСЕ joined комнаты
+     * 3. Если нашли живую DM вне m.direct — обновить m.direct
      */
     findExistingDM(userId: string): string | null {
         if (!this.client) return null;
@@ -343,6 +347,7 @@ export class MatrixService {
         const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
         const dmRoomIds: string[] = directMap[userId] || [];
 
+        // 1. Проверить комнаты из m.direct
         for (const roomId of dmRoomIds) {
             const room = this.client.getRoom(roomId);
             if (!room) continue;
@@ -354,7 +359,46 @@ export class MatrixService {
             }
         }
 
+        // 2. m.direct не содержит живой комнаты — ищем среди всех joined комнат
+        const allRooms = this.client.getRooms().filter(r => r.getMyMembership() === 'join');
+        for (const room of allRooms) {
+            // Пропускаем комнаты уже проверенные через m.direct
+            if (dmRoomIds.includes(room.roomId)) continue;
+
+            // DM — комната с 2 участниками где оба joined
+            const members = room.getJoinedMembers();
+            if (members.length !== 2) continue;
+
+            const hasTarget = members.some(m => m.userId === userId);
+            const hasMe = members.some(m => m.userId === this.client!.getUserId());
+            if (!hasTarget || !hasMe) continue;
+
+            // Нашли живую DM вне m.direct — обновить m.direct
+            console.log(`Найдена DM с ${userId} вне m.direct: ${room.roomId}, обновляю...`);
+            this.updateDirectMap(userId, room.roomId);
+            return room.roomId;
+        }
+
         return null;
+    }
+
+    /**
+     * Обновить m.direct account data для пользователя.
+     */
+    private async updateDirectMap(userId: string, roomId: string): Promise<void> {
+        if (!this.client) return;
+        try {
+            const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
+            if (!directMap[userId]) {
+                directMap[userId] = [];
+            }
+            if (!directMap[userId].includes(roomId)) {
+                directMap[userId].push(roomId);
+            }
+            await this.client.setAccountData('m.direct', directMap);
+        } catch (err) {
+            console.warn('Не удалось обновить m.direct:', (err as Error).message);
+        }
     }
 
     /**
@@ -374,15 +418,7 @@ export class MatrixService {
         });
 
         const newRoomId = response.room_id;
-
-        const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
-        if (!directMap[userId]) {
-            directMap[userId] = [];
-        }
-        if (!directMap[userId].includes(newRoomId)) {
-            directMap[userId].push(newRoomId);
-        }
-        await this.client.setAccountData('m.direct', directMap);
+        await this.updateDirectMap(userId, newRoomId);
 
         return newRoomId;
     }
