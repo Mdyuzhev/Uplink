@@ -17,6 +17,17 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     target: 'esnext',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Тяжёлые зависимости в отдельные чанки — браузер грузит параллельно
+          'matrix-sdk': ['matrix-js-sdk'],
+          'livekit': ['livekit-client'],
+          'react-vendor': ['react', 'react-dom'],
+        },
+      },
+    },
   },
   optimizeDeps: {
     exclude: [
