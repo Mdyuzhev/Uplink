@@ -14,7 +14,8 @@ interface RoomHeaderProps {
 export const RoomHeader: React.FC<RoomHeaderProps> = ({
     room, onBack, callState, activeCallRoomName, onJoinCall, onLeaveCall,
 }) => {
-    const isThisRoomInCall = activeCallRoomName === room.name;
+    // activeCallRoomName теперь содержит room.id (Matrix room ID)
+    const isThisRoomInCall = activeCallRoomName === room.id;
     const isOtherRoomInCall = activeCallRoomName !== null && !isThisRoomInCall;
 
     return (

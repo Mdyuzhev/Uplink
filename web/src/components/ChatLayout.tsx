@@ -52,7 +52,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
 
     const handleJoinCall = () => {
         if (activeRoom) {
-            joinCall(activeRoom.name);
+            // Используем room.id (Matrix room ID), а не room.name:
+            // В DM у Alice комната называется "Bob", у Bob — "Alice".
+            // room.id одинаковый у обоих → попадают в одну LiveKit-комнату.
+            joinCall(activeRoom.id);
         }
     };
 
@@ -87,9 +90,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             <div className="call-error">{callError}</div>
                         )}
 
-                        {callState === 'connected' && activeRoomName === activeRoom.name && (
+                        {callState === 'connected' && activeRoomName === activeRoom.id && (
                             <CallBar
-                                roomName={activeRoomName}
+                                roomName={activeRoom.name}
                                 participants={participants}
                                 isMuted={isMuted}
                                 duration={duration}
