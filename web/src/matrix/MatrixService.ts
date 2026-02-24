@@ -502,7 +502,15 @@ export class MatrixService {
     /** Конвертировать mxc:// URL в HTTP URL для <img src> */
     mxcToHttp(mxcUrl: string | undefined | null, size: number = 96): string | null {
         if (!this.client || !mxcUrl) return null;
-        return this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop') || null;
+        const url = this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop');
+        if (!url) return null;
+        // Synapse 1.120+ требует аутентификацию для media.
+        // <img> не может отправить заголовок Authorization,
+        // поэтому передаём токен через query parameter.
+        const token = this.client.getAccessToken();
+        if (!token) return url;
+        const sep = url.includes('?') ? '&' : '?';
+        return `${url}${sep}access_token=${encodeURIComponent(token)}`;
     }
 
     /** Получить HTTP URL аватара любого пользователя */
@@ -521,9 +529,7 @@ export class MatrixService {
     getMyAvatarUrl(size: number = 96): string | null {
         if (!this.client) return null;
         const user = this.client.getUser(this.client.getUserId()!);
-        const mxcUrl = user?.avatarUrl;
-        if (!mxcUrl) return null;
-        return this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop') || null;
+        return this.mxcToHttp(user?.avatarUrl, size);
     }
 
     /** Получить mxc:// URL аватара через Profile API (не зависит от sync) */
