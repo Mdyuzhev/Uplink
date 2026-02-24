@@ -6,7 +6,7 @@ services:
     container_name: uplink-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -61,7 +61,7 @@ services:
     container_name: uplink-synapse-admin
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${ADMIN_PORT:-8080}:80"
     depends_on:
       synapse:
         condition: service_healthy
