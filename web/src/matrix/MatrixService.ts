@@ -133,7 +133,12 @@ export class MatrixService {
         await this.initCrypto();
 
         this.client.on(sdk.ClientEvent.Sync, (state: string) => {
-            if (state === 'PREPARED' || state === 'SYNCING') {
+            if (state === 'PREPARED') {
+                // При первом sync — принять все ожидающие invite
+                this.acceptPendingInvites();
+                this.setConnectionState('connected');
+                this.emitRoomsUpdated();
+            } else if (state === 'SYNCING') {
                 this.setConnectionState('connected');
                 this.emitRoomsUpdated();
             } else if (state === 'ERROR' || state === 'STOPPED') {
@@ -149,7 +154,11 @@ export class MatrixService {
             }
         });
 
-        this.client.on(sdk.RoomEvent.MyMembership, () => {
+        this.client.on(sdk.RoomEvent.MyMembership, (room: sdk.Room, membership: string) => {
+            // Авто-принятие invite в DM-комнаты
+            if (membership === 'invite') {
+                this.autoAcceptInvite(room);
+            }
             this.emitRoomsUpdated();
         });
 
@@ -182,6 +191,33 @@ export class MatrixService {
             this.configureCryptoTrust();
         } catch (err) {
             console.warn('⚠️ E2E шифрование недоступно, работаем без него (PoC):', (err as Error).message);
+        }
+    }
+
+    /**
+     * Принять все ожидающие приглашения при начальном sync.
+     */
+    private async acceptPendingInvites(): Promise<void> {
+        if (!this.client) return;
+        const invited = this.client.getRooms().filter(r => r.getMyMembership() === 'invite');
+        for (const room of invited) {
+            this.autoAcceptInvite(room);
+        }
+    }
+
+    /**
+     * Авто-принятие приглашений в комнаты.
+     * Без этого DM не работают: Alice создаёт комнату, Bob получает invite,
+     * но не видит комнату пока не примет приглашение вручную.
+     */
+    private async autoAcceptInvite(room: sdk.Room): Promise<void> {
+        if (!this.client) return;
+        try {
+            await this.client.joinRoom(room.roomId);
+            console.log(`Авто-принятие invite: ${room.roomId}`);
+            this.emitRoomsUpdated();
+        } catch (err) {
+            console.warn(`Не удалось принять invite ${room.roomId}:`, (err as Error).message);
         }
     }
 
