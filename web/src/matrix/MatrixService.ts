@@ -497,6 +497,49 @@ export class MatrixService {
         return null;
     }
 
+    // === Профиль пользователя ===
+
+    getMyDisplayName(): string {
+        if (!this.client) return '';
+        const user = this.client.getUser(this.client.getUserId()!);
+        return user?.displayName || this.client.getUserId()!.split(':')[0].substring(1);
+    }
+
+    getMyAvatarUrl(size: number = 96): string | null {
+        if (!this.client) return null;
+        const user = this.client.getUser(this.client.getUserId()!);
+        const mxcUrl = user?.avatarUrl;
+        if (!mxcUrl) return null;
+        return this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop') || null;
+    }
+
+    async setDisplayName(name: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        await this.client.setDisplayName(name);
+    }
+
+    async setAvatar(file: File): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const response = await this.client.uploadContent(file, {
+            type: file.type,
+        });
+        const mxcUrl = response.content_uri;
+        await this.client.setAvatarUrl(mxcUrl);
+    }
+
+    async changePassword(oldPassword: string, newPassword: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const userId = this.client.getUserId()!;
+        await this.client.setPassword(
+            {
+                type: 'm.login.password',
+                identifier: { type: 'm.id.user', user: userId },
+                password: oldPassword,
+            } as any,
+            newPassword
+        );
+    }
+
     async disconnect(): Promise<void> {
         if (this.client) {
             this.client.stopClient();

@@ -758,3 +758,231 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+/* === Sidebar header — кнопка профиля === */
+.chat-sidebar__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-sidebar__profile-btn {
+    background: var(--uplink-bg-tertiary, #353840);
+    border: none;
+    color: var(--uplink-text-primary, #fff);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.chat-sidebar__profile-btn:hover {
+    background: var(--uplink-sidebar-hover, #3e4249);
+}
+
+/* === Profile Modal === */
+.profile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+.profile-modal {
+    background: var(--uplink-bg-secondary, #2a2d35);
+    border-radius: 12px;
+    width: 380px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.profile-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-modal__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--uplink-text-primary, #fff);
+}
+
+.profile-modal__close {
+    background: none;
+    border: none;
+    color: var(--uplink-text-muted, #888);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.profile-modal__close:hover {
+    background: var(--uplink-bg-tertiary, #353840);
+    color: var(--uplink-text-primary, #fff);
+}
+
+/* Avatar section */
+.profile-modal__avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-modal__avatar {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.profile-modal__avatar:hover {
+    opacity: 0.8;
+}
+
+.profile-modal__avatar--uploading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.profile-modal__avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-modal__avatar .avatar {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 32px !important;
+}
+
+.profile-modal__avatar-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    text-align: center;
+    font-size: 16px;
+    padding: 4px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.profile-modal__avatar:hover .profile-modal__avatar-overlay {
+    opacity: 1;
+}
+
+.profile-modal__avatar-hint {
+    font-size: 12px;
+    color: var(--uplink-text-muted, #888);
+    margin-top: 8px;
+}
+
+/* Sections */
+.profile-modal__section {
+    margin-bottom: 16px;
+}
+
+.profile-modal__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--uplink-text-muted, #888);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-modal__input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--uplink-bg-primary, #1a1d23);
+    border: 1px solid var(--uplink-border, #3e4249);
+    border-radius: 6px;
+    color: var(--uplink-text-primary, #fff);
+    font-size: 14px;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+}
+
+.profile-modal__input:focus {
+    outline: none;
+    border-color: var(--uplink-accent, #5865f2);
+}
+
+.profile-modal__input::placeholder {
+    color: var(--uplink-text-muted, #888);
+}
+
+.profile-modal__btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    margin-top: 4px;
+}
+
+.profile-modal__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.profile-modal__btn--primary {
+    background: var(--uplink-accent, #5865f2);
+    color: white;
+}
+
+.profile-modal__btn--primary:hover:not(:disabled) {
+    background: #4752c4;
+}
+
+.profile-modal__btn--danger {
+    background: transparent;
+    color: #f44336;
+    border: 1px solid #f44336;
+}
+
+.profile-modal__btn--danger:hover {
+    background: #f44336;
+    color: white;
+}
+
+.profile-modal__error {
+    color: #f44336;
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.profile-modal__divider {
+    height: 1px;
+    background: var(--uplink-border, #3e4249);
+    margin: 16px 0;
+}

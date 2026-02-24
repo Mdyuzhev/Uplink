@@ -9,14 +9,16 @@ interface SidebarProps {
     users: UserInfo[];
     usersLoading: boolean;
     activeRoomId: string | null;
+    userName: string;
     onSelectRoom: (roomId: string) => void;
     onOpenDM: (userId: string) => void;
+    onProfileClick: () => void;
     onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     channels, directs, users, usersLoading,
-    activeRoomId, onSelectRoom, onOpenDM, onLogout,
+    activeRoomId, userName, onSelectRoom, onOpenDM, onProfileClick, onLogout,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -43,9 +45,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <>
             <div className="chat-sidebar__header">
                 <span className="chat-sidebar__title">Uplink</span>
-                <button className="chat-sidebar__logout" onClick={onLogout} title="Выйти">
-                    &#x2192;
-                </button>
+                <div className="chat-sidebar__header-actions">
+                    <button
+                        className="chat-sidebar__profile-btn"
+                        onClick={onProfileClick}
+                        title="Настройки профиля"
+                    >
+                        {userName}
+                    </button>
+                    <button className="chat-sidebar__logout" onClick={onLogout} title="Выйти">
+                        &#x2192;
+                    </button>
+                </div>
             </div>
 
             <div className="chat-sidebar__search">

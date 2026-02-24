@@ -11,6 +11,7 @@ import { RoomHeader } from './RoomHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { CallBar } from './CallBar';
+import { ProfileModal } from './ProfileModal';
 import { IncomingCallOverlay } from './IncomingCallOverlay';
 import { OutgoingCallOverlay } from './OutgoingCallOverlay';
 import '../styles/chat.css';
@@ -24,6 +25,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const { users, loading: usersLoading } = useUsers();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
+    const [showProfile, setShowProfile] = useState(false);
     const { messages, sendMessage, loadMore } = useMessages(activeRoomId);
 
     const {
@@ -117,8 +119,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                     users={users}
                     usersLoading={usersLoading}
                     activeRoomId={activeRoomId}
+                    userName={matrixService.getMyDisplayName()}
                     onSelectRoom={handleSelectRoom}
                     onOpenDM={handleOpenDM}
+                    onProfileClick={() => setShowProfile(true)}
                     onLogout={onLogout}
                 />
             </div>
@@ -178,6 +182,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                     callInfo={callInfo}
                     onAccept={handleAcceptCall}
                     onReject={rejectCall}
+                />
+            )}
+
+            {/* Модалка профиля */}
+            {showProfile && (
+                <ProfileModal
+                    onClose={() => setShowProfile(false)}
+                    onLogout={onLogout}
                 />
             )}
         </div>

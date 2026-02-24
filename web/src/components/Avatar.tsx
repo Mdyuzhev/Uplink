@@ -4,6 +4,7 @@ interface AvatarProps {
     name: string;
     size?: number;
     online?: boolean;
+    imageUrl?: string | null;
 }
 
 const COLORS = [
@@ -19,16 +20,24 @@ function hashColor(str: string): string {
     return COLORS[Math.abs(hash) % COLORS.length];
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online }) => {
+export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online, imageUrl }) => {
     const letter = (name[0] || '?').toUpperCase();
     const bg = hashColor(name);
 
     return (
         <div
             className="avatar"
-            style={{ width: size, height: size, fontSize: size * 0.4, background: bg }}
+            style={{ width: size, height: size, fontSize: size * 0.4, background: imageUrl ? 'transparent' : bg }}
         >
-            {letter}
+            {imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt={name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                />
+            ) : (
+                letter
+            )}
             {online && <span className="avatar__online-dot" />}
         </div>
     );
