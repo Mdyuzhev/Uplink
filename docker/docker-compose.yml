@@ -44,6 +44,7 @@ services:
       SYNAPSE_CONFIG_DIR: /data
     volumes:
       - ./synapse:/data
+      - uplink-synapse-media:/data/media_store
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,3 +135,4 @@ services:
 volumes:
   uplink-postgres-data:
   uplink-redis-data:
+  uplink-synapse-media:
