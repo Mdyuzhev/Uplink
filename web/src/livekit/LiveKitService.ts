@@ -4,7 +4,7 @@ import {
     RemoteParticipant,
     Track,
 } from 'livekit-client';
-import { config } from '../config';
+import { config, isExternal } from '../config';
 
 export type CallState = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -80,11 +80,19 @@ export class LiveKitService {
         this._activeRoomName = roomName;
 
         try {
-            const token = await this.fetchToken(userId, roomName);
+            const { token, turnServers } = await this.fetchToken(userId, roomName);
+
+            // Для внешнего доступа (Cloudflare Tunnel) — добавляем TURN relay,
+            // т.к. прямое UDP/TCP соединение через tunnel невозможно
+            const rtcConfig: RTCConfiguration | undefined =
+                isExternal && turnServers.length > 0
+                    ? { iceServers: turnServers, iceTransportPolicy: 'relay' as RTCIceTransportPolicy }
+                    : undefined;
 
             this.room = new Room({
                 adaptiveStream: true,
                 dynacast: true,
+                rtcConfig,
             });
 
             this.setupRoomListeners();
@@ -175,7 +183,7 @@ export class LiveKitService {
 
     // === Вспомогательные методы ===
 
-    private async fetchToken(userId: string, roomName: string): Promise<string> {
+    private async fetchToken(userId: string, roomName: string): Promise<{ token: string; turnServers: RTCIceServer[] }> {
         const resp = await fetch(`${config.tokenServiceUrl}/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -188,7 +196,7 @@ export class LiveKitService {
         }
 
         const data = await resp.json();
-        return data.token;
+        return { token: data.token, turnServers: data.turnServers || [] };
     }
 
     private setupRoomListeners(): void {

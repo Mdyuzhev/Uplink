@@ -22,7 +22,7 @@ const isSecure = window.location.protocol === 'https:';
  * - dev: Vite dev server (порт 5173)
  *   LiveKit напрямую: ws://host:7880
  */
-const isExternal = isSecure && (port === '' || port === '443');
+export const isExternal = isSecure && (port === '' || port === '443');
 
 export const config = {
     /** Matrix homeserver (Synapse) */

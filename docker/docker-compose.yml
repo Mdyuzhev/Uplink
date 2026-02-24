@@ -97,6 +97,10 @@ services:
     environment:
       LIVEKIT_API_KEY: uplink-api-key
       LIVEKIT_API_SECRET: uplink-api-secret-change-me-in-prod
+      TURN_HOST: ${TURN_HOST:-}
+      TURN_PORT: ${TURN_PORT:-3478}
+      TURN_USER: ${TURN_USER:-uplink}
+      TURN_PASS: ${TURN_PASS:-uplink-turn-pass}
     depends_on:
       livekit:
         condition: service_healthy
@@ -105,6 +109,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: uplink-coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: -c /etc/coturn/turnserver.conf
 
   uplink:
     build:

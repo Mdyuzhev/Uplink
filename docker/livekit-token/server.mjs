@@ -16,6 +16,12 @@ const PORT = 7890;
 const API_KEY = process.env.LIVEKIT_API_KEY || 'uplink-api-key';
 const API_SECRET = process.env.LIVEKIT_API_SECRET || 'uplink-api-secret-change-me-in-prod';
 
+// TURN server (coturn) для relay медиа через NAT/firewall
+const TURN_HOST = process.env.TURN_HOST || '';
+const TURN_PORT = process.env.TURN_PORT || '3478';
+const TURN_USER = process.env.TURN_USER || 'uplink';
+const TURN_PASS = process.env.TURN_PASS || 'uplink-turn-pass';
+
 /**
  * Генерация токена с правами на подключение к комнате,
  * публикацию аудио и подписку на треки других участников.
@@ -66,8 +72,23 @@ const server = http.createServer(async (req, res) => {
             }
 
             const token = await generateToken(userId, roomName);
+
+            // Если TURN_HOST задан — отдаём TURN-серверы для relay
+            const turnServers = TURN_HOST ? [
+                {
+                    urls: `turn:${TURN_HOST}:${TURN_PORT}?transport=udp`,
+                    username: TURN_USER,
+                    credential: TURN_PASS,
+                },
+                {
+                    urls: `turn:${TURN_HOST}:${TURN_PORT}?transport=tcp`,
+                    username: TURN_USER,
+                    credential: TURN_PASS,
+                },
+            ] : [];
+
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ token }));
+            res.end(JSON.stringify({ token, turnServers }));
         } catch (err) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: err.message }));
