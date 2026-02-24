@@ -159,13 +159,25 @@ export class MatrixService {
     /**
      * Инициализация E2E шифрования.
      * Пробуем Rust crypto (matrix-sdk-crypto-wasm).
-     * Если не удалось — продолжаем без шифрования (PoC-режим).
+     * Если не удалось или зависло (мобилки без SharedArrayBuffer) —
+     * продолжаем без шифрования (PoC-режим).
      */
     private async initCrypto(): Promise<void> {
         if (!this.client) return;
 
+        // SharedArrayBuffer нужен для WASM crypto, но доступен только с COOP/COEP.
+        // На мобилках без этих заголовков initRustCrypto() может зависнуть.
+        if (typeof SharedArrayBuffer === 'undefined') {
+            console.warn('⚠️ SharedArrayBuffer недоступен — E2E шифрование отключено');
+            return;
+        }
+
         try {
-            await this.client.initRustCrypto();
+            // Таймаут 10с — если WASM не загрузился, продолжаем без E2E
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('timeout')), 10000)
+            );
+            await Promise.race([this.client.initRustCrypto(), timeout]);
             console.log('✅ Uplink E2E: Rust crypto (matrix-sdk-crypto-wasm)');
             this.configureCryptoTrust();
         } catch (err) {
