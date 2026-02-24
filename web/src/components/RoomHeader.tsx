@@ -32,9 +32,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                 {room.topic && <div className="room-header__topic">{room.topic}</div>}
             </div>
 
-            {room.type === 'channel' && (
-                <div className="room-header__call">
-                    {isThisRoomInCall ? (
+            <div className="room-header__call">
+                {isThisRoomInCall ? (
                         <button
                             className="room-header__call-btn room-header__call-btn--leave"
                             onClick={onLeaveCall}
@@ -51,9 +50,8 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                         >
                             {callState === 'connecting' ? '...' : '\u{1F4DE}'}
                         </button>
-                    )}
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

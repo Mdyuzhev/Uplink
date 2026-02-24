@@ -21,7 +21,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
 
     const {
         callState, participants, duration, isMuted,
-        activeRoomName, joinCall, leaveCall, toggleMute,
+        activeRoomName, error: callError, joinCall, leaveCall, toggleMute,
     } = useLiveKit();
 
     const allRooms = [...channels, ...directs];
@@ -65,6 +65,10 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             onJoinCall={handleJoinCall}
                             onLeaveCall={leaveCall}
                         />
+
+                        {callError && (
+                            <div className="call-error">{callError}</div>
+                        )}
 
                         {callState === 'connected' && activeRoomName === activeRoom.name && (
                             <CallBar

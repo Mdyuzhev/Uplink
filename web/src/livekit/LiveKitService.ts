@@ -91,7 +91,11 @@ export class LiveKitService {
 
             await this.room.connect(config.livekitUrl, token);
 
-            await this.room.localParticipant.setMicrophoneEnabled(true);
+            try {
+                await this.room.localParticipant.setMicrophoneEnabled(true);
+            } catch (micErr) {
+                console.warn('Микрофон недоступен (HTTP? нет разрешения?):', micErr);
+            }
 
             this.startDurationTimer();
 
