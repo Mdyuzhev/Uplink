@@ -166,31 +166,25 @@ export class MatrixService {
     }
 
     /**
-     * Инициализация E2E шифрования.
-     * Пробуем Rust crypto (matrix-sdk-crypto-wasm).
-     * Если не удалось или зависло (мобилки без SharedArrayBuffer) —
-     * продолжаем без шифрования (PoC-режим).
+     * Инициализация E2E шифрования (Rust crypto / WASM).
+     *
+     * matrix-sdk-crypto-wasm v7+ НЕ требует SharedArrayBuffer —
+     * проверка удалена (она ложно блокировала E2E на мобильных
+     * браузерах и при доступе через Cloudflare Tunnel без COOP/COEP).
+     *
+     * При ошибке — логируем, но не ломаем приложение.
+     * Нешифрованные комнаты продолжат работать.
      */
     private async initCrypto(): Promise<void> {
         if (!this.client) return;
 
-        // SharedArrayBuffer нужен для WASM crypto, но доступен только с COOP/COEP.
-        // На мобилках без этих заголовков initRustCrypto() может зависнуть.
-        if (typeof SharedArrayBuffer === 'undefined') {
-            console.warn('⚠️ SharedArrayBuffer недоступен — E2E шифрование отключено');
-            return;
-        }
-
         try {
-            // Таймаут 10с — если WASM не загрузился, продолжаем без E2E
-            const timeout = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), 10000)
-            );
-            await Promise.race([this.client.initRustCrypto(), timeout]);
+            await this.client.initRustCrypto();
             console.log('✅ Uplink E2E: Rust crypto (matrix-sdk-crypto-wasm)');
             this.configureCryptoTrust();
         } catch (err) {
-            console.warn('⚠️ E2E шифрование недоступно, работаем без него (PoC):', (err as Error).message);
+            console.error('❌ E2E шифрование не удалось инициализировать:', (err as Error).message);
+            console.error('Сообщения в шифрованных комнатах не будут расшифрованы.');
         }
     }
 
@@ -464,12 +458,18 @@ export class MatrixService {
             return invitedRoom.roomId;
         }
 
-        // 3. Создать новую комнату
+        // 3. Создать новую комнату с E2E шифрованием
         const response = await this.client.createRoom({
             is_direct: true,
             invite: [userId],
             preset: sdk.Preset.PrivateChat,
-            initial_state: [],
+            initial_state: [
+                {
+                    type: 'm.room.encryption',
+                    state_key: '',
+                    content: { algorithm: 'm.megolm.v1.aes-sha2' },
+                },
+            ],
         });
 
         const newRoomId = response.room_id;
