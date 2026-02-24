@@ -92,12 +92,11 @@ export class LiveKitService {
             this.room = new Room({
                 adaptiveStream: true,
                 dynacast: true,
-                rtcConfig,
             });
 
             this.setupRoomListeners();
 
-            await this.room.connect(config.livekitUrl, token);
+            await this.room.connect(config.livekitUrl, token, { rtcConfig });
 
             try {
                 await this.room.localParticipant.setMicrophoneEnabled(true);
