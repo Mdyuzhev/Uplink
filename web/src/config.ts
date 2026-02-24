@@ -3,10 +3,10 @@
  *
  * Все URL-ы вычисляются из window.location — работает в любом режиме:
  *
- *   localhost:5173         → Dev (Vite), сервисы на localhost по портам
- *   localhost:5174         → Prod (nginx), /_matrix/ проксируется
- *   192.168.1.74:5174      → LAN, /_matrix/ проксируется
- *   flomasterserver...8443 → Tailscale HTTPS, /_matrix/ проксируется
+ *   localhost:5173                        → Dev (Vite), сервисы напрямую
+ *   localhost:5174 / 192.168.1.74:5174    → Prod LAN (nginx)
+ *   uplink.yourdomain.com                 → Cloudflare Tunnel (HTTPS)
+ *   *.trycloudflare.com                   → Cloudflare Quick Tunnel (HTTPS)
  */
 
 const host = window.location.hostname;
@@ -17,7 +17,7 @@ export const config = {
     /**
      * Matrix homeserver (Synapse).
      * Dev: напрямую на порт 8008.
-     * Prod/Tailscale: через nginx proxy (/_matrix/ → synapse:8008).
+     * Prod/Cloudflare: через nginx proxy (/_matrix/ → synapse:8008).
      */
     matrixHomeserver: isDev
         ? `http://${host}:8008`
@@ -26,10 +26,10 @@ export const config = {
     /**
      * LiveKit Server (WebSocket для WebRTC).
      * Всегда напрямую — WebRTC нельзя проксировать через nginx.
-     * wss:// для HTTPS (Tailscale), ws:// для HTTP (LAN).
+     * wss:// для HTTPS, ws:// для HTTP (LAN).
      *
-     * ВАЖНО: через Tailscale LiveKit пока НЕ работает —
-     * порт 7880 не пробрасывается. Звонки работают только в LAN.
+     * ВАЖНО: через Cloudflare Tunnel LiveKit НЕ работает —
+     * WebRTC требует прямое UDP-соединение. Звонки работают только в LAN.
      */
     livekitUrl: isDev
         ? `ws://${host}:7880`
@@ -38,7 +38,7 @@ export const config = {
     /**
      * Сервис генерации LiveKit-токенов.
      * Dev: напрямую на порт 7890.
-     * Prod/Tailscale: через nginx proxy (/livekit-token/ → livekit-token:7890).
+     * Prod/Cloudflare: через nginx proxy (/livekit-token/ → livekit-token:7890).
      */
     tokenServiceUrl: isDev
         ? `http://${host}:7890`
