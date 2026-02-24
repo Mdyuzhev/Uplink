@@ -246,9 +246,16 @@ export class MatrixService {
         return (user as any)?.presence || 'offline';
     }
 
+    /** Извлечь домен сервера из userId (например, "uplink.local") */
+    private getServerDomain(): string {
+        const userId = this.client?.getUserId() || '';
+        const match = userId.match(/:(.+)$/);
+        return match ? match[1] : 'uplink.local';
+    }
+
     /**
      * Получить список пользователей на сервере.
-     * Использует User Directory API (поиск по пустой строке вернёт всех).
+     * Synapse не поддерживает пустую строку — ищем по имени сервера (домену).
      * Исключает текущего пользователя из результатов.
      */
     async searchUsers(query: string = ''): Promise<Array<{
@@ -259,7 +266,10 @@ export class MatrixService {
         if (!this.client) return [];
 
         try {
-            const response = await this.client.searchUserDirectory({ term: query, limit: 50 });
+            // Synapse User Directory не возвращает результаты для пустой строки.
+            // Ищем по домену сервера — все userId содержат его (@user:domain).
+            const searchTerm = query || this.getServerDomain();
+            const response = await this.client.searchUserDirectory({ term: searchTerm, limit: 50 });
             const myUserId = this.client.getUserId();
 
             return (response.results || [])
