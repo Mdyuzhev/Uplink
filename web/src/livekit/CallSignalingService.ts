@@ -54,7 +54,7 @@ class CallSignalingService {
     private _timeoutId: ReturnType<typeof setTimeout> | null = null;
     private _listeners = new Set<CallSignalListener>();
     private _listening = false;
-    private _timelineHandler: ((event: any, room: any) => void) | null = null;
+    private _timelineHandler: ((...args: any[]) => void) | null = null;
 
     get state(): CallSignalState { return this._state; }
     get currentCall(): CallInfo | null { return this._currentCall; }
@@ -76,9 +76,15 @@ class CallSignalingService {
         try {
             const client = matrixService.getClient();
 
-            // Слушаем ВСЕ timeline-события (включая кастомные)
-            this._timelineHandler = (event: any, room: any) => {
+            // Слушаем ВСЕ timeline-события (включая кастомные).
+            // 5-й аргумент (data) содержит liveEvent — true только для real-time событий,
+            // false для initial sync / pagination. Без этой проверки старые invite
+            // из initial sync ставят state в ringing-in и новый звонок сразу отклоняется.
+            this._timelineHandler = (event: any, room: any, _toStart: any, _removed: any, data: any) => {
                 try {
+                    // Только live-события (не initial sync)
+                    if (!data?.liveEvent) return;
+
                     const type = event?.getType?.();
                     if (!type || !type.startsWith('uplink.call.')) return;
 
@@ -88,10 +94,6 @@ class CallSignalingService {
 
                     // Игнорируем свои собственные события
                     if (senderId === myUserId) return;
-
-                    // Игнорируем старые события (при initial sync)
-                    const eventAge = Date.now() - event.getTs();
-                    if (eventAge > CALL_LIFETIME_MS + 5000) return;
 
                     this.handleIncomingEvent(type, content, senderId, room.roomId);
                 } catch (err) {
