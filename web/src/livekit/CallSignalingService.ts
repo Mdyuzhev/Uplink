@@ -12,6 +12,20 @@
 
 import { matrixService } from '../matrix/MatrixService';
 
+/** UUID v4 — fallback для HTTP (crypto.randomUUID требует secure context) */
+function generateCallId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback: случайный hex-строка
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+
 export type CallDirection = 'outgoing' | 'incoming';
 export type CallSignalState =
     | 'idle'           // нет звонка
@@ -40,6 +54,7 @@ class CallSignalingService {
     private _timeoutId: ReturnType<typeof setTimeout> | null = null;
     private _listeners = new Set<CallSignalListener>();
     private _listening = false;
+    private _timelineHandler: ((event: any, room: any) => void) | null = null;
 
     get state(): CallSignalState { return this._state; }
     get currentCall(): CallInfo | null { return this._currentCall; }
@@ -58,32 +73,50 @@ class CallSignalingService {
         if (this._listening) return;
         this._listening = true;
 
-        const client = matrixService.getClient();
+        try {
+            const client = matrixService.getClient();
 
-        // Слушаем ВСЕ timeline-события (включая кастомные)
-        client.on('Room.timeline' as any, (event: any, room: any) => {
-            const type = event.getType();
-            if (!type.startsWith('uplink.call.')) return;
+            // Слушаем ВСЕ timeline-события (включая кастомные)
+            this._timelineHandler = (event: any, room: any) => {
+                try {
+                    const type = event?.getType?.();
+                    if (!type || !type.startsWith('uplink.call.')) return;
 
-            const content = event.getContent();
-            const senderId = event.getSender();
-            const myUserId = matrixService.getUserId();
+                    const content = event.getContent();
+                    const senderId = event.getSender();
+                    const myUserId = matrixService.getUserId();
 
-            // Игнорируем свои собственные события
-            if (senderId === myUserId) return;
+                    // Игнорируем свои собственные события
+                    if (senderId === myUserId) return;
 
-            // Игнорируем старые события (при initial sync)
-            const eventAge = Date.now() - event.getTs();
-            if (eventAge > CALL_LIFETIME_MS + 5000) return;
+                    // Игнорируем старые события (при initial sync)
+                    const eventAge = Date.now() - event.getTs();
+                    if (eventAge > CALL_LIFETIME_MS + 5000) return;
 
-            this.handleIncomingEvent(type, content, senderId, room.roomId);
-        });
+                    this.handleIncomingEvent(type, content, senderId, room.roomId);
+                } catch (err) {
+                    console.error('CallSignaling: ошибка обработки события', err);
+                }
+            };
+
+            client.on('Room.timeline' as any, this._timelineHandler);
+        } catch (err) {
+            console.error('CallSignaling: не удалось запустить слушатель', err);
+            this._listening = false;
+        }
     }
 
     /**
      * Остановить слушание (при logout).
      */
     stopListening(): void {
+        if (this._timelineHandler) {
+            try {
+                const client = matrixService.getClient();
+                client.off('Room.timeline' as any, this._timelineHandler);
+            } catch { /* клиент уже уничтожен */ }
+            this._timelineHandler = null;
+        }
         this._listening = false;
         this.clearTimeout();
         this.setState('idle', null);
@@ -98,7 +131,7 @@ class CallSignalingService {
             return;
         }
 
-        const callId = crypto.randomUUID();
+        const callId = generateCallId();
         const myUserId = matrixService.getUserId();
 
         const info: CallInfo = {
