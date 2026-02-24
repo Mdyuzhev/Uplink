@@ -246,6 +246,89 @@ export class MatrixService {
         return (user as any)?.presence || 'offline';
     }
 
+    /**
+     * Получить список пользователей на сервере.
+     * Использует User Directory API (поиск по пустой строке вернёт всех).
+     * Исключает текущего пользователя из результатов.
+     */
+    async searchUsers(query: string = ''): Promise<Array<{
+        userId: string;
+        displayName: string;
+        avatarUrl?: string;
+    }>> {
+        if (!this.client) return [];
+
+        try {
+            const response = await this.client.searchUserDirectory({ term: query, limit: 50 });
+            const myUserId = this.client.getUserId();
+
+            return (response.results || [])
+                .filter((u: any) => u.user_id !== myUserId)
+                .map((u: any) => ({
+                    userId: u.user_id,
+                    displayName: u.display_name || u.user_id.split(':')[0].substring(1),
+                    avatarUrl: u.avatar_url,
+                }));
+        } catch (err) {
+            console.error('Ошибка поиска пользователей:', err);
+            return [];
+        }
+    }
+
+    /**
+     * Найти существующую DM-комнату с пользователем.
+     * Проверяет account data m.direct и membership.
+     */
+    findExistingDM(userId: string): string | null {
+        if (!this.client) return null;
+
+        const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
+        const dmRoomIds: string[] = directMap[userId] || [];
+
+        for (const roomId of dmRoomIds) {
+            const room = this.client.getRoom(roomId);
+            if (!room) continue;
+            if (room.getMyMembership() !== 'join') continue;
+
+            const member = room.getMember(userId);
+            if (member && (member.membership === 'join' || member.membership === 'invite')) {
+                return roomId;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Создать DM-комнату с пользователем или вернуть существующую.
+     */
+    async getOrCreateDM(userId: string): Promise<string> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+
+        const existingRoomId = this.findExistingDM(userId);
+        if (existingRoomId) return existingRoomId;
+
+        const response = await this.client.createRoom({
+            is_direct: true,
+            invite: [userId],
+            preset: sdk.Preset.PrivateChat,
+            initial_state: [],
+        });
+
+        const newRoomId = response.room_id;
+
+        const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
+        if (!directMap[userId]) {
+            directMap[userId] = [];
+        }
+        if (!directMap[userId].includes(newRoomId)) {
+            directMap[userId].push(newRoomId);
+        }
+        await this.client.setAccountData('m.direct', directMap);
+
+        return newRoomId;
+    }
+
     async disconnect(): Promise<void> {
         if (this.client) {
             this.client.stopClient();

@@ -142,6 +142,19 @@
     flex-shrink: 0;
 }
 
+/* === User item in sidebar === */
+.sidebar-user-item .avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+}
+
+.chat-sidebar__empty {
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--uplink-text-muted);
+}
+
 /* Presence dot */
 .presence-dot {
     display: inline-block;

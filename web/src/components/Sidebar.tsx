@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { RoomInfo } from '../matrix/RoomsManager';
+import { UserInfo } from '../hooks/useUsers';
+import { Avatar } from './Avatar';
 
 interface SidebarProps {
     channels: RoomInfo[];
     directs: RoomInfo[];
+    users: UserInfo[];
+    usersLoading: boolean;
     activeRoomId: string | null;
     onSelectRoom: (roomId: string) => void;
+    onOpenDM: (userId: string) => void;
     onLogout: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-    channels, directs, activeRoomId, onSelectRoom, onLogout
+    channels, directs, users, usersLoading,
+    activeRoomId, onSelectRoom, onOpenDM, onLogout,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -20,8 +26,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return rooms.filter(r => r.name.toLowerCase().includes(q));
     };
 
+    const filterUsers = (list: UserInfo[]) => {
+        if (!filter) return list;
+        const q = filter.toLowerCase();
+        return list.filter(u =>
+            u.displayName.toLowerCase().includes(q) ||
+            u.userId.toLowerCase().includes(q)
+        );
+    };
+
     const filteredChannels = filterRooms(channels);
     const filteredDirects = filterRooms(directs);
+    const filteredUsers = filterUsers(users);
 
     return (
         <>
@@ -70,13 +86,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ))}
                     </div>
                 )}
+
+                <div className="chat-sidebar__section">
+                    <div className="chat-sidebar__section-title">
+                        Пользователи{usersLoading ? ' ...' : ` (${filteredUsers.length})`}
+                    </div>
+                    {filteredUsers.map(user => (
+                        <UserItem
+                            key={user.userId}
+                            user={user}
+                            onClick={() => onOpenDM(user.userId)}
+                        />
+                    ))}
+                    {!usersLoading && filteredUsers.length === 0 && (
+                        <div className="chat-sidebar__empty">Нет пользователей</div>
+                    )}
+                </div>
             </div>
         </>
     );
 };
 
 const RoomItem: React.FC<{ room: RoomInfo; active: boolean; onClick: () => void }> = ({
-    room, active, onClick
+    room, active, onClick,
 }) => {
     return (
         <div
@@ -92,6 +124,19 @@ const RoomItem: React.FC<{ room: RoomInfo; active: boolean; onClick: () => void 
             {room.unreadCount > 0 && (
                 <span className="sidebar-room-item__badge">{room.unreadCount}</span>
             )}
+        </div>
+    );
+};
+
+const UserItem: React.FC<{ user: { userId: string; displayName: string }; onClick: () => void }> = ({
+    user, onClick,
+}) => {
+    return (
+        <div className="sidebar-room-item sidebar-user-item" onClick={onClick}>
+            <span className="sidebar-room-item__icon">
+                <Avatar name={user.displayName} size={20} />
+            </span>
+            <span className="sidebar-room-item__name">{user.displayName}</span>
         </div>
     );
 };

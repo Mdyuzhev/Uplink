@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useRooms } from '../hooks/useRooms';
 import { useMessages } from '../hooks/useMessages';
+import { useUsers } from '../hooks/useUsers';
 import { useLiveKit } from '../hooks/useLiveKit';
+import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
 import { RoomHeader } from './RoomHeader';
 import { MessageList } from './MessageList';
@@ -14,7 +16,8 @@ interface ChatLayoutProps {
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
-    const { channels, directs } = useRooms();
+    const { channels, directs, refresh } = useRooms();
+    const { users, loading: usersLoading } = useUsers();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
     const { messages, sendMessage, loadMore } = useMessages(activeRoomId);
@@ -36,6 +39,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         setMobileView('sidebar');
     };
 
+    const handleOpenDM = async (userId: string) => {
+        try {
+            const roomId = await matrixService.getOrCreateDM(userId);
+            refresh();
+            setActiveRoomId(roomId);
+            setMobileView('chat');
+        } catch (err) {
+            console.error('Ошибка открытия DM:', err);
+        }
+    };
+
     const handleJoinCall = () => {
         if (activeRoom) {
             joinCall(activeRoom.name);
@@ -48,8 +62,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                 <Sidebar
                     channels={channels}
                     directs={directs}
+                    users={users}
+                    usersLoading={usersLoading}
                     activeRoomId={activeRoomId}
                     onSelectRoom={handleSelectRoom}
+                    onOpenDM={handleOpenDM}
                     onLogout={onLogout}
                 />
             </div>
