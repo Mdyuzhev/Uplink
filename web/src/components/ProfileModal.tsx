@@ -58,6 +58,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
     const [avatarUploading, setAvatarUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Загрузить аватар через Profile API (не зависит от sync)
+    useEffect(() => {
+        matrixService.fetchMyAvatarUrl().then(url => {
+            if (url) setAvatarUrl(url);
+        });
+    }, []);
+
     // === Password ===
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');

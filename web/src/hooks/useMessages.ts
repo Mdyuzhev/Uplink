@@ -12,8 +12,9 @@ export function useMessages(roomId: string | null) {
         }
         const events = matrixService.getRoomTimeline(roomId);
         const getDisplayName = (userId: string) => matrixService.getDisplayName(userId);
+        const getAvatarUrl = (userId: string) => matrixService.getUserAvatarUrl(userId);
         const parsed = events
-            .map(e => parseEvent(e, getDisplayName))
+            .map(e => parseEvent(e, getDisplayName, getAvatarUrl))
             .filter((m): m is ParsedMessage => m !== null);
         setMessages(parsed);
     }, [roomId]);

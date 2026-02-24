@@ -17,7 +17,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAutho
     return (
         <div className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''}`}>
             <div className={`message-bubble__avatar-col ${!showAuthor ? 'message-bubble__avatar-col--compact' : ''}`}>
-                {showAuthor && <Avatar name={message.senderDisplayName} size={36} />}
+                {showAuthor && <Avatar name={message.senderDisplayName} size={36} imageUrl={message.senderAvatarUrl} />}
             </div>
             <div className="message-bubble__content">
                 {showAuthor && (

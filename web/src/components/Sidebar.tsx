@@ -139,13 +139,13 @@ const RoomItem: React.FC<{ room: RoomInfo; active: boolean; onClick: () => void 
     );
 };
 
-const UserItem: React.FC<{ user: { userId: string; displayName: string }; onClick: () => void }> = ({
+const UserItem: React.FC<{ user: { userId: string; displayName: string; avatarUrl?: string }; onClick: () => void }> = ({
     user, onClick,
 }) => {
     return (
         <div className="sidebar-room-item sidebar-user-item" onClick={onClick}>
             <span className="sidebar-room-item__icon">
-                <Avatar name={user.displayName} size={20} />
+                <Avatar name={user.displayName} size={20} imageUrl={user.avatarUrl} />
             </span>
             <span className="sidebar-room-item__name">{user.displayName}</span>
         </div>

@@ -344,7 +344,7 @@ export class MatrixService {
                 .map((u: any) => ({
                     userId: u.user_id,
                     displayName: u.display_name || u.user_id.split(':')[0].substring(1),
-                    avatarUrl: u.avatar_url,
+                    avatarUrl: this.mxcToHttp(u.avatar_url, 36) || undefined,
                 }));
         } catch (err) {
             console.error('Ошибка поиска пользователей:', err);
@@ -499,6 +499,19 @@ export class MatrixService {
 
     // === Профиль пользователя ===
 
+    /** Конвертировать mxc:// URL в HTTP URL для <img src> */
+    mxcToHttp(mxcUrl: string | undefined | null, size: number = 96): string | null {
+        if (!this.client || !mxcUrl) return null;
+        return this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop') || null;
+    }
+
+    /** Получить HTTP URL аватара любого пользователя */
+    getUserAvatarUrl(userId: string, size: number = 36): string | null {
+        if (!this.client) return null;
+        const user = this.client.getUser(userId);
+        return this.mxcToHttp(user?.avatarUrl, size);
+    }
+
     getMyDisplayName(): string {
         if (!this.client) return '';
         const user = this.client.getUser(this.client.getUserId()!);
@@ -511,6 +524,17 @@ export class MatrixService {
         const mxcUrl = user?.avatarUrl;
         if (!mxcUrl) return null;
         return this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop') || null;
+    }
+
+    /** Получить mxc:// URL аватара через Profile API (не зависит от sync) */
+    async fetchMyAvatarUrl(size: number = 96): Promise<string | null> {
+        if (!this.client) return null;
+        try {
+            const profile = await this.client.getProfileInfo(this.client.getUserId()!);
+            return this.mxcToHttp(profile.avatar_url, size);
+        } catch {
+            return null;
+        }
     }
 
     async setDisplayName(name: string): Promise<void> {
