@@ -17,21 +17,22 @@ export const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
     return (
         <div className="incoming-call-overlay">
             <div className="incoming-call-overlay__card">
-                <div className="incoming-call-overlay__icon">📞</div>
                 <div className="incoming-call-overlay__title">Входящий звонок</div>
                 <div className="incoming-call-overlay__caller">{callInfo.callerName}</div>
                 <div className="incoming-call-overlay__actions">
                     <button
                         className="incoming-call-overlay__btn incoming-call-overlay__btn--reject"
                         onClick={onReject}
+                        title="Отклонить"
                     >
-                        Отклонить
+                        &#x2715;
                     </button>
                     <button
                         className="incoming-call-overlay__btn incoming-call-overlay__btn--accept"
                         onClick={onAccept}
+                        title="Принять"
                     >
-                        Принять
+                        &#x2713;
                     </button>
                 </div>
             </div>

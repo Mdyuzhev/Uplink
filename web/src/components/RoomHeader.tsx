@@ -28,7 +28,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <div className="room-header__info">
                 <div className="room-header__name">
                     {room.type === 'channel' ? '# ' : ''}{room.name}
-                    {room.encrypted && ' \uD83D\uDD12'}
+                    {room.encrypted && ' *'}
                 </div>
                 {room.topic && <div className="room-header__topic">{room.topic}</div>}
             </div>
@@ -40,7 +40,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                             onClick={onLeaveCall}
                             title="Завершить звонок"
                         >
-                            &#128308;&#128222;
+                            &#x2715;
                         </button>
                     ) : (
                         <button
@@ -49,7 +49,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                             disabled={isOtherRoomInCall || callState === 'connecting'}
                             title={isOtherRoomInCall ? 'Сначала завершите текущий звонок' : 'Начать звонок'}
                         >
-                            {callState === 'connecting' ? '...' : '\u{1F4DE}'}
+                            {callState === 'connecting' ? '...' : '\u260E'}
                         </button>
                 )}
             </div>

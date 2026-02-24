@@ -19,16 +19,29 @@ function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
+const SENDER_COLORS = [
+    '#f47067', '#c678dd', '#e5c07b', '#61afef',
+    '#56b6c2', '#98c379', '#e06c75', '#d19a66',
+];
+
+function getSenderColor(name: string): string {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
+}
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAuthor }) => {
     return (
         <div className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''}`}>
             <div className={`message-bubble__avatar-col ${!showAuthor ? 'message-bubble__avatar-col--compact' : ''}`}>
-                {showAuthor && <Avatar name={message.senderDisplayName} size={36} imageUrl={message.senderAvatarUrl} />}
+                {showAuthor && <Avatar name={message.senderDisplayName} size={40} imageUrl={message.senderAvatarUrl} />}
             </div>
             <div className="message-bubble__content">
                 {showAuthor && (
                     <div className="message-bubble__header">
-                        <span className="message-bubble__sender">{message.senderDisplayName}</span>
+                        <span className="message-bubble__sender" style={{ color: getSenderColor(message.sender) }}>{message.senderDisplayName}</span>
                         <span className="message-bubble__time">{formatTime(message.timestamp)}</span>
                     </div>
                 )}
@@ -53,7 +66,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAutho
                     </div>
                 ) : message.type === 'file' ? (
                     <div className="message-bubble__file">
-                        <span className="message-bubble__file-icon">📄</span>
+                        <span className="message-bubble__file-icon">&#9741;</span>
                         <div className="message-bubble__file-info">
                             <span className="message-bubble__file-name">{message.body}</span>
                             <span className="message-bubble__file-size">
@@ -67,7 +80,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAutho
                                 className="message-bubble__file-download"
                                 title="Скачать"
                             >
-                                ⬇
+                                &#8595;
                             </a>
                         )}
                     </div>

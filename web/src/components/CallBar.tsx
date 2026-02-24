@@ -25,7 +25,6 @@ export const CallBar: React.FC<CallBarProps> = ({
         <div className="call-bar">
             <div className="call-bar__info">
                 <span className="call-bar__title">
-                    <span className="call-bar__icon">&#128266;</span>
                     #{roomName}
                 </span>
                 <span className="call-bar__duration">{formatDuration(duration)}</span>
@@ -37,7 +36,7 @@ export const CallBar: React.FC<CallBarProps> = ({
                         key={p.identity}
                         className={`call-bar__participant ${p.isSpeaking ? 'call-bar__participant--speaking' : ''} ${p.isMuted ? 'call-bar__participant--muted' : ''}`}
                     >
-                        {p.displayName}{p.isLocal ? ' (вы)' : ''}{p.isCameraOn ? ' \u{1F4F9}' : ''}
+                        {p.displayName}{p.isLocal ? ' (вы)' : ''}{p.isCameraOn ? ' cam' : ''}
                     </span>
                 ))}
             </div>
@@ -48,21 +47,21 @@ export const CallBar: React.FC<CallBarProps> = ({
                     onClick={onToggleMute}
                     title={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
                 >
-                    {isMuted ? '\u{1F509} Unmute' : '\u{1F3A4} Mute'}
+                    {isMuted ? 'Unmute' : 'Mute'}
                 </button>
                 <button
                     className={`call-bar__btn call-bar__btn--camera ${isCameraOn ? 'call-bar__btn--active' : ''}`}
                     onClick={onToggleCamera}
                     title={isCameraOn ? 'Выключить камеру' : 'Включить камеру'}
                 >
-                    {isCameraOn ? '\u{1F4F9} Камера' : '\u{1F4F7} Камера'}
+                    {isCameraOn ? 'Камера вкл' : 'Камера'}
                 </button>
                 <button
                     className="call-bar__btn call-bar__btn--leave"
                     onClick={onLeave}
                     title="Завершить звонок"
                 >
-                    &#128222; Завершить
+                    Завершить
                 </button>
             </div>
         </div>

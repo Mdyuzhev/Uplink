@@ -4,15 +4,17 @@
     justify-content: center;
     height: 100vh;
     padding: 16px;
+    background: radial-gradient(ellipse at center, #2b2d31 0%, #1e1f22 100%);
 }
 
 .login-card {
     width: 100%;
     max-width: 400px;
-    background: var(--uplink-sidebar-bg);
-    border: 1px solid var(--uplink-border);
-    border-radius: 8px;
+    background: var(--uplink-bg-secondary);
+    border: none;
+    border-radius: var(--uplink-radius-lg);
     padding: 32px;
+    box-shadow: var(--uplink-shadow-elevated);
 }
 
 .login-card__header {
@@ -21,10 +23,11 @@
 }
 
 .login-card__logo {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
-    color: var(--uplink-accent);
+    color: var(--uplink-text-primary);
     margin-bottom: 4px;
+    letter-spacing: -0.5px;
 }
 
 .login-card__subtitle {
@@ -38,45 +41,46 @@
 
 .login-card__label {
     display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--uplink-sidebar-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--uplink-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
     margin-bottom: 6px;
 }
 
 .login-card__input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px;
     background: var(--uplink-input-bg);
-    border: 1px solid var(--uplink-border);
-    border-radius: var(--uplink-radius);
-    color: var(--uplink-text);
+    border: none;
+    border-radius: var(--uplink-radius-md);
+    color: var(--uplink-text-primary);
     font-size: 15px;
     font-family: var(--uplink-font);
     outline: none;
-    transition: border-color 0.15s;
+    transition: box-shadow 0.15s;
 }
 
 .login-card__input:focus {
-    border-color: var(--uplink-accent);
+    box-shadow: 0 0 0 2px var(--uplink-accent);
 }
 
 .login-card__input::placeholder {
-    color: var(--uplink-text-muted);
+    color: var(--uplink-text-faint);
 }
 
 .login-card__button {
     width: 100%;
-    padding: 11px;
+    padding: 0;
+    height: 44px;
     margin-top: 8px;
     background: var(--uplink-accent);
     color: #fff;
     border: none;
-    border-radius: var(--uplink-radius);
+    border-radius: var(--uplink-radius-md);
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     font-family: var(--uplink-font);
     cursor: pointer;
     transition: background 0.15s;
@@ -94,9 +98,9 @@
 .login-card__error {
     margin-top: 12px;
     padding: 8px 12px;
-    background: rgba(237, 66, 69, 0.1);
-    border: 1px solid var(--uplink-danger);
-    border-radius: var(--uplink-radius);
+    background: rgba(218, 55, 60, 0.1);
+    border: none;
+    border-radius: var(--uplink-radius-md);
     color: var(--uplink-danger);
     font-size: 13px;
     text-align: center;

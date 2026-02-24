@@ -120,7 +120,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, 
                     disabled={uploading}
                     title="Прикрепить файл"
                 >
-                    📎
+                    +
                 </button>
                 <input
                     ref={fileInputRef}
