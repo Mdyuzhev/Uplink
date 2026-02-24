@@ -502,15 +502,16 @@ export class MatrixService {
     /** Конвертировать mxc:// URL в HTTP URL для <img src> */
     mxcToHttp(mxcUrl: string | undefined | null, size: number = 96): string | null {
         if (!this.client || !mxcUrl) return null;
-        const url = this.client.mxcUrlToHttp(mxcUrl, size, size, 'crop');
-        if (!url) return null;
-        // Synapse 1.120+ требует аутентификацию для media.
-        // <img> не может отправить заголовок Authorization,
-        // поэтому передаём токен через query parameter.
+        // mxc://serverName/mediaId → /_matrix/client/v1/media/thumbnail/serverName/mediaId
+        // Synapse 1.147: старый /_matrix/media/v3/ отключён, нужен новый authenticated endpoint
+        const match = mxcUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/);
+        if (!match) return null;
+        const [, serverName, mediaId] = match;
+        const baseUrl = this.client.getHomeserverUrl();
         const token = this.client.getAccessToken();
-        if (!token) return url;
-        const sep = url.includes('?') ? '&' : '?';
-        return `${url}${sep}access_token=${encodeURIComponent(token)}`;
+        const params = new URLSearchParams({ width: String(size), height: String(size), method: 'crop' });
+        if (token) params.set('access_token', token);
+        return `${baseUrl}/_matrix/client/v1/media/thumbnail/${serverName}/${mediaId}?${params}`;
     }
 
     /** Получить HTTP URL аватара любого пользователя */
