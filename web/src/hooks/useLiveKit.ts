@@ -58,8 +58,12 @@ export function useLiveKit() {
     }, []);
 
     const toggleCamera = useCallback(async () => {
-        await livekitService.toggleCamera();
-        setIsCameraOn(livekitService.isCameraOn);
+        try {
+            await livekitService.toggleCamera();
+            setIsCameraOn(livekitService.isCameraOn);
+        } catch (err: any) {
+            setError(err.message || 'Камера недоступна');
+        }
     }, []);
 
     return {

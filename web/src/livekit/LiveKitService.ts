@@ -166,7 +166,13 @@ export class LiveKitService {
         if (!this.room) return false;
 
         const currentlyEnabled = this.room.localParticipant.isCameraEnabled;
-        await this.room.localParticipant.setCameraEnabled(!currentlyEnabled);
+
+        try {
+            await this.room.localParticipant.setCameraEnabled(!currentlyEnabled);
+        } catch (err) {
+            console.warn('Камера недоступна (HTTP? нет разрешения?):', err);
+            throw new Error('Камера недоступна. Нужен HTTPS или разрешение браузера.');
+        }
 
         if (!currentlyEnabled) {
             const pub = this.room.localParticipant.getTrackPublication(Track.Source.Camera);

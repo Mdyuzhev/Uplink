@@ -6,7 +6,7 @@ LiveKit Cloud аккаунт создан, проект "Uplink" готов.
 
 **Известные данные:**
 - URL: `wss://uplink-3ism3la4.livekit.cloud`
-- API Key: `APIo9mdkwkQchic`
+- API Key: `APIXUKnGCb2vUQZ`
 - API Secret: `hMkeeXl3pjOZKrpUCJa5OAy0wsrlYkGllb1bcQHeZDjA`
 
 ---
