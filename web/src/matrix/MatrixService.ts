@@ -558,6 +558,53 @@ export class MatrixService {
         await this.client.setAvatarUrl(mxcUrl);
     }
 
+    /** Получить HTTP URL для скачивания/просмотра полного файла (не thumbnail) */
+    mxcToHttpDownload(mxcUrl: string | undefined | null): string | null {
+        if (!this.client || !mxcUrl) return null;
+        const match = mxcUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/);
+        if (!match) return null;
+        const [, serverName, mediaId] = match;
+        const baseUrl = this.client.getHomeserverUrl();
+        const token = this.client.getAccessToken();
+        const params = new URLSearchParams();
+        if (token) params.set('access_token', token);
+        return `${baseUrl}/_matrix/client/v1/media/download/${serverName}/${mediaId}?${params}`;
+    }
+
+    /** Загрузить файл на сервер и отправить как сообщение */
+    async sendFile(roomId: string, file: File): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const uploadResponse = await this.client.uploadContent(file, { type: file.type });
+        const mxcUrl = uploadResponse.content_uri;
+        const isImage = file.type.startsWith('image/');
+
+        if (isImage) {
+            const dims = await this.getImageDimensions(file);
+            await this.client.sendMessage(roomId, {
+                msgtype: 'm.image',
+                body: file.name,
+                url: mxcUrl,
+                info: { mimetype: file.type, size: file.size, w: dims.width, h: dims.height },
+            } as any);
+        } else {
+            await this.client.sendMessage(roomId, {
+                msgtype: 'm.file',
+                body: file.name,
+                url: mxcUrl,
+                info: { mimetype: file.type, size: file.size },
+            } as any);
+        }
+    }
+
+    private getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight }); URL.revokeObjectURL(img.src); };
+            img.onerror = () => { resolve({ width: 0, height: 0 }); URL.revokeObjectURL(img.src); };
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
     async changePassword(oldPassword: string, newPassword: string): Promise<void> {
         if (!this.client) throw new Error('Клиент не инициализирован');
         const userId = this.client.getUserId()!;

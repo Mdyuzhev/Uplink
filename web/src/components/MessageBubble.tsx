@@ -13,6 +13,12 @@ function formatTime(ts: number): string {
     return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} Б`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+}
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAuthor }) => {
     return (
         <div className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''}`}>
@@ -30,6 +36,41 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, showAutho
                     <CodeSnippet body={message.body} codeContext={message.codeContext} />
                 ) : message.type === 'encrypted' ? (
                     <div className="message-bubble__encrypted">{message.body}</div>
+                ) : message.type === 'image' ? (
+                    <div className="message-bubble__image">
+                        <a href={message.imageUrl || '#'} target="_blank" rel="noopener noreferrer">
+                            <img
+                                src={message.thumbnailUrl || message.imageUrl || ''}
+                                alt={message.body}
+                                className="message-bubble__image-img"
+                                loading="lazy"
+                                style={{
+                                    maxWidth: Math.min(message.imageWidth || 400, 400),
+                                    maxHeight: 300,
+                                }}
+                            />
+                        </a>
+                    </div>
+                ) : message.type === 'file' ? (
+                    <div className="message-bubble__file">
+                        <span className="message-bubble__file-icon">📄</span>
+                        <div className="message-bubble__file-info">
+                            <span className="message-bubble__file-name">{message.body}</span>
+                            <span className="message-bubble__file-size">
+                                {message.fileSize ? formatFileSize(message.fileSize) : ''}
+                            </span>
+                        </div>
+                        {message.fileUrl && (
+                            <a
+                                href={message.fileUrl}
+                                download={message.body}
+                                className="message-bubble__file-download"
+                                title="Скачать"
+                            >
+                                ⬇
+                            </a>
+                        )}
+                    </div>
                 ) : (
                     <div className="message-bubble__body">{message.body}</div>
                 )}

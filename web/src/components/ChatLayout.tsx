@@ -26,7 +26,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
     const [showProfile, setShowProfile] = useState(false);
-    const { messages, sendMessage, loadMore } = useMessages(activeRoomId);
+    const { messages, sendMessage, sendFile, loadMore } = useMessages(activeRoomId);
 
     const {
         callState, participants, duration, isMuted,
@@ -157,6 +157,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                         <MessageList messages={messages} onLoadMore={loadMore} />
                         <MessageInput
                             onSend={sendMessage}
+                            onSendFile={sendFile}
                             roomName={activeRoom.name}
                         />
                     </>

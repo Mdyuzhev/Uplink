@@ -16,9 +16,23 @@ export interface ParsedMessage {
         lineEnd: number;
         gitBranch?: string;
     };
+    // Медиа
+    imageUrl?: string | null;
+    thumbnailUrl?: string | null;
+    fileUrl?: string | null;
+    fileSize?: number;
+    mimetype?: string;
+    imageWidth?: number;
+    imageHeight?: number;
 }
 
-export function parseEvent(event: sdk.MatrixEvent, getDisplayName: (userId: string) => string, getAvatarUrl?: (userId: string) => string | null): ParsedMessage | null {
+export function parseEvent(
+    event: sdk.MatrixEvent,
+    getDisplayName: (userId: string) => string,
+    getAvatarUrl?: (userId: string) => string | null,
+    mxcToHttp?: (mxcUrl: string, size?: number) => string | null,
+    mxcToHttpDownload?: (mxcUrl: string) => string | null,
+): ParsedMessage | null {
     const type = event.getType();
     if (type !== 'm.room.message' && type !== 'm.room.encrypted') return null;
 
@@ -36,6 +50,22 @@ export function parseEvent(event: sdk.MatrixEvent, getDisplayName: (userId: stri
     }
 
     const content = event.getContent();
+    const info = content.info || {};
+    const mxcUrl = content.url;
+
+    let imageUrl: string | null = null;
+    let thumbnailUrl: string | null = null;
+    let fileUrl: string | null = null;
+
+    if (mxcUrl && mxcToHttp && mxcToHttpDownload) {
+        if (content.msgtype === 'm.image') {
+            imageUrl = mxcToHttpDownload(mxcUrl);
+            thumbnailUrl = mxcToHttp(mxcUrl, 400);
+        }
+        if (content.msgtype === 'm.file' || content.msgtype === 'm.image') {
+            fileUrl = mxcToHttpDownload(mxcUrl);
+        }
+    }
 
     if (content['dev.uplink.code_context']) {
         return {
@@ -52,5 +82,12 @@ export function parseEvent(event: sdk.MatrixEvent, getDisplayName: (userId: stri
         type: content.msgtype === 'm.image' ? 'image' : content.msgtype === 'm.file' ? 'file' : 'text',
         body: content.body || '',
         formattedBody: content.formatted_body,
+        imageUrl,
+        thumbnailUrl,
+        fileUrl,
+        fileSize: info.size,
+        mimetype: info.mimetype,
+        imageWidth: info.w,
+        imageHeight: info.h,
     };
 }

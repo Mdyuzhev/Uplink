@@ -470,6 +470,127 @@
     cursor: not-allowed;
 }
 
+/* === Attach button === */
+.message-input__attach {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.message-input__attach:hover {
+    opacity: 1;
+}
+
+.message-input__attach:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* === Drag & Drop overlay === */
+.message-input--drag-over {
+    position: relative;
+}
+
+.message-input__drop-overlay {
+    position: absolute;
+    inset: -100px 0 0 0;
+    background: rgba(88, 101, 242, 0.15);
+    border: 2px dashed var(--uplink-accent, #5865f2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--uplink-accent, #5865f2);
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* === Upload indicator === */
+.message-input__uploading {
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--uplink-text-muted, #888);
+    text-align: center;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* === Image message === */
+.message-bubble__image {
+    margin-top: 4px;
+}
+
+.message-bubble__image-img {
+    border-radius: 8px;
+    cursor: pointer;
+    display: block;
+    object-fit: contain;
+    transition: opacity 0.15s;
+}
+
+.message-bubble__image-img:hover {
+    opacity: 0.9;
+}
+
+/* === File message === */
+.message-bubble__file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--uplink-bg-tertiary, #353840);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 4px;
+    max-width: 350px;
+}
+
+.message-bubble__file-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.message-bubble__file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.message-bubble__file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--uplink-text-primary, #fff);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.message-bubble__file-size {
+    font-size: 12px;
+    color: var(--uplink-text-muted, #888);
+}
+
+.message-bubble__file-download {
+    font-size: 20px;
+    text-decoration: none;
+    color: var(--uplink-accent, #5865f2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.message-bubble__file-download:hover {
+    background: var(--uplink-bg-primary, #1a1d23);
+}
+
 /* === Avatar === */
 .avatar {
     border-radius: 50%;
