@@ -209,12 +209,31 @@ export class MatrixService {
      * Авто-принятие приглашений в комнаты.
      * Без этого DM не работают: Alice создаёт комнату, Bob получает invite,
      * но не видит комнату пока не примет приглашение вручную.
+     *
+     * После join — обновляем m.direct, чтобы комната показывалась как DM,
+     * а не как канал. Иначе получатель и отправитель смотрят в разные комнаты.
      */
     private async autoAcceptInvite(room: sdk.Room): Promise<void> {
         if (!this.client) return;
         try {
             await this.client.joinRoom(room.roomId);
             console.log(`Авто-принятие invite: ${room.roomId}`);
+
+            // Определить, является ли комната DM.
+            // Проверяем is_direct из invite-события или по числу участников.
+            const myUserId = this.client.getUserId()!;
+            const inviteEvent = room.currentState.getStateEvents('m.room.member', myUserId);
+            const isDirect = inviteEvent?.getContent()?.is_direct === true;
+
+            if (isDirect) {
+                // Найти peer — того, кто пригласил нас
+                const peerId = inviteEvent?.getSender();
+                if (peerId && peerId !== myUserId) {
+                    await this.updateDirectMap(peerId, room.roomId);
+                    console.log(`m.direct обновлён: ${peerId} → ${room.roomId}`);
+                }
+            }
+
             this.emitRoomsUpdated();
         } catch (err) {
             console.warn(`Не удалось принять invite ${room.roomId}:`, (err as Error).message);
@@ -337,49 +356,68 @@ export class MatrixService {
      * Найти существующую DM-комнату с пользователем.
      *
      * Стратегия:
-     * 1. Проверить m.direct account data
-     * 2. Если m.direct указывает на мёртвую комнату — сканировать ВСЕ joined комнаты
-     * 3. Если нашли живую DM вне m.direct — обновить m.direct
+     * 1. Собрать ВСЕ joined-комнаты с этим пользователем (из m.direct + scan)
+     * 2. Если дубликаты — выбрать самую активную (по последнему сообщению)
+     * 3. Обновить m.direct если нужно
      */
     findExistingDM(userId: string): string | null {
         if (!this.client) return null;
 
         const directMap = this.client.getAccountData('m.direct')?.getContent() || {};
         const dmRoomIds: string[] = directMap[userId] || [];
+        const myUserId = this.client.getUserId();
 
-        // 1. Проверить комнаты из m.direct
+        // Собрать все кандидаты: joined-комнаты с этим пользователем
+        const candidates: sdk.Room[] = [];
+
+        // Из m.direct
         for (const roomId of dmRoomIds) {
             const room = this.client.getRoom(roomId);
             if (!room) continue;
             if (room.getMyMembership() !== 'join') continue;
-
             const member = room.getMember(userId);
             if (member && (member.membership === 'join' || member.membership === 'invite')) {
-                return roomId;
+                candidates.push(room);
             }
         }
 
-        // 2. m.direct не содержит живой комнаты — ищем среди всех joined комнат
+        // Scan всех joined-комнат (найти пропущенные в m.direct)
         const allRooms = this.client.getRooms().filter(r => r.getMyMembership() === 'join');
         for (const room of allRooms) {
-            // Пропускаем комнаты уже проверенные через m.direct
             if (dmRoomIds.includes(room.roomId)) continue;
+            if (candidates.some(c => c.roomId === room.roomId)) continue;
 
-            // DM — комната с 2 участниками где оба joined
             const members = room.getJoinedMembers();
             if (members.length !== 2) continue;
+            if (!members.some(m => m.userId === userId)) continue;
+            if (!members.some(m => m.userId === myUserId)) continue;
 
-            const hasTarget = members.some(m => m.userId === userId);
-            const hasMe = members.some(m => m.userId === this.client!.getUserId());
-            if (!hasTarget || !hasMe) continue;
-
-            // Нашли живую DM вне m.direct — обновить m.direct
-            console.log(`Найдена DM с ${userId} вне m.direct: ${room.roomId}, обновляю...`);
-            this.updateDirectMap(userId, room.roomId);
-            return room.roomId;
+            candidates.push(room);
         }
 
-        return null;
+        if (candidates.length === 0) return null;
+
+        // Выбрать самую активную комнату (по времени последнего события)
+        const best = candidates.reduce((a, b) => {
+            const tsA = this.getLastEventTs(a);
+            const tsB = this.getLastEventTs(b);
+            return tsB > tsA ? b : a;
+        });
+
+        // Обновить m.direct если комната не была там
+        if (!dmRoomIds.includes(best.roomId)) {
+            console.log(`Найдена DM с ${userId} вне m.direct: ${best.roomId}, обновляю...`);
+            this.updateDirectMap(userId, best.roomId);
+        }
+
+        return best.roomId;
+    }
+
+    /** Время последнего события в комнате (для выбора самой активной). */
+    private getLastEventTs(room: sdk.Room): number {
+        const events = room.getLiveTimeline().getEvents();
+        if (events.length === 0) return 0;
+        return events[events.length - 1].getTs();
     }
 
     /**
@@ -403,13 +441,30 @@ export class MatrixService {
 
     /**
      * Создать DM-комнату с пользователем или вернуть существующую.
+     *
+     * Порядок поиска:
+     * 1. Joined-комната через findExistingDM (m.direct + scan)
+     * 2. Pending invite от этого пользователя → принять вместо создания дубля
+     * 3. Только если ничего нет — создать новую
      */
     async getOrCreateDM(userId: string): Promise<string> {
         if (!this.client) throw new Error('Клиент не инициализирован');
 
+        // 1. Есть ли уже joined-комната?
         const existingRoomId = this.findExistingDM(userId);
         if (existingRoomId) return existingRoomId;
 
+        // 2. Есть ли pending invite от этого пользователя?
+        const invitedRoom = this.findInviteFrom(userId);
+        if (invitedRoom) {
+            await this.client.joinRoom(invitedRoom.roomId);
+            await this.updateDirectMap(userId, invitedRoom.roomId);
+            console.log(`Принят invite от ${userId} вместо создания дубля: ${invitedRoom.roomId}`);
+            this.emitRoomsUpdated();
+            return invitedRoom.roomId;
+        }
+
+        // 3. Создать новую комнату
         const response = await this.client.createRoom({
             is_direct: true,
             invite: [userId],
@@ -421,6 +476,25 @@ export class MatrixService {
         await this.updateDirectMap(userId, newRoomId);
 
         return newRoomId;
+    }
+
+    /**
+     * Найти комнату, в которую нас пригласил указанный пользователь (invite pending).
+     */
+    private findInviteFrom(userId: string): sdk.Room | null {
+        if (!this.client) return null;
+        const myUserId = this.client.getUserId()!;
+
+        for (const room of this.client.getRooms()) {
+            if (room.getMyMembership() !== 'invite') continue;
+
+            // Проверить, что invite пришёл от нужного пользователя
+            const inviteEvent = room.currentState.getStateEvents('m.room.member', myUserId);
+            if (inviteEvent?.getSender() === userId) {
+                return room;
+            }
+        }
+        return null;
     }
 
     async disconnect(): Promise<void> {
