@@ -873,30 +873,21 @@
    VIDEO GRID
    ═══════════════════════════════════ */
 .video-grid {
-    display: grid;
-    gap: 8px;
-    padding: 12px;
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
     background: var(--uplink-bg-floating);
-    max-height: 50vh;
-    grid-template-columns: 1fr;
-}
-
-/* 2 participants: two columns */
-.video-grid:has(.video-tile:nth-child(2)) {
-    grid-template-columns: 1fr 1fr;
-}
-
-/* 3-4 participants: 2×2 grid */
-.video-grid:has(.video-tile:nth-child(3)) {
-    grid-template-columns: 1fr 1fr;
+    max-height: 140px;
 }
 
 .video-tile {
     position: relative;
     border-radius: var(--uplink-radius-md);
     overflow: hidden;
-    background: var(--uplink-bg-tertiary);
+    background: #000;
     aspect-ratio: 16 / 9;
+    height: 120px;
+    flex-shrink: 0;
 }
 
 .video-tile__video {
@@ -906,11 +897,24 @@
     display: block;
 }
 
+.video-tile__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.video-tile__placeholder-icon {
+    font-size: 36px;
+}
+
 .video-tile__name {
     position: absolute;
-    bottom: 6px;
-    left: 8px;
-    font-size: 12px;
+    bottom: 4px;
+    left: 6px;
+    font-size: 11px;
     font-weight: 600;
     color: #fff;
     background: rgba(0, 0, 0, 0.5);

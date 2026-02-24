@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { livekitService } from '../livekit/LiveKitService';
+import { livekitService, CallParticipant } from '../livekit/LiveKitService';
+
+interface VideoGridProps {
+    participants: CallParticipant[];
+}
 
 interface VideoTileProps {
     identity: string;
-    track: MediaStreamTrack;
+    displayName: string;
+    track: MediaStreamTrack | null;
 }
 
-const VideoTile: React.FC<VideoTileProps> = ({ identity, track }) => {
+const VideoTile: React.FC<VideoTileProps> = ({ identity, displayName, track }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -20,23 +25,29 @@ const VideoTile: React.FC<VideoTileProps> = ({ identity, track }) => {
         };
     }, [track]);
 
-    const displayName = identity.split(':')[0].replace('@', '');
+    const name = displayName || identity.split(':')[0].replace('@', '');
 
     return (
         <div className="video-tile">
-            <video
-                ref={videoRef}
-                className="video-tile__video"
-                autoPlay
-                playsInline
-                muted={true}
-            />
-            <span className="video-tile__name">{displayName}</span>
+            {track ? (
+                <video
+                    ref={videoRef}
+                    className="video-tile__video"
+                    autoPlay
+                    playsInline
+                    muted={true}
+                />
+            ) : (
+                <div className="video-tile__placeholder">
+                    <span className="video-tile__placeholder-icon">&#x1F60E;</span>
+                </div>
+            )}
+            <span className="video-tile__name">{name}</span>
         </div>
     );
 };
 
-export const VideoGrid: React.FC = () => {
+export const VideoGrid: React.FC<VideoGridProps> = ({ participants }) => {
     const [tracks, setTracks] = useState<Map<string, MediaStreamTrack>>(new Map());
 
     useEffect(() => {
@@ -54,12 +65,17 @@ export const VideoGrid: React.FC = () => {
         return unsub;
     }, []);
 
-    if (tracks.size === 0) return null;
+    if (participants.length === 0) return null;
 
     return (
         <div className="video-grid">
-            {Array.from(tracks.entries()).map(([identity, track]) => (
-                <VideoTile key={identity} identity={identity} track={track} />
+            {participants.map(p => (
+                <VideoTile
+                    key={p.identity}
+                    identity={p.identity}
+                    displayName={p.displayName}
+                    track={tracks.get(p.identity) || null}
+                />
             ))}
         </div>
     );

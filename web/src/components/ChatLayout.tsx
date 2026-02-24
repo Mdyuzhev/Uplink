@@ -156,7 +156,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                                     onToggleCamera={toggleCamera}
                                     onLeave={handleLeaveCall}
                                 />
-                                <VideoGrid />
+                                <VideoGrid participants={participants} />
                             </>
                         )}
 
