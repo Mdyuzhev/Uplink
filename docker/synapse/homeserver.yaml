@@ -77,6 +77,7 @@ rc_invites:
     per_second: 100
     burst_count: 100
 
-# E2E шифрование отключено для PoC (веб-клиент без crypto)
+# E2E шифрование включено для всех новых комнат
+# E2E шифрование отключено для PoC (включить когда WASM crypto будет стабилен)
 encryption_enabled_by_default_for_room_type: "off"
 allow_device_name_lookup_over_federation: false

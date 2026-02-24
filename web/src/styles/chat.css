@@ -144,6 +144,7 @@
 
 /* Presence dot */
 .presence-dot {
+    display: inline-block;
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -478,6 +479,140 @@
     border-radius: 50%;
     background: var(--uplink-success);
     border: 2px solid var(--uplink-bg);
+}
+
+/* === Call Bar === */
+.call-bar {
+    background: #1e4620;
+    border-bottom: 1px solid #2d6630;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.call-bar__info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.call-bar__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4ade80;
+}
+
+.call-bar__icon {
+    margin-right: 4px;
+}
+
+.call-bar__duration {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    font-variant-numeric: tabular-nums;
+}
+
+.call-bar__participants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.call-bar__participant {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.call-bar__participant--speaking {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.15);
+    box-shadow: 0 0 0 1px #4ade80;
+}
+
+.call-bar__participant--muted {
+    opacity: 0.5;
+}
+
+.call-bar__controls {
+    display: flex;
+    gap: 8px;
+}
+
+.call-bar__btn {
+    padding: 5px 14px;
+    border: none;
+    border-radius: var(--uplink-radius);
+    font-size: 13px;
+    font-family: var(--uplink-font);
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.call-bar__btn--mute {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.call-bar__btn--mute:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.call-bar__btn--mute.call-bar__btn--active {
+    background: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.call-bar__btn--leave {
+    background: var(--uplink-danger);
+    color: #fff;
+}
+
+.call-bar__btn--leave:hover {
+    opacity: 0.85;
+}
+
+/* === Call button in RoomHeader === */
+.room-header__call {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.room-header__call-btn {
+    background: none;
+    border: 1px solid var(--uplink-border);
+    color: var(--uplink-text-muted);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.room-header__call-btn--join:hover {
+    color: var(--uplink-success);
+    border-color: var(--uplink-success);
+    background: rgba(59, 165, 93, 0.1);
+}
+
+.room-header__call-btn--leave {
+    border-color: var(--uplink-danger);
+}
+
+.room-header__call-btn--leave:hover {
+    background: rgba(237, 66, 69, 0.1);
+}
+
+.room-header__call-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* === Mobile === */

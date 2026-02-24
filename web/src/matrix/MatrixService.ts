@@ -120,21 +120,17 @@ export class MatrixService {
 
         await this.client.whoami();
 
+        // Проверка IndexedDB для хранения крипто-ключей
         try {
-            await this.client.initRustCrypto();
-            console.log('Uplink: E2E шифрование включено (Rust crypto)');
+            const testDb = indexedDB.open('uplink_crypto_test');
+            testDb.onerror = () => {
+                console.warn('⚠️ IndexedDB недоступен (приватный режим?). E2E ключи не будут сохранены между сессиями.');
+            };
         } catch {
-            try {
-                await this.client.initCrypto();
-                console.log('Uplink: E2E шифрование включено (Olm)');
-            } catch {
-                console.warn('Uplink: E2E шифрование недоступно, работаем без него');
-            }
+            console.warn('⚠️ IndexedDB недоступен');
         }
 
-        if (this.client.getCrypto()) {
-            this.client.getCrypto()!.globalBlacklistUnverifiedDevices = false;
-        }
+        await this.initCrypto();
 
         this.client.on(sdk.ClientEvent.Sync, (state: string) => {
             if (state === 'PREPARED' || state === 'SYNCING') {
@@ -158,6 +154,32 @@ export class MatrixService {
         });
 
         await this.client.startClient({ initialSyncLimit: 20 });
+    }
+
+    /**
+     * Инициализация E2E шифрования.
+     * Пробуем Rust crypto (matrix-sdk-crypto-wasm).
+     * Если не удалось — продолжаем без шифрования (PoC-режим).
+     */
+    private async initCrypto(): Promise<void> {
+        if (!this.client) return;
+
+        try {
+            await this.client.initRustCrypto();
+            console.log('✅ Uplink E2E: Rust crypto (matrix-sdk-crypto-wasm)');
+            this.configureCryptoTrust();
+        } catch (err) {
+            console.warn('⚠️ E2E шифрование недоступно, работаем без него (PoC):', (err as Error).message);
+        }
+    }
+
+    private configureCryptoTrust(): void {
+        if (!this.client) return;
+        const crypto = this.client.getCrypto();
+        if (crypto) {
+            crypto.globalBlacklistUnverifiedDevices = false;
+            console.log('PoC-режим: автодоверие устройствам включено');
+        }
     }
 
     getClient(): sdk.MatrixClient {
@@ -239,6 +261,19 @@ export class MatrixService {
         }
         await this.disconnect();
         this.clearSession();
+
+        // Очистить крипто-хранилище IndexedDB
+        try {
+            const databases = await indexedDB.databases();
+            for (const db of databases) {
+                if (db.name && (db.name.includes('matrix') || db.name.includes('crypto'))) {
+                    indexedDB.deleteDatabase(db.name);
+                    console.log(`Удалена IndexedDB: ${db.name}`);
+                }
+            }
+        } catch {
+            console.warn('Не удалось очистить IndexedDB');
+        }
     }
 
     clearSession(): void {

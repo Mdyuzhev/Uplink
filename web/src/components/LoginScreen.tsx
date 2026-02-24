@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { config } from '../config';
 import '../styles/login.css';
 
 interface LoginScreenProps {
@@ -7,7 +8,7 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
-    const [homeserver, setHomeserver] = useState('http://localhost:8008');
+    const [homeserver, setHomeserver] = useState(config.matrixHomeserver);
     const [userId, setUserId] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -78,7 +79,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
                     {loading ? 'Подключение...' : 'Войти'}
                 </button>
 
-                {error && <div className="login-card__error">{error}</div>}
+                {error && (
+                    <div className="login-card__error">
+                        <p>{error}</p>
+                        {error.includes('шифрование') && (
+                            <p className="login-card__error-hint">
+                                Обратитесь к администратору: крипто-модуль не установлен на сервере.
+                            </p>
+                        )}
+                    </div>
+                )}
             </form>
         </div>
     );

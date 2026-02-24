@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useRooms } from '../hooks/useRooms';
 import { useMessages } from '../hooks/useMessages';
+import { useLiveKit } from '../hooks/useLiveKit';
 import { Sidebar } from './Sidebar';
 import { RoomHeader } from './RoomHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { CallBar } from './CallBar';
 import '../styles/chat.css';
 
 interface ChatLayoutProps {
@@ -17,6 +19,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
     const { messages, sendMessage, loadMore } = useMessages(activeRoomId);
 
+    const {
+        callState, participants, duration, isMuted,
+        activeRoomName, joinCall, leaveCall, toggleMute,
+    } = useLiveKit();
+
     const allRooms = [...channels, ...directs];
     const activeRoom = allRooms.find(r => r.id === activeRoomId) || null;
 
@@ -27,6 +34,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
 
     const handleBack = () => {
         setMobileView('sidebar');
+    };
+
+    const handleJoinCall = () => {
+        if (activeRoom) {
+            joinCall(activeRoom.name);
+        }
     };
 
     return (
@@ -44,7 +57,26 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
             <div className="chat-main">
                 {activeRoom ? (
                     <>
-                        <RoomHeader room={activeRoom} onBack={handleBack} />
+                        <RoomHeader
+                            room={activeRoom}
+                            onBack={handleBack}
+                            callState={callState}
+                            activeCallRoomName={activeRoomName}
+                            onJoinCall={handleJoinCall}
+                            onLeaveCall={leaveCall}
+                        />
+
+                        {callState === 'connected' && activeRoomName === activeRoom.name && (
+                            <CallBar
+                                roomName={activeRoomName}
+                                participants={participants}
+                                isMuted={isMuted}
+                                duration={duration}
+                                onToggleMute={toggleMute}
+                                onLeave={leaveCall}
+                            />
+                        )}
+
                         <MessageList messages={messages} onLoadMore={loadMore} />
                         <MessageInput
                             onSend={sendMessage}
