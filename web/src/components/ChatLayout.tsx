@@ -15,6 +15,7 @@ import { VideoGrid } from './VideoGrid';
 import { ProfileModal } from './ProfileModal';
 import { IncomingCallOverlay } from './IncomingCallOverlay';
 import { OutgoingCallOverlay } from './OutgoingCallOverlay';
+import { useNotifications } from '../hooks/useNotifications';
 import '../styles/chat.css';
 
 interface ChatLayoutProps {
@@ -64,7 +65,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const handleSelectRoom = (roomId: string) => {
         setActiveRoomId(roomId);
         setMobileView('chat');
+        // Сбросить счётчик непрочитанных при открытии чата
+        matrixService.markRoomAsRead(roomId).then(() => refresh());
     };
+
+    // Push-уведомления о новых сообщениях в других чатах
+    useNotifications(activeRoomId, handleSelectRoom);
 
     const handleBack = () => {
         setMobileView('sidebar');

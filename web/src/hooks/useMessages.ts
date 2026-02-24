@@ -23,9 +23,14 @@ export function useMessages(roomId: string | null) {
 
     useEffect(() => {
         loadMessages();
+        // При открытии комнаты — сразу отметить как прочитанное
+        if (roomId) matrixService.markRoomAsRead(roomId);
+
         const unsub = matrixService.onNewMessage((msgRoomId) => {
             if (msgRoomId === roomId) {
                 loadMessages();
+                // Новое сообщение в открытом чате — сразу сбросить счётчик
+                matrixService.markRoomAsRead(roomId);
             }
         });
         return unsub;
