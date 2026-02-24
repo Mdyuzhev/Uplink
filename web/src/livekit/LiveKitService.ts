@@ -4,7 +4,7 @@ import {
     RemoteParticipant,
     Track,
 } from 'livekit-client';
-import { config, isExternal } from '../config';
+import { config } from '../config';
 
 export type CallState = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -14,6 +14,7 @@ export interface CallParticipant {
     isMuted: boolean;
     isSpeaking: boolean;
     isLocal: boolean;
+    isCameraOn: boolean;
 }
 
 type Listener<T extends (...args: any[]) => void> = T;
@@ -28,6 +29,7 @@ export class LiveKitService {
     private _callStateListeners = new Set<Listener<(state: CallState) => void>>();
     private _participantsListeners = new Set<Listener<(participants: CallParticipant[]) => void>>();
     private _durationListeners = new Set<Listener<(seconds: number) => void>>();
+    private _videoTrackListeners = new Set<Listener<(identity: string, track: MediaStreamTrack | null) => void>>();
 
     get callState(): CallState { return this._callState; }
     get isInCall(): boolean { return this._callState === 'connected'; }
@@ -51,6 +53,12 @@ export class LiveKitService {
         return () => { this._durationListeners.delete(fn); };
     }
 
+    /** Подписка на появление/исчезновение видеотреков */
+    onVideoTrack(fn: (identity: string, track: MediaStreamTrack | null) => void): () => void {
+        this._videoTrackListeners.add(fn);
+        return () => { this._videoTrackListeners.delete(fn); };
+    }
+
     private emitCallState(state: CallState): void {
         this._callState = state;
         this._callStateListeners.forEach(fn => fn(state));
@@ -63,6 +71,10 @@ export class LiveKitService {
 
     private emitDuration(seconds: number): void {
         this._durationListeners.forEach(fn => fn(seconds));
+    }
+
+    private emitVideoTrack(identity: string, track: MediaStreamTrack | null): void {
+        this._videoTrackListeners.forEach(fn => fn(identity, track));
     }
 
     // === Основные методы ===
@@ -80,23 +92,19 @@ export class LiveKitService {
         this._activeRoomName = roomName;
 
         try {
-            const { token, turnServers } = await this.fetchToken(userId, roomName);
-
-            // Для внешнего доступа (Cloudflare Tunnel) — добавляем TURN relay,
-            // т.к. прямое UDP/TCP соединение через tunnel невозможно
-            const rtcConfig: RTCConfiguration | undefined =
-                isExternal && turnServers.length > 0
-                    ? { iceServers: turnServers, iceTransportPolicy: 'relay' as RTCIceTransportPolicy }
-                    : undefined;
+            const token = await this.fetchToken(userId, roomName);
 
             this.room = new Room({
                 adaptiveStream: true,
                 dynacast: true,
+                videoCaptureDefaults: {
+                    resolution: { width: 640, height: 480, frameRate: 24 },
+                },
             });
 
             this.setupRoomListeners();
 
-            await this.room.connect(config.livekitUrl, token, { rtcConfig });
+            await this.room.connect(config.livekitUrl, token);
 
             try {
                 await this.room.localParticipant.setMicrophoneEnabled(true);
@@ -153,6 +161,31 @@ export class LiveKitService {
         return !this.room.localParticipant.isMicrophoneEnabled;
     }
 
+    /** Переключить камеру (вкл/выкл) */
+    async toggleCamera(): Promise<boolean> {
+        if (!this.room) return false;
+
+        const currentlyEnabled = this.room.localParticipant.isCameraEnabled;
+        await this.room.localParticipant.setCameraEnabled(!currentlyEnabled);
+
+        if (!currentlyEnabled) {
+            const pub = this.room.localParticipant.getTrackPublication(Track.Source.Camera);
+            if (pub?.track) {
+                this.emitVideoTrack(this.room.localParticipant.identity, pub.track.mediaStreamTrack);
+            }
+        } else {
+            this.emitVideoTrack(this.room.localParticipant.identity, null);
+        }
+
+        this.emitParticipants();
+        return !currentlyEnabled;
+    }
+
+    get isCameraOn(): boolean {
+        if (!this.room) return false;
+        return this.room.localParticipant.isCameraEnabled;
+    }
+
     getParticipants(): CallParticipant[] {
         if (!this.room) return [];
 
@@ -165,6 +198,7 @@ export class LiveKitService {
             isMuted: !local.isMicrophoneEnabled,
             isSpeaking: local.isSpeaking,
             isLocal: true,
+            isCameraOn: local.isCameraEnabled,
         });
 
         this.room.remoteParticipants.forEach((p: RemoteParticipant) => {
@@ -174,6 +208,7 @@ export class LiveKitService {
                 isMuted: !p.isMicrophoneEnabled,
                 isSpeaking: p.isSpeaking,
                 isLocal: false,
+                isCameraOn: p.isCameraEnabled,
             });
         });
 
@@ -182,7 +217,8 @@ export class LiveKitService {
 
     // === Вспомогательные методы ===
 
-    private async fetchToken(userId: string, roomName: string): Promise<{ token: string; turnServers: RTCIceServer[] }> {
+    /** Получить токен. TURN не нужен — LiveKit Cloud сам управляет relay. */
+    private async fetchToken(userId: string, roomName: string): Promise<string> {
         const resp = await fetch(`${config.tokenServiceUrl}/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -195,7 +231,7 @@ export class LiveKitService {
         }
 
         const data = await resp.json();
-        return { token: data.token, turnServers: data.turnServers || [] };
+        return data.token;
     }
 
     private setupRoomListeners(): void {
@@ -205,7 +241,8 @@ export class LiveKitService {
             this.emitParticipants();
         });
 
-        this.room.on(RoomEvent.ParticipantDisconnected, () => {
+        this.room.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
+            this.emitVideoTrack(participant.identity, null);
             this.emitParticipants();
         });
 
@@ -214,13 +251,19 @@ export class LiveKitService {
                 const audioEl = track.attach();
                 audioEl.id = `audio-${participant.identity}`;
                 document.body.appendChild(audioEl);
+            } else if (track.kind === Track.Kind.Video) {
+                this.emitVideoTrack(participant.identity, track.mediaStreamTrack);
             }
         });
 
         this.room.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
-            track.detach().forEach(el => el.remove());
-            const audioEl = document.getElementById(`audio-${participant.identity}`);
-            if (audioEl) audioEl.remove();
+            if (track.kind === Track.Kind.Audio) {
+                track.detach().forEach(el => el.remove());
+                const audioEl = document.getElementById(`audio-${participant.identity}`);
+                if (audioEl) audioEl.remove();
+            } else if (track.kind === Track.Kind.Video) {
+                this.emitVideoTrack(participant.identity, null);
+            }
         });
 
         this.room.on(RoomEvent.TrackMuted, () => this.emitParticipants());
@@ -262,9 +305,11 @@ export class LiveKitService {
         if (this.room) {
             this.room.removeAllListeners();
             this.room.remoteParticipants.forEach((p) => {
-                const el = document.getElementById(`audio-${p.identity}`);
-                if (el) el.remove();
+                const audioEl = document.getElementById(`audio-${p.identity}`);
+                if (audioEl) audioEl.remove();
+                this.emitVideoTrack(p.identity, null);
             });
+            this.emitVideoTrack(this.room.localParticipant.identity, null);
             this.room = null;
         }
 

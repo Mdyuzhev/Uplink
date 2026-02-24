@@ -1,28 +1,14 @@
 /**
  * Централизованная конфигурация URL-ов сервисов Uplink.
  *
- * Все URL-ы вычисляются из window.location — работает в любом режиме:
- *
- *   localhost:5173                        → Dev (Vite), сервисы напрямую
- *   localhost:5174 / 192.168.1.74:5174    → Prod LAN (nginx)
- *   *.trycloudflare.com                   → Cloudflare Tunnel (HTTPS)
+ * Matrix (Synapse) — на homelab, доступ через nginx.
+ * LiveKit — в облаке (LiveKit Cloud), единый URL для всех клиентов.
+ * Token Service — на homelab, проксируется через nginx.
  */
 
 const host = window.location.hostname;
 const port = window.location.port;
 const isDev = port === '5173';
-const isSecure = window.location.protocol === 'https:';
-
-/**
- * Определяем режим доступа:
- * - external: через Cloudflare Tunnel (HTTPS, без порта или 443)
- *   LiveKit через nginx WebSocket proxy: wss://domain/livekit-ws
- * - lan: LAN или localhost (HTTP, порт 5174)
- *   LiveKit напрямую: ws://host:7880
- * - dev: Vite dev server (порт 5173)
- *   LiveKit напрямую: ws://host:7880
- */
-export const isExternal = isSecure && (port === '' || port === '443');
 
 export const config = {
     /** Matrix homeserver (Synapse) */
@@ -31,15 +17,12 @@ export const config = {
         : window.location.origin,
 
     /**
-     * LiveKit Server (WebSocket).
-     * External (Cloudflare): через nginx proxy /livekit-ws
-     * LAN/Dev: напрямую на порт 7880
+     * LiveKit Cloud — единый URL для всех клиентов.
+     * TURN/STUN встроены, работает через любой NAT.
      */
-    livekitUrl: isExternal
-        ? `wss://${host}/livekit-ws/`
-        : `ws://${host}:7880`,
+    livekitUrl: 'wss://uplink-3ism3la4.livekit.cloud',
 
-    /** Сервис генерации LiveKit-токенов */
+    /** Сервис генерации LiveKit-токенов (на homelab) */
     tokenServiceUrl: isDev
         ? `http://${host}:7890`
         : `${window.location.origin}/livekit-token`,

@@ -5,8 +5,10 @@ interface CallBarProps {
     roomName: string;
     participants: CallParticipant[];
     isMuted: boolean;
+    isCameraOn: boolean;
     duration: number;
     onToggleMute: () => void;
+    onToggleCamera: () => void;
     onLeave: () => void;
 }
 
@@ -17,7 +19,7 @@ function formatDuration(seconds: number): string {
 }
 
 export const CallBar: React.FC<CallBarProps> = ({
-    roomName, participants, isMuted, duration, onToggleMute, onLeave,
+    roomName, participants, isMuted, isCameraOn, duration, onToggleMute, onToggleCamera, onLeave,
 }) => {
     return (
         <div className="call-bar">
@@ -35,7 +37,7 @@ export const CallBar: React.FC<CallBarProps> = ({
                         key={p.identity}
                         className={`call-bar__participant ${p.isSpeaking ? 'call-bar__participant--speaking' : ''} ${p.isMuted ? 'call-bar__participant--muted' : ''}`}
                     >
-                        {p.displayName}{p.isLocal ? ' (вы)' : ''}
+                        {p.displayName}{p.isLocal ? ' (вы)' : ''}{p.isCameraOn ? ' \u{1F4F9}' : ''}
                     </span>
                 ))}
             </div>
@@ -47,6 +49,13 @@ export const CallBar: React.FC<CallBarProps> = ({
                     title={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
                 >
                     {isMuted ? '\u{1F509} Unmute' : '\u{1F3A4} Mute'}
+                </button>
+                <button
+                    className={`call-bar__btn call-bar__btn--camera ${isCameraOn ? 'call-bar__btn--active' : ''}`}
+                    onClick={onToggleCamera}
+                    title={isCameraOn ? 'Выключить камеру' : 'Включить камеру'}
+                >
+                    {isCameraOn ? '\u{1F4F9} Камера' : '\u{1F4F7} Камера'}
                 </button>
                 <button
                     className="call-bar__btn call-bar__btn--leave"

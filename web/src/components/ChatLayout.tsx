@@ -11,6 +11,7 @@ import { RoomHeader } from './RoomHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { CallBar } from './CallBar';
+import { VideoGrid } from './VideoGrid';
 import { ProfileModal } from './ProfileModal';
 import { IncomingCallOverlay } from './IncomingCallOverlay';
 import { OutgoingCallOverlay } from './OutgoingCallOverlay';
@@ -29,8 +30,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const { messages, sendMessage, sendFile, loadMore } = useMessages(activeRoomId);
 
     const {
-        callState, participants, duration, isMuted,
-        activeRoomName, error: callError, joinCall, leaveCall, toggleMute,
+        callState, participants, duration, isMuted, isCameraOn,
+        activeRoomName, error: callError, joinCall, leaveCall, toggleMute, toggleCamera,
     } = useLiveKit();
 
     const {
@@ -144,14 +145,19 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                         )}
 
                         {callState === 'connected' && activeRoomName === activeRoom.id && (
-                            <CallBar
-                                roomName={activeRoom.name}
-                                participants={participants}
-                                isMuted={isMuted}
-                                duration={duration}
-                                onToggleMute={toggleMute}
-                                onLeave={handleLeaveCall}
-                            />
+                            <>
+                                <CallBar
+                                    roomName={activeRoom.name}
+                                    participants={participants}
+                                    isMuted={isMuted}
+                                    isCameraOn={isCameraOn}
+                                    duration={duration}
+                                    onToggleMute={toggleMute}
+                                    onToggleCamera={toggleCamera}
+                                    onLeave={handleLeaveCall}
+                                />
+                                <VideoGrid />
+                            </>
                         )}
 
                         <MessageList messages={messages} onLoadMore={loadMore} />

@@ -13,18 +13,17 @@ import http from 'node:http';
 import { AccessToken } from 'livekit-server-sdk';
 
 const PORT = 7890;
-const API_KEY = process.env.LIVEKIT_API_KEY || 'uplink-api-key';
-const API_SECRET = process.env.LIVEKIT_API_SECRET || 'uplink-api-secret-change-me-in-prod';
+const API_KEY = process.env.LIVEKIT_API_KEY;
+const API_SECRET = process.env.LIVEKIT_API_SECRET;
 
-// TURN server (coturn) для relay медиа через NAT/firewall
-const TURN_HOST = process.env.TURN_HOST || '';
-const TURN_PORT = process.env.TURN_PORT || '3478';
-const TURN_USER = process.env.TURN_USER || 'uplink';
-const TURN_PASS = process.env.TURN_PASS || 'uplink-turn-pass';
+if (!API_KEY || !API_SECRET) {
+    console.error('LIVEKIT_API_KEY и LIVEKIT_API_SECRET обязательны!');
+    process.exit(1);
+}
 
 /**
  * Генерация токена с правами на подключение к комнате,
- * публикацию аудио и подписку на треки других участников.
+ * публикацию аудио/видео и подписку на треки других участников.
  */
 function generateToken(userId, roomName) {
     const token = new AccessToken(API_KEY, API_SECRET, {
@@ -73,22 +72,8 @@ const server = http.createServer(async (req, res) => {
 
             const token = await generateToken(userId, roomName);
 
-            // Если TURN_HOST задан — отдаём TURN-серверы для relay
-            const turnServers = TURN_HOST ? [
-                {
-                    urls: `turn:${TURN_HOST}:${TURN_PORT}?transport=udp`,
-                    username: TURN_USER,
-                    credential: TURN_PASS,
-                },
-                {
-                    urls: `turn:${TURN_HOST}:${TURN_PORT}?transport=tcp`,
-                    username: TURN_USER,
-                    credential: TURN_PASS,
-                },
-            ] : [];
-
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ token, turnServers }));
+            res.end(JSON.stringify({ token }));
         } catch (err) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: err.message }));

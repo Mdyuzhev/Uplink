@@ -709,6 +709,20 @@
     color: #fca5a5;
 }
 
+.call-bar__btn--camera {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.call-bar__btn--camera:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.call-bar__btn--camera.call-bar__btn--active {
+    background: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
 .call-bar__btn--leave {
     background: var(--uplink-danger);
     color: #fff;
@@ -716,6 +730,46 @@
 
 .call-bar__btn--leave:hover {
     opacity: 0.85;
+}
+
+/* === Video Grid === */
+.video-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #111317;
+    border-bottom: 1px solid var(--uplink-border);
+}
+
+.video-tile {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1a1d23;
+    flex: 1 1 200px;
+    max-width: 400px;
+    min-width: 160px;
+    aspect-ratio: 4 / 3;
+}
+
+.video-tile__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.video-tile__name {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
 /* === Call button in RoomHeader === */

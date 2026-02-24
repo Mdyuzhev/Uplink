@@ -11,6 +11,7 @@ export function useLiveKit() {
     const [participants, setParticipants] = useState<CallParticipant[]>([]);
     const [duration, setDuration] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
+    const [isCameraOn, setIsCameraOn] = useState(false);
     const [activeRoomName, setActiveRoomName] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,10 +24,14 @@ export function useLiveKit() {
             } else {
                 setError(null);
             }
+            if (state === 'idle') {
+                setIsCameraOn(false);
+            }
         });
         const unsub2 = livekitService.onParticipantsChange((p) => {
             setParticipants(p);
             setIsMuted(livekitService.isMuted);
+            setIsCameraOn(livekitService.isCameraOn);
         });
         const unsub3 = livekitService.onDurationChange(setDuration);
 
@@ -52,15 +57,22 @@ export function useLiveKit() {
         setIsMuted(livekitService.isMuted);
     }, []);
 
+    const toggleCamera = useCallback(async () => {
+        await livekitService.toggleCamera();
+        setIsCameraOn(livekitService.isCameraOn);
+    }, []);
+
     return {
         callState,
         participants,
         duration,
         isMuted,
+        isCameraOn,
         activeRoomName,
         error,
         joinCall,
         leaveCall,
         toggleMute,
+        toggleCamera,
     };
 }
