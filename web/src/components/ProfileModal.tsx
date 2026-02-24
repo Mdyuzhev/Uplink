@@ -108,10 +108,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
         setAvatarUploading(true);
         try {
             const resized = await resizeImage(file, MAX_AVATAR_SIZE, MAX_AVATAR_BYTES);
+            // Показать превью сразу из файла (не ждать sync)
+            const localPreview = URL.createObjectURL(resized);
+            setAvatarUrl(localPreview);
             await matrixService.setAvatar(resized);
-            setTimeout(() => {
-                setAvatarUrl(matrixService.getMyAvatarUrl());
-            }, 1000);
         } catch (err: any) {
             alert('Ошибка загрузки: ' + (err.message || 'Неизвестная ошибка'));
         } finally {
