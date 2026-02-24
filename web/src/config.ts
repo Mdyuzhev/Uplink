@@ -36,7 +36,7 @@ export const config = {
      * LAN/Dev: напрямую на порт 7880
      */
     livekitUrl: isExternal
-        ? `wss://${host}/livekit-ws`
+        ? `wss://${host}/livekit-ws/`
         : `ws://${host}:7880`,
 
     /** Сервис генерации LiveKit-токенов */
