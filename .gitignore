@@ -8,6 +8,10 @@ docker/synapse/*.signing.key
 docker/synapse/*.log.config
 docker/synapse/media_store/
 
+# Claude
+.claude/
+Tasks/
+
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/
