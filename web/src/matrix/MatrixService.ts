@@ -614,7 +614,7 @@ export class MatrixService {
             const userId = this.client.getUserId()!;
             const resp = await this.client.http.authedRequest(
                 sdk.Method.Get,
-                `/_synapse/admin/v1/users/${encodeURIComponent(userId)}`,
+                `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`,
                 undefined, undefined, { prefix: '' }
             );
             return (resp as Record<string, unknown>)?.admin === true;
