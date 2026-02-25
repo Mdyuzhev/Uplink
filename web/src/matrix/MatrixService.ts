@@ -17,6 +17,14 @@ const STORAGE_KEYS = {
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+export interface SynapseUser {
+    userId: string;
+    displayName: string;
+    isAdmin: boolean;
+    deactivated: boolean;
+    avatarUrl?: string;
+}
+
 type Listener<T extends (...args: any[]) => void> = T;
 
 export class MatrixService {
@@ -722,6 +730,70 @@ export class MatrixService {
         if (!room) return false;
         const createEvent = room.currentState.getStateEvents('m.room.create', '');
         return createEvent?.getContent()?.type === 'm.space';
+    }
+
+    // === Admin API (Synapse) ===
+
+    /** Список всех пользователей на сервере (Synapse Admin API v2) */
+    async listServerUsers(): Promise<SynapseUser[]> {
+        if (!this.client) return [];
+        try {
+            const resp = await this.client.http.authedRequest(
+                sdk.Method.Get,
+                '/_synapse/admin/v2/users',
+                { from: '0', limit: '200', guests: 'false' },
+                undefined,
+                { prefix: '' }
+            );
+            return ((resp as any).users || []).map((u: any) => ({
+                userId: u.name,
+                displayName: u.displayname || u.name.split(':')[0].substring(1),
+                isAdmin: u.admin === 1 || u.admin === true,
+                deactivated: u.deactivated === 1 || u.deactivated === true,
+                avatarUrl: this.mxcToHttp(u.avatar_url, 36) || undefined,
+            }));
+        } catch (err) {
+            console.error('Ошибка загрузки пользователей:', err);
+            throw new Error('Нет доступа к Admin API. Вы серверный админ?');
+        }
+    }
+
+    /** Создать пользователя (Synapse Admin API v2) */
+    async createUser(username: string, password: string, displayName?: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const domain = this.getServerDomain();
+        const userId = `@${username}:${domain}`;
+        await this.client.http.authedRequest(
+            sdk.Method.Put,
+            `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`,
+            undefined,
+            { password, displayname: displayName || username, admin: false },
+            { prefix: '' }
+        );
+    }
+
+    /** Изменить роль админа (Synapse Admin API v2) */
+    async setUserAdmin(userId: string, isAdmin: boolean): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        await this.client.http.authedRequest(
+            sdk.Method.Put,
+            `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`,
+            undefined,
+            { admin: isAdmin },
+            { prefix: '' }
+        );
+    }
+
+    /** Деактивировать (заблокировать) пользователя — необратимо */
+    async deactivateUser(userId: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        await this.client.http.authedRequest(
+            sdk.Method.Post,
+            `/_synapse/admin/v1/deactivate/${encodeURIComponent(userId)}`,
+            undefined,
+            { erase: false },
+            { prefix: '' }
+        );
     }
 
     async changePassword(oldPassword: string, newPassword: string): Promise<void> {

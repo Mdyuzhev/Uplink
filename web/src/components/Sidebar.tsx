@@ -18,12 +18,13 @@ interface SidebarProps {
     onLogout: () => void;
     onCreateSpace: () => void;
     onCreateRoom: (spaceId: string) => void;
+    onAdminPanel: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     spaces, channels, directs, users, usersLoading,
     activeRoomId, userName, isAdmin, onSelectRoom, onOpenDM,
-    onProfileClick, onLogout, onCreateSpace, onCreateRoom,
+    onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -60,6 +61,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <>
             <div className="chat-sidebar__header">
                 <span className="chat-sidebar__title">Uplink</span>
+                {isAdmin && (
+                    <button
+                        className="chat-sidebar__admin-btn"
+                        onClick={onAdminPanel}
+                        title="Управление пользователями"
+                    >
+                        &#x2699;
+                    </button>
+                )}
                 <div className="chat-sidebar__header-actions">
                     <button
                         className="chat-sidebar__profile-btn"

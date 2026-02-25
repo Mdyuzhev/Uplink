@@ -1332,6 +1332,209 @@
 }
 
 /* ═══════════════════════════════════
+   ADMIN BUTTON (sidebar header)
+   ═══════════════════════════════════ */
+.chat-sidebar__admin-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: var(--uplink-radius-sm);
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+}
+
+.chat-sidebar__admin-btn:hover {
+    color: var(--uplink-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════
+   ADMIN PANEL (модалка)
+   ═══════════════════════════════════ */
+.admin-panel {
+    width: 480px;
+    max-height: 85vh;
+    position: relative;
+}
+
+.admin-panel__success {
+    color: var(--uplink-success);
+    font-size: 13px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+}
+
+.admin-panel__loading {
+    color: var(--uplink-text-muted);
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+/* Список пользователей */
+.admin-panel__user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.admin-panel__user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: var(--uplink-radius-sm);
+    transition: background 0.1s;
+}
+
+.admin-panel__user:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-panel__user--deactivated {
+    opacity: 0.4;
+}
+
+.admin-panel__user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-panel__user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.admin-panel__user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--uplink-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-panel__user-id {
+    font-size: 11px;
+    color: var(--uplink-text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Бейджи */
+.admin-panel__badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.admin-panel__badge--admin {
+    background: rgba(88, 101, 242, 0.2);
+    color: var(--uplink-accent);
+}
+
+.admin-panel__badge--blocked {
+    background: rgba(218, 55, 60, 0.2);
+    color: var(--uplink-danger);
+}
+
+/* Кнопки действий */
+.admin-panel__user-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.admin-panel__user:hover .admin-panel__user-actions {
+    opacity: 1;
+}
+
+.admin-panel__action-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--uplink-radius-sm);
+    transition: background 0.15s;
+}
+
+.admin-panel__action-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-panel__action-btn--danger:hover {
+    background: rgba(218, 55, 60, 0.2);
+}
+
+/* Подтверждение блокировки */
+.admin-panel__confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--uplink-radius-lg);
+    z-index: 10;
+}
+
+.admin-panel__confirm {
+    background: var(--uplink-bg-secondary);
+    padding: 20px 24px;
+    border-radius: var(--uplink-radius-md);
+    text-align: center;
+    max-width: 300px;
+}
+
+.admin-panel__confirm p {
+    color: var(--uplink-text-primary);
+    font-size: 14px;
+    margin: 0 0 8px;
+}
+
+.admin-panel__confirm-warning {
+    color: var(--uplink-danger) !important;
+    font-size: 12px !important;
+    margin-bottom: 16px !important;
+}
+
+.admin-panel__confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.admin-panel__confirm-actions .profile-modal__btn {
+    width: auto;
+    padding: 8px 20px;
+}
+
+.admin-panel__confirm-cancel {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--uplink-text-secondary);
+}
+
+.admin-panel__confirm-cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ═══════════════════════════════════
    MOBILE
    ═══════════════════════════════════ */
 @media (max-width: 768px) {

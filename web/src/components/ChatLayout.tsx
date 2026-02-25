@@ -17,6 +17,7 @@ import { IncomingCallOverlay } from './IncomingCallOverlay';
 import { OutgoingCallOverlay } from './OutgoingCallOverlay';
 import { CreateSpaceModal } from './CreateSpaceModal';
 import { CreateRoomModal } from './CreateRoomModal';
+import { AdminPanel } from './AdminPanel';
 import { useNotifications } from '../hooks/useNotifications';
 import '../styles/chat.css';
 
@@ -32,6 +33,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [showProfile, setShowProfile] = useState(false);
     const [showCreateSpace, setShowCreateSpace] = useState(false);
     const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
+    const [showAdminPanel, setShowAdminPanel] = useState(false);
     const { messages, sendMessage, sendFile, loadMore } = useMessages(activeRoomId);
 
     const {
@@ -147,6 +149,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                         const space = spaces.find(s => s.id === spaceId);
                         setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
                     }}
+                    onAdminPanel={() => setShowAdminPanel(true)}
                 />
             </div>
 
@@ -238,6 +241,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                     onClose={() => setCreateRoomForSpace(null)}
                     onCreated={refresh}
                 />
+            )}
+
+            {/* Админ-панель */}
+            {showAdminPanel && (
+                <AdminPanel onClose={() => setShowAdminPanel(false)} />
             )}
         </div>
     );
