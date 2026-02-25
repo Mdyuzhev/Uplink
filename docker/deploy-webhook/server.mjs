@@ -30,8 +30,18 @@ function deploy() {
     console.log(`[${new Date().toISOString()}] Начинаю деплой...`);
 
     try {
-        // git pull
-        const pullResult = execSync('git pull origin main', {
+        // Разрешить работу с repo другого владельца
+        execSync('git config --global --add safe.directory /repo', { encoding: 'utf-8' });
+
+        // Убедиться что remote github настроен
+        try {
+            execSync('git remote add github https://github.com/Mdyuzhev/Uplink.git', {
+                cwd: REPO_PATH, encoding: 'utf-8',
+            });
+        } catch { /* уже существует */ }
+
+        // git pull с GitHub
+        const pullResult = execSync('git pull github main', {
             cwd: REPO_PATH,
             encoding: 'utf-8',
             timeout: 60_000,
