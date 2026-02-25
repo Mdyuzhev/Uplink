@@ -19,10 +19,21 @@ export function useUsers() {
         if (!matrixService.isConnected) return;
         setLoading(true);
         try {
-            const result = await matrixService.searchUsers('');
-            setUsers(result);
-        } catch (err) {
-            console.error('Ошибка загрузки пользователей:', err);
+            // Пробуем Admin API — видит ВСЕХ пользователей сервера
+            const serverUsers = await matrixService.listServerUsers();
+            const myUserId = matrixService.getUserId();
+            setUsers(serverUsers
+                .filter(u => u.userId !== myUserId && !u.deactivated)
+                .map(u => ({ userId: u.userId, displayName: u.displayName, avatarUrl: u.avatarUrl }))
+            );
+        } catch {
+            // Не админ — фолбэк на User Directory
+            try {
+                const result = await matrixService.searchUsers('');
+                setUsers(result);
+            } catch (err) {
+                console.error('Ошибка загрузки пользователей:', err);
+            }
         } finally {
             setLoading(false);
         }
