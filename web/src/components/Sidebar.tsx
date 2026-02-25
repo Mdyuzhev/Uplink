@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
-import { RoomInfo } from '../matrix/RoomsManager';
+import { RoomInfo, SpaceInfo } from '../matrix/RoomsManager';
 import { UserInfo } from '../hooks/useUsers';
 import { Avatar } from './Avatar';
 
 interface SidebarProps {
+    spaces: SpaceInfo[];
     channels: RoomInfo[];
     directs: RoomInfo[];
     users: UserInfo[];
     usersLoading: boolean;
     activeRoomId: string | null;
     userName: string;
+    isAdmin: boolean;
     onSelectRoom: (roomId: string) => void;
     onOpenDM: (userId: string) => void;
     onProfileClick: () => void;
     onLogout: () => void;
+    onCreateSpace: () => void;
+    onCreateRoom: (spaceId: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-    channels, directs, users, usersLoading,
-    activeRoomId, userName, onSelectRoom, onOpenDM, onProfileClick, onLogout,
+    spaces, channels, directs, users, usersLoading,
+    activeRoomId, userName, isAdmin, onSelectRoom, onOpenDM,
+    onProfileClick, onLogout, onCreateSpace, onCreateRoom,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -37,6 +42,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         );
     };
 
+    const filterSpaces = (list: SpaceInfo[]) => {
+        if (!filter) return list;
+        const q = filter.toLowerCase();
+        return list.map(s => ({
+            ...s,
+            rooms: s.rooms.filter(r => r.name.toLowerCase().includes(q)),
+        })).filter(s => s.name.toLowerCase().includes(q) || s.rooms.length > 0);
+    };
+
+    const filteredSpaces = filterSpaces(spaces);
     const filteredChannels = filterRooms(channels);
     const filteredDirects = filterRooms(directs);
     const filteredUsers = filterUsers(users);
@@ -70,9 +85,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="chat-sidebar__rooms">
+                {/* Каналы (Spaces) */}
+                {(filteredSpaces.length > 0 || isAdmin) && (
+                    <div className="chat-sidebar__section">
+                        <div className="chat-sidebar__section-title-row">
+                            <span className="chat-sidebar__section-title chat-sidebar__section-title--inline">Каналы</span>
+                            {isAdmin && (
+                                <button
+                                    className="chat-sidebar__section-add-btn"
+                                    onClick={onCreateSpace}
+                                    title="Создать канал"
+                                >
+                                    +
+                                </button>
+                            )}
+                        </div>
+                        {filteredSpaces.map(space => (
+                            <SpaceItem
+                                key={space.id}
+                                space={space}
+                                activeRoomId={activeRoomId}
+                                isAdmin={isAdmin}
+                                onSelectRoom={onSelectRoom}
+                                onCreateRoom={onCreateRoom}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {/* Другие комнаты (не привязанные к каналам) */}
                 {filteredChannels.length > 0 && (
                     <div className="chat-sidebar__section">
-                        <div className="chat-sidebar__section-title">Каналы</div>
+                        <div className="chat-sidebar__section-title">Другие комнаты</div>
                         {filteredChannels.map(room => (
                             <RoomItem
                                 key={room.id}
@@ -84,6 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 )}
 
+                {/* Личные сообщения */}
                 {filteredDirects.length > 0 && (
                     <div className="chat-sidebar__section">
                         <div className="chat-sidebar__section-title">Личные сообщения</div>
@@ -98,6 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 )}
 
+                {/* Пользователи */}
                 <div className="chat-sidebar__section">
                     <div className="chat-sidebar__section-title">
                         Пользователи{usersLoading ? ' ...' : ` (${filteredUsers.length})`}
@@ -118,12 +164,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
 };
 
-const RoomItem: React.FC<{ room: RoomInfo; active: boolean; onClick: () => void }> = ({
-    room, active, onClick,
-}) => {
+const SpaceItem: React.FC<{
+    space: SpaceInfo;
+    activeRoomId: string | null;
+    isAdmin: boolean;
+    onSelectRoom: (roomId: string) => void;
+    onCreateRoom: (spaceId: string) => void;
+}> = ({ space, activeRoomId, isAdmin, onSelectRoom, onCreateRoom }) => {
+    const [collapsed, setCollapsed] = useState(false);
+
+    return (
+        <div className="sidebar-space">
+            <div className="sidebar-space__header" onClick={() => setCollapsed(!collapsed)}>
+                <span className={`sidebar-space__arrow ${collapsed ? 'sidebar-space__arrow--collapsed' : ''}`}>
+                    &#x25BE;
+                </span>
+                <span className="sidebar-space__name">{space.name}</span>
+                {isAdmin && (
+                    <button
+                        className="sidebar-space__add-btn"
+                        onClick={(e) => { e.stopPropagation(); onCreateRoom(space.id); }}
+                        title="Создать комнату"
+                    >
+                        +
+                    </button>
+                )}
+            </div>
+            {!collapsed && space.rooms.map(room => (
+                <RoomItem
+                    key={room.id}
+                    room={room}
+                    active={room.id === activeRoomId}
+                    onClick={() => onSelectRoom(room.id)}
+                    indent
+                />
+            ))}
+            {!collapsed && space.rooms.length === 0 && (
+                <div className="sidebar-space__empty">Нет комнат</div>
+            )}
+        </div>
+    );
+};
+
+const RoomItem: React.FC<{
+    room: RoomInfo;
+    active: boolean;
+    onClick: () => void;
+    indent?: boolean;
+}> = ({ room, active, onClick, indent }) => {
     return (
         <div
-            className={`sidebar-room-item ${active ? 'sidebar-room-item--active' : ''}`}
+            className={`sidebar-room-item ${active ? 'sidebar-room-item--active' : ''} ${indent ? 'sidebar-room-item--indent' : ''}`}
             onClick={onClick}
         >
             <span className="sidebar-room-item__icon">

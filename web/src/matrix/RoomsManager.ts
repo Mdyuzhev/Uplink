@@ -14,7 +14,49 @@ export interface RoomInfo {
     topic?: string;
 }
 
+export interface SpaceInfo {
+    id: string;
+    name: string;
+    topic?: string;
+    rooms: RoomInfo[];
+}
+
+function buildRoomInfo(client: sdk.MatrixClient, room: sdk.Room, type: 'channel' | 'direct'): RoomInfo {
+    const lastEvent = room.getLiveTimeline().getEvents()
+        .filter(e => e.getType() === 'm.room.message')
+        .slice(-1)[0];
+
+    let peerId: string | undefined;
+    let peerPresence = 'offline';
+    if (type === 'direct') {
+        const members = room.getJoinedMembers();
+        const peer = members.find(m => m.userId !== client.getUserId());
+        if (peer) {
+            peerId = peer.userId;
+            const user = client.getUser(peer.userId);
+            peerPresence = (user as any)?.presence || 'offline';
+        }
+    }
+
+    return {
+        id: room.roomId,
+        name: type === 'direct' && peerId
+            ? getDisplayName(client, peerId)
+            : room.name || 'Без названия',
+        type,
+        encrypted: room.hasEncryptionStateEvent(),
+        unreadCount: room.getUnreadNotificationCount(sdk.NotificationCountType.Total) || 0,
+        lastMessage: lastEvent?.getContent().body,
+        lastMessageSender: lastEvent ? getDisplayName(client, lastEvent.getSender()!) : undefined,
+        lastMessageTs: lastEvent?.getTs(),
+        peerId,
+        peerPresence,
+        topic: room.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic,
+    };
+}
+
 export function getGroupedRooms(client: sdk.MatrixClient): {
+    spaces: SpaceInfo[];
     channels: RoomInfo[];
     directs: RoomInfo[];
 } {
@@ -27,51 +69,72 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
         }
     }
 
+    const spaces: SpaceInfo[] = [];
     const channels: RoomInfo[] = [];
     const directs: RoomInfo[] = [];
+    const childRoomIds = new Set<string>();
 
+    // Первый проход: найти Spaces и их дочерние комнаты
     for (const room of rooms) {
-        const isDirect = directIds.has(room.roomId);
-        const lastEvent = room.getLiveTimeline().getEvents()
-            .filter(e => e.getType() === 'm.room.message')
-            .slice(-1)[0];
+        const createEvent = room.currentState.getStateEvents('m.room.create', '');
+        if (createEvent?.getContent()?.type === 'm.space') {
+            const childEvents = room.currentState.getStateEvents('m.space.child');
+            const childIds = childEvents
+                .filter(e => Object.keys(e.getContent()).length > 0)
+                .map(e => e.getStateKey()!)
+                .filter(Boolean);
 
-        let peerId: string | undefined;
-        let peerPresence = 'offline';
-        if (isDirect) {
-            const members = room.getJoinedMembers();
-            const peer = members.find(m => m.userId !== client.getUserId());
-            if (peer) {
-                peerId = peer.userId;
-                const user = client.getUser(peer.userId);
-                peerPresence = (user as any)?.presence || 'offline';
+            childIds.forEach(id => childRoomIds.add(id));
+
+            spaces.push({
+                id: room.roomId,
+                name: room.name || 'Без названия',
+                topic: room.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic,
+                rooms: [],
+            });
+        }
+    }
+
+    // Второй проход: распределить комнаты
+    for (const room of rooms) {
+        if (directIds.has(room.roomId)) {
+            directs.push(buildRoomInfo(client, room, 'direct'));
+            continue;
+        }
+
+        // Пропускаем сами Spaces
+        const createEvent = room.currentState.getStateEvents('m.room.create', '');
+        if (createEvent?.getContent()?.type === 'm.space') continue;
+
+        const info = buildRoomInfo(client, room, 'channel');
+
+        // Найти, к какому Space принадлежит комната
+        let assigned = false;
+        if (childRoomIds.has(room.roomId)) {
+            for (const space of spaces) {
+                const spaceRoom = client.getRoom(space.id);
+                if (!spaceRoom) continue;
+                const childEvent = spaceRoom.currentState.getStateEvents('m.space.child', room.roomId);
+                if (childEvent && Object.keys(childEvent.getContent()).length > 0) {
+                    space.rooms.push(info);
+                    assigned = true;
+                    break;
+                }
             }
         }
 
-        const info: RoomInfo = {
-            id: room.roomId,
-            name: isDirect && peerId
-                ? getDisplayName(client, peerId)
-                : room.name || 'Без названия',
-            type: isDirect ? 'direct' : 'channel',
-            encrypted: room.hasEncryptionStateEvent(),
-            unreadCount: room.getUnreadNotificationCount(sdk.NotificationCountType.Total) || 0,
-            lastMessage: lastEvent?.getContent().body,
-            lastMessageSender: lastEvent ? getDisplayName(client, lastEvent.getSender()!) : undefined,
-            lastMessageTs: lastEvent?.getTs(),
-            peerId,
-            peerPresence,
-            topic: room.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic,
-        };
-
-        if (isDirect) directs.push(info);
-        else channels.push(info);
+        if (!assigned) {
+            channels.push(info);
+        }
     }
 
+    // Сортировка
+    spaces.sort((a, b) => a.name.localeCompare(b.name));
+    spaces.forEach(s => s.rooms.sort((a, b) => a.name.localeCompare(b.name)));
     channels.sort((a, b) => a.name.localeCompare(b.name));
     directs.sort((a, b) => (b.lastMessageTs || 0) - (a.lastMessageTs || 0));
 
-    return { channels, directs };
+    return { spaces, channels, directs };
 }
 
 export function getDisplayName(client: sdk.MatrixClient, userId: string): string {

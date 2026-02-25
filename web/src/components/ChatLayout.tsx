@@ -15,6 +15,8 @@ import { VideoGrid } from './VideoGrid';
 import { ProfileModal } from './ProfileModal';
 import { IncomingCallOverlay } from './IncomingCallOverlay';
 import { OutgoingCallOverlay } from './OutgoingCallOverlay';
+import { CreateSpaceModal } from './CreateSpaceModal';
+import { CreateRoomModal } from './CreateRoomModal';
 import { useNotifications } from '../hooks/useNotifications';
 import '../styles/chat.css';
 
@@ -23,11 +25,13 @@ interface ChatLayoutProps {
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
-    const { channels, directs, refresh } = useRooms();
+    const { spaces, channels, directs, isAdmin, refresh } = useRooms();
     const { users, loading: usersLoading } = useUsers();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
     const [showProfile, setShowProfile] = useState(false);
+    const [showCreateSpace, setShowCreateSpace] = useState(false);
+    const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
     const { messages, sendMessage, sendFile, loadMore } = useMessages(activeRoomId);
 
     const {
@@ -39,7 +43,12 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         signalState, callInfo, startCall, acceptCall, rejectCall, cancelCall, resetSignaling,
     } = useCallSignaling();
 
-    const allRooms = [...channels, ...directs];
+    // Собрать все комнаты для поиска activeRoom (включая вложенные в Spaces)
+    const allRooms = [
+        ...channels,
+        ...directs,
+        ...spaces.flatMap(s => s.rooms),
+    ];
     const activeRoom = allRooms.find(r => r.id === activeRoomId) || null;
 
     // Запуск слушателя сигнализации звонков
@@ -121,16 +130,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         <div className="chat-layout">
             <div className={`chat-sidebar ${mobileView === 'chat' ? 'chat-sidebar--hidden' : ''}`}>
                 <Sidebar
+                    spaces={spaces}
                     channels={channels}
                     directs={directs}
                     users={users}
                     usersLoading={usersLoading}
                     activeRoomId={activeRoomId}
                     userName={matrixService.getMyDisplayName()}
+                    isAdmin={isAdmin}
                     onSelectRoom={handleSelectRoom}
                     onOpenDM={handleOpenDM}
                     onProfileClick={() => setShowProfile(true)}
                     onLogout={onLogout}
+                    onCreateSpace={() => setShowCreateSpace(true)}
+                    onCreateRoom={(spaceId) => {
+                        const space = spaces.find(s => s.id === spaceId);
+                        setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
+                    }}
                 />
             </div>
 
@@ -203,6 +219,24 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                 <ProfileModal
                     onClose={() => setShowProfile(false)}
                     onLogout={onLogout}
+                />
+            )}
+
+            {/* Модалка создания канала */}
+            {showCreateSpace && (
+                <CreateSpaceModal
+                    onClose={() => setShowCreateSpace(false)}
+                    onCreated={refresh}
+                />
+            )}
+
+            {/* Модалка создания комнаты в канале */}
+            {createRoomForSpace && (
+                <CreateRoomModal
+                    spaceId={createRoomForSpace.id}
+                    spaceName={createRoomForSpace.name}
+                    onClose={() => setCreateRoomForSpace(null)}
+                    onCreated={refresh}
                 />
             )}
         </div>

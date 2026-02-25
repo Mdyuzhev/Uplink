@@ -605,6 +605,125 @@ export class MatrixService {
         });
     }
 
+    // === Каналы (Spaces) и админ ===
+
+    /** Проверить, является ли текущий пользователь серверным админом Synapse */
+    async checkIsAdmin(): Promise<boolean> {
+        if (!this.client) return false;
+        try {
+            const userId = this.client.getUserId()!;
+            const resp = await this.client.http.authedRequest(
+                sdk.Method.Get,
+                `/_synapse/admin/v1/users/${encodeURIComponent(userId)}`,
+                undefined, undefined, { prefix: '' }
+            );
+            return (resp as Record<string, unknown>)?.admin === true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Создать канал (Matrix Space).
+     * Space — комната с типом m.space, в которую вложены обычные комнаты.
+     */
+    async createSpace(name: string, topic?: string): Promise<string> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+
+        const response = await this.client.createRoom({
+            name,
+            topic,
+            visibility: sdk.Visibility.Private,
+            preset: sdk.Preset.PublicChat,
+            creation_content: { type: 'm.space' },
+            initial_state: [
+                {
+                    type: 'm.room.join_rules',
+                    state_key: '',
+                    content: { join_rule: 'public' },
+                },
+            ],
+            power_level_content_override: {
+                events: { 'm.space.child': 100 },
+            },
+        } as Parameters<sdk.MatrixClient['createRoom']>[0]);
+
+        await this.inviteAllUsersToRoom(response.room_id);
+        this.emitRoomsUpdated();
+        return response.room_id;
+    }
+
+    /**
+     * Создать комнату внутри канала (Space).
+     * Привязывает к Space через m.space.child / m.space.parent, включает E2E.
+     */
+    async createRoomInSpace(spaceId: string, name: string, topic?: string): Promise<string> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+
+        const response = await this.client.createRoom({
+            name,
+            topic,
+            visibility: sdk.Visibility.Private,
+            preset: sdk.Preset.PublicChat,
+            initial_state: [
+                {
+                    type: 'm.room.encryption',
+                    state_key: '',
+                    content: { algorithm: 'm.megolm.v1.aes-sha2' },
+                },
+                {
+                    type: 'm.room.join_rules',
+                    state_key: '',
+                    content: { join_rule: 'public' },
+                },
+                {
+                    type: 'm.space.parent',
+                    state_key: spaceId,
+                    content: { via: [this.getServerDomain()], canonical: true },
+                },
+            ],
+        } as Parameters<sdk.MatrixClient['createRoom']>[0]);
+
+        const roomId = response.room_id;
+
+        // Привязать комнату к Space через m.space.child
+        await this.client.sendStateEvent(spaceId, 'm.space.child' as any, {
+            via: [this.getServerDomain()],
+        }, roomId);
+
+        await this.inviteAllUsersToRoom(roomId);
+        this.emitRoomsUpdated();
+        return roomId;
+    }
+
+    /** Пригласить всех пользователей сервера в комнату */
+    private async inviteAllUsersToRoom(roomId: string): Promise<void> {
+        if (!this.client) return;
+        try {
+            const users = await this.searchUsers('');
+            const myUserId = this.client.getUserId();
+            for (const user of users) {
+                if (user.userId === myUserId) continue;
+                try {
+                    await this.client.invite(roomId, user.userId);
+                } catch {
+                    // Пользователь уже в комнате — пропускаем
+                }
+            }
+        } catch (err) {
+            console.warn('Не удалось пригласить пользователей:', (err as Error).message);
+        }
+    }
+
+    /** Проверить, является ли комната Space */
+    isSpace(roomId: string): boolean {
+        if (!this.client) return false;
+        const room = this.client.getRoom(roomId);
+        if (!room) return false;
+        const createEvent = room.currentState.getStateEvents('m.room.create', '');
+        return createEvent?.getContent()?.type === 'm.space';
+    }
+
     async changePassword(oldPassword: string, newPassword: string): Promise<void> {
         if (!this.client) throw new Error('Клиент не инициализирован');
         const userId = this.client.getUserId()!;

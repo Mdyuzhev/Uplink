@@ -124,6 +124,120 @@
     user-select: none;
 }
 
+/* Space (канал) в sidebar */
+.sidebar-space {
+    padding: 2px 0;
+}
+
+.sidebar-space__header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px 6px 12px;
+    cursor: pointer;
+    user-select: none;
+    border-radius: var(--uplink-radius-sm);
+    margin: 1px 8px;
+    transition: background 0.1s;
+}
+
+.sidebar-space__header:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-space__arrow {
+    font-size: 10px;
+    color: var(--uplink-text-faint);
+    transition: transform 0.15s;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.sidebar-space__arrow--collapsed {
+    transform: rotate(-90deg);
+}
+
+.sidebar-space__name {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--uplink-text-faint);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-space__add-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    border-radius: var(--uplink-radius-sm);
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.sidebar-space__header:hover .sidebar-space__add-btn {
+    opacity: 1;
+}
+
+.sidebar-space__add-btn:hover {
+    color: var(--uplink-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-space__empty {
+    padding: 4px 20px 4px 44px;
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    font-style: italic;
+}
+
+/* Заголовок секции с кнопкой "+" */
+.chat-sidebar__section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 12px 4px 20px;
+}
+
+.chat-sidebar__section-title--inline {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--uplink-text-faint);
+    padding: 0;
+    cursor: default;
+}
+
+.chat-sidebar__section-add-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    border-radius: var(--uplink-radius-sm);
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.chat-sidebar__section-title-row:hover .chat-sidebar__section-add-btn {
+    opacity: 1;
+}
+
+.chat-sidebar__section-add-btn:hover {
+    color: var(--uplink-text-primary);
+}
+
 /* Room items */
 .sidebar-room-item {
     display: flex;
@@ -148,6 +262,10 @@
 .sidebar-room-item--active .sidebar-room-item__name {
     color: var(--uplink-text-primary);
     font-weight: 600;
+}
+
+.sidebar-room-item--indent {
+    padding-left: 28px;
 }
 
 .sidebar-room-item__icon {
