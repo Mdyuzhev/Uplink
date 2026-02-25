@@ -762,7 +762,7 @@ export class MatrixService {
     async createUser(username: string, password: string, displayName?: string): Promise<void> {
         if (!this.client) throw new Error('Клиент не инициализирован');
         const domain = this.getServerDomain();
-        const userId = `@${username}:${domain}`;
+        const userId = `@${username.toLowerCase()}:${domain}`;
         await this.client.http.authedRequest(
             sdk.Method.Put,
             `/_synapse/admin/v2/users/${encodeURIComponent(userId)}`,
