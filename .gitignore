@@ -12,6 +12,11 @@ docker/synapse/media_store/
 .claude/
 Tasks/
 
+# Инфраструктура (homelab)
+docker/
+scripts/
+deploy.sh
+
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/
