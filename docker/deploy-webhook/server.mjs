@@ -48,9 +48,11 @@ function deploy() {
         });
         console.log('git pull:', pullResult.trim());
 
-        // docker compose up --build -d (пересобрать только uplink и livekit-token)
+        // docker compose up --build --no-deps -d (только uplink и livekit-token, не трогать synapse/postgres/redis)
+        // --no-deps критичен: без него compose пересоздаёт synapse с невалидными volume путями
+        // (контейнерный путь /repo/docker/synapse не существует на хосте)
         const composeResult = execSync(
-            `docker compose -f ${COMPOSE_FILE} up --build -d uplink livekit-token`,
+            `docker compose -f ${COMPOSE_FILE} up --build --no-deps -d uplink livekit-token`,
             { cwd: REPO_PATH, encoding: 'utf-8', timeout: 300_000 }
         );
         console.log('docker compose:', composeResult.trim());
