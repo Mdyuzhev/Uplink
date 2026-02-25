@@ -16,6 +16,9 @@ Tasks/
 docker/
 scripts/
 deploy.sh
+web/Dockerfile
+web/.dockerignore
+web/nginx.conf
 
 # Tauri
 web/src-tauri/target/
