@@ -1,0 +1,12 @@
+{
+  "name": "uplink-livekit-token",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "livekit-server-sdk": "^2.0.0"
+  }
+}
