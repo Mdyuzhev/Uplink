@@ -7,3 +7,7 @@ dist/
 docker/synapse/*.signing.key
 docker/synapse/*.log.config
 docker/synapse/media_store/
+
+# Tauri
+web/src-tauri/target/
+web/src-tauri/gen/
