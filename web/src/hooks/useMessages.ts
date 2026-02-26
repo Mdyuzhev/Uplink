@@ -122,13 +122,18 @@ export function useMessages(roomId: string | null) {
 
     const togglePin = useCallback(async (eventId: string) => {
         if (!roomId) return;
-        if (pinnedIds.has(eventId)) {
-            await matrixService.unpinMessage(roomId, eventId);
-        } else {
-            await matrixService.pinMessage(roomId, eventId);
+        try {
+            if (pinnedIds.has(eventId)) {
+                await matrixService.unpinMessage(roomId, eventId);
+                setPinnedIds(prev => { const next = new Set(prev); next.delete(eventId); return next; });
+            } else {
+                await matrixService.pinMessage(roomId, eventId);
+                setPinnedIds(prev => new Set(prev).add(eventId));
+            }
+        } catch (e) {
+            console.error('Ошибка закрепления сообщения:', e);
         }
-        loadMessages();
-    }, [roomId, pinnedIds, loadMessages]);
+    }, [roomId, pinnedIds]);
 
     const loadMore = useCallback(async () => {
         if (!roomId) return;

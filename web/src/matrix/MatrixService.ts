@@ -192,6 +192,14 @@ export class MatrixService {
             this.emitRoomsUpdated();
         });
 
+        // Слушать изменения state-событий (pinned messages и др.)
+        this.client.on('RoomState.events' as any, (event: sdk.MatrixEvent) => {
+            if (event.getType() === 'm.room.pinned_events') {
+                const roomId = event.getRoomId();
+                if (roomId) this.emitNewMessage(roomId, event);
+            }
+        });
+
         await this.client.startClient({ initialSyncLimit: 20 });
     }
 
