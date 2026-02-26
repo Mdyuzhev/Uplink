@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { ParsedMessage } from '../matrix/MessageFormatter';
-import { MessageBubble, ReactionInfo } from './MessageBubble';
+import { MessageBubble, ReactionInfo, ThreadSummaryInfo } from './MessageBubble';
 
 interface MessageListProps {
     messages: ParsedMessage[];
     reactions?: Map<string, ReactionInfo[]>;
     pinnedIds?: Set<string>;
+    threadSummaries?: Map<string, ThreadSummaryInfo>;
     typingUsers?: string[];
     scrollToEventId?: string | null;
     onScrollComplete?: () => void;
@@ -14,6 +15,7 @@ interface MessageListProps {
     onReact?: (eventId: string, emoji: string) => void;
     onRemoveReaction?: (reactionEventId: string) => void;
     onPin?: (eventId: string) => void;
+    onOpenThread?: (eventId: string) => void;
 }
 
 const SAME_AUTHOR_THRESHOLD = 5 * 60 * 1000; // 5 минут
@@ -36,9 +38,9 @@ function getDayKey(ts: number): string {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
-    messages, reactions, pinnedIds, typingUsers,
+    messages, reactions, pinnedIds, threadSummaries, typingUsers,
     scrollToEventId, onScrollComplete,
-    onLoadMore, onReply, onReact, onRemoveReaction, onPin,
+    onLoadMore, onReply, onReact, onRemoveReaction, onPin, onOpenThread,
 }) => {
     const listRef = useRef<HTMLDivElement>(null);
     const isAtBottom = useRef(true);
@@ -103,10 +105,12 @@ export const MessageList: React.FC<MessageListProps> = ({
                 showAuthor={showAuthor}
                 reactions={reactions?.get(msg.id)}
                 isPinned={pinnedIds?.has(msg.id)}
+                threadSummary={threadSummaries?.get(msg.id)}
                 onReply={onReply}
                 onReact={onReact}
                 onRemoveReaction={onRemoveReaction}
                 onPin={onPin}
+                onOpenThread={onOpenThread}
                 onScrollToMessage={scrollToMessage}
             />
         );

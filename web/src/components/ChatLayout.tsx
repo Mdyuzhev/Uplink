@@ -20,6 +20,7 @@ import { OutgoingCallOverlay } from './OutgoingCallOverlay';
 import { CreateSpaceModal } from './CreateSpaceModal';
 import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
+import { ThreadPanel } from './ThreadPanel';
 import { useNotifications } from '../hooks/useNotifications';
 import '../styles/chat.css';
 
@@ -38,8 +39,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [showAdminPanel, setShowAdminPanel] = useState(false);
     const [replyTo, setReplyTo] = useState<ReplyToInfo | null>(null);
     const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
+    const [activeThread, setActiveThread] = useState<{ roomId: string; threadRootId: string } | null>(null);
     const {
-        messages, reactions, pinnedIds, typingUsers,
+        messages, reactions, pinnedIds, threadSummaries, typingUsers,
         sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
     } = useMessages(activeRoomId);
 
@@ -105,10 +107,17 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
 
     const handleSelectRoom = (roomId: string) => {
         setActiveRoomId(roomId);
+        setActiveThread(null);
         setMobileView('chat');
         // Сбросить счётчик непрочитанных при открытии чата
         matrixService.markRoomAsRead(roomId).then(() => refresh());
     };
+
+    const handleOpenThread = useCallback((threadRootId: string) => {
+        if (activeRoomId) {
+            setActiveThread({ roomId: activeRoomId, threadRootId });
+        }
+    }, [activeRoomId]);
 
     // Push-уведомления о новых сообщениях в других чатах
     useNotifications(activeRoomId, handleSelectRoom);
@@ -183,7 +192,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                 />
             </div>
 
-            <div className="chat-main">
+            <div className={`chat-main ${activeThread ? 'chat-main--with-thread' : ''}`}>
                 {activeRoom ? (
                     <>
                         <RoomHeader
@@ -222,6 +231,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             messages={messages}
                             reactions={reactions}
                             pinnedIds={pinnedIds}
+                            threadSummaries={threadSummaries}
                             typingUsers={typingUsers}
                             scrollToEventId={scrollToEventId}
                             onScrollComplete={() => setScrollToEventId(null)}
@@ -230,6 +240,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             onReact={sendReaction}
                             onRemoveReaction={removeReaction}
                             onPin={togglePin}
+                            onOpenThread={handleOpenThread}
                         />
                         <MessageInput
                             onSend={sendMessage}
@@ -247,6 +258,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                     </div>
                 )}
             </div>
+
+            {/* Панель треда */}
+            {activeThread && (
+                <ThreadPanel
+                    roomId={activeThread.roomId}
+                    threadRootId={activeThread.threadRootId}
+                    onClose={() => setActiveThread(null)}
+                />
+            )}
 
             {/* Оверлей исходящего звонка */}
             {showOutgoing && callInfo && (

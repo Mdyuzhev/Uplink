@@ -35,6 +35,7 @@ export class MatrixService {
     private _roomsListeners = new Set<Listener<() => void>>();
     private _messageListeners = new Set<Listener<(roomId: string, event: sdk.MatrixEvent) => void>>();
     private _typingListeners = new Set<Listener<(roomId: string, userIds: string[]) => void>>();
+    private _threadListeners = new Set<Listener<(roomId: string, threadRootId: string) => void>>();
 
     get connectionState(): ConnectionState { return this._connectionState; }
     get isConnected(): boolean { return this._connectionState === 'connected'; }
@@ -200,7 +201,20 @@ export class MatrixService {
             }
         });
 
-        await this.client.startClient({ initialSyncLimit: 20 });
+        // Подписка на новые и обновлённые треды
+        this.client.on('Thread.update' as any, (thread: any) => {
+            if (!thread?.roomId || !thread?.id) return;
+            this._threadListeners.forEach(fn => fn(thread.roomId, thread.id));
+            this.emitRoomsUpdated();
+        });
+
+        this.client.on('Thread.new' as any, (thread: any) => {
+            if (!thread?.roomId || !thread?.id) return;
+            this._threadListeners.forEach(fn => fn(thread.roomId, thread.id));
+            this.emitRoomsUpdated();
+        });
+
+        await this.client.startClient({ initialSyncLimit: 20, threadSupport: true });
     }
 
     /**
@@ -433,6 +447,76 @@ export class MatrixService {
         return room.currentState
             .getStateEvents('m.room.pinned_events', '')
             ?.getContent()?.pinned || [];
+    }
+
+    // === Треды ===
+
+    /** Отправить сообщение в тред */
+    async sendThreadMessage(roomId: string, threadRootId: string, body: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        await this.client.sendEvent(roomId, 'm.room.message' as any, {
+            msgtype: 'm.text',
+            body,
+            'm.relates_to': {
+                rel_type: 'm.thread',
+                event_id: threadRootId,
+                is_falling_back: true,
+                'm.in_reply_to': {
+                    event_id: threadRootId,
+                },
+            },
+        });
+    }
+
+    /** Получить сводку треда из bundled aggregations корневого события */
+    getThreadSummary(roomId: string, eventId: string): {
+        rootEventId: string;
+        replyCount: number;
+        lastReply?: { sender: string; body: string; ts: number };
+        participated: boolean;
+    } | null {
+        if (!this.client) return null;
+        const room = this.client.getRoom(roomId);
+        if (!room) return null;
+
+        const threads = room.getThreads();
+        const thread = threads.find(t => t.id === eventId);
+        if (!thread || thread.length === 0) return null;
+
+        const lastEvent = thread.replyToEvent;
+
+        return {
+            rootEventId: eventId,
+            replyCount: thread.length,
+            lastReply: lastEvent ? {
+                sender: this.getDisplayName(lastEvent.getSender()!),
+                body: lastEvent.getContent()?.body || '',
+                ts: lastEvent.getTs(),
+            } : undefined,
+            participated: thread.events.some(
+                e => e.getSender() === this.client!.getUserId()
+            ),
+        };
+    }
+
+    /** Получить все сообщения треда */
+    getThreadMessages(roomId: string, threadRootId: string): sdk.MatrixEvent[] {
+        if (!this.client) return [];
+        const room = this.client.getRoom(roomId);
+        if (!room) return [];
+
+        const thread = room.getThreads().find(t => t.id === threadRootId);
+        if (!thread) return [];
+
+        return thread.events
+            .filter(e => e.getType() === 'm.room.message' || e.getType() === 'm.room.encrypted')
+            .sort((a, b) => a.getTs() - b.getTs());
+    }
+
+    /** Подписка на обновления тредов в комнате */
+    onThreadUpdate(fn: (roomId: string, threadRootId: string) => void): () => void {
+        this._threadListeners.add(fn);
+        return () => { this._threadListeners.delete(fn); };
     }
 
     async sendTyping(roomId: string, isTyping: boolean): Promise<void> {

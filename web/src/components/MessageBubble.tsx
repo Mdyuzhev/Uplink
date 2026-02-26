@@ -13,15 +13,22 @@ export interface ReactionInfo {
     myReactionEventId?: string;
 }
 
+export interface ThreadSummaryInfo {
+    replyCount: number;
+    lastReply?: { sender: string; body: string; ts: number };
+}
+
 interface MessageBubbleProps {
     message: ParsedMessage;
     showAuthor: boolean;
     reactions?: ReactionInfo[];
     isPinned?: boolean;
+    threadSummary?: ThreadSummaryInfo | null;
     onReply?: (msg: ParsedMessage) => void;
     onReact?: (eventId: string, emoji: string) => void;
     onRemoveReaction?: (reactionEventId: string) => void;
     onPin?: (eventId: string) => void;
+    onOpenThread?: (eventId: string) => void;
     onScrollToMessage?: (eventId: string) => void;
 }
 
@@ -49,9 +56,15 @@ function getSenderColor(name: string): string {
     return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
 }
 
+function pluralReplies(n: number): string {
+    if (n % 10 === 1 && n % 100 !== 11) return 'ответ';
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'ответа';
+    return 'ответов';
+}
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
-    message, showAuthor, reactions, isPinned,
-    onReply, onReact, onRemoveReaction, onPin, onScrollToMessage,
+    message, showAuthor, reactions, isPinned, threadSummary,
+    onReply, onReact, onRemoveReaction, onPin, onOpenThread, onScrollToMessage,
 }) => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -85,6 +98,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     onClick={() => onReply?.(message)}
                     title="Ответить"
                 >↩</button>
+                <button
+                    className="message-bubble__action-btn"
+                    onClick={() => onOpenThread?.(message.id)}
+                    title="Тред"
+                >💬</button>
                 <button
                     className="message-bubble__action-btn"
                     onClick={() => onPin?.(message.id)}
@@ -187,6 +205,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 <span className="reaction-chip__count">{r.count}</span>
                             </button>
                         ))}
+                    </div>
+                )}
+
+                {/* Индикатор треда */}
+                {threadSummary && threadSummary.replyCount > 0 && (
+                    <div className="thread-indicator" onClick={() => onOpenThread?.(message.id)}>
+                        <span className="thread-indicator__icon">💬</span>
+                        <span className="thread-indicator__count">
+                            {threadSummary.replyCount} {pluralReplies(threadSummary.replyCount)}
+                        </span>
+                        {threadSummary.lastReply && (
+                            <span className="thread-indicator__last">
+                                {threadSummary.lastReply.sender} · {formatTime(threadSummary.lastReply.ts)}
+                            </span>
+                        )}
+                        <span className="thread-indicator__arrow">→</span>
                     </div>
                 )}
             </div>

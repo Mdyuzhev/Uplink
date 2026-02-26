@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { matrixService } from '../matrix/MatrixService';
 import { parseEvent, ParsedMessage } from '../matrix/MessageFormatter';
-import { ReactionInfo } from '../components/MessageBubble';
+import { ReactionInfo, ThreadSummaryInfo } from '../components/MessageBubble';
 
 export function useMessages(roomId: string | null) {
     const [messages, setMessages] = useState<ParsedMessage[]>([]);
     const [rawReactions, setRawReactions] = useState<Map<string, Array<{ emoji: string; userId: string; eventId: string }>>>(new Map());
     const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
+    const [threadSummaries, setThreadSummaries] = useState<Map<string, ThreadSummaryInfo>>(new Map());
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
     const loadMessages = useCallback(() => {
@@ -14,6 +15,7 @@ export function useMessages(roomId: string | null) {
             setMessages([]);
             setRawReactions(new Map());
             setPinnedIds(new Set());
+            setThreadSummaries(new Map());
             return;
         }
         const events = matrixService.getRoomTimeline(roomId);
@@ -21,7 +23,16 @@ export function useMessages(roomId: string | null) {
         const getAvatarUrl = (userId: string) => matrixService.getUserAvatarUrl(userId);
         const mxcToHttp = (url: string, size?: number) => matrixService.mxcToHttp(url, size);
         const mxcToHttpDownload = (url: string) => matrixService.mxcToHttpDownload(url);
-        const parsed = events
+
+        // Фильтрация: скрыть сообщения, принадлежащие тредам (но показывать корневые)
+        const filteredEvents = events.filter(e => {
+            const content = e.getContent();
+            const relation = content?.['m.relates_to'];
+            if (relation?.rel_type === 'm.thread') return false;
+            return true;
+        });
+
+        const parsed = filteredEvents
             .map(e => parseEvent(e, getDisplayName, getAvatarUrl, mxcToHttp, mxcToHttpDownload))
             .filter((m): m is ParsedMessage => m !== null);
 
@@ -39,6 +50,19 @@ export function useMessages(roomId: string | null) {
         }
 
         setMessages(parsed);
+
+        // Thread summaries для корневых сообщений
+        const summaries = new Map<string, ThreadSummaryInfo>();
+        for (const msg of parsed) {
+            const summary = matrixService.getThreadSummary(roomId, msg.id);
+            if (summary && summary.replyCount > 0) {
+                summaries.set(msg.id, {
+                    replyCount: summary.replyCount,
+                    lastReply: summary.lastReply,
+                });
+            }
+        }
+        setThreadSummaries(summaries);
 
         // Реакции
         setRawReactions(matrixService.getReactionsForRoom(roomId));
@@ -80,7 +104,10 @@ export function useMessages(roomId: string | null) {
                 matrixService.markRoomAsRead(roomId);
             }
         });
-        return unsub;
+        const unsubThread = matrixService.onThreadUpdate((rid) => {
+            if (rid === roomId) loadMessages();
+        });
+        return () => { unsub(); unsubThread(); };
     }, [roomId, loadMessages]);
 
     // Typing listener
@@ -142,7 +169,7 @@ export function useMessages(roomId: string | null) {
     }, [roomId, loadMessages]);
 
     return {
-        messages, reactions, pinnedIds, typingUsers,
+        messages, reactions, pinnedIds, threadSummaries, typingUsers,
         sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
     };
 }
