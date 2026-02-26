@@ -7,6 +7,8 @@ interface MessageListProps {
     reactions?: Map<string, ReactionInfo[]>;
     pinnedIds?: Set<string>;
     typingUsers?: string[];
+    scrollToEventId?: string | null;
+    onScrollComplete?: () => void;
     onLoadMore: () => void;
     onReply?: (msg: ParsedMessage) => void;
     onReact?: (eventId: string, emoji: string) => void;
@@ -35,6 +37,7 @@ function getDayKey(ts: number): string {
 
 export const MessageList: React.FC<MessageListProps> = ({
     messages, reactions, pinnedIds, typingUsers,
+    scrollToEventId, onScrollComplete,
     onLoadMore, onReply, onReact, onRemoveReaction, onPin,
 }) => {
     const listRef = useRef<HTMLDivElement>(null);
@@ -63,6 +66,14 @@ export const MessageList: React.FC<MessageListProps> = ({
             setTimeout(() => target.classList.remove('message-bubble--highlight'), 2000);
         }
     }, []);
+
+    // Скролл к сообщению по внешнему запросу (напр. из панели закреплённых)
+    useEffect(() => {
+        if (scrollToEventId) {
+            scrollToMessage(scrollToEventId);
+            onScrollComplete?.();
+        }
+    }, [scrollToEventId, scrollToMessage, onScrollComplete]);
 
     const items: React.ReactNode[] = [];
     let lastDay = '';

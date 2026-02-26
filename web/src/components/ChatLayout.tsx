@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRooms } from '../hooks/useRooms';
 import { useMessages } from '../hooks/useMessages';
 import { ParsedMessage } from '../matrix/MessageFormatter';
@@ -37,10 +37,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
     const [replyTo, setReplyTo] = useState<ReplyToInfo | null>(null);
+    const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
     const {
         messages, reactions, pinnedIds, typingUsers,
         sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
     } = useMessages(activeRoomId);
+
+    // Закреплённые сообщения для панели в шапке
+    const pinnedMessages = useMemo(() => {
+        if (!pinnedIds || pinnedIds.size === 0) return [];
+        return messages
+            .filter(m => pinnedIds.has(m.id))
+            .map(m => ({
+                id: m.id,
+                sender: m.senderDisplayName,
+                body: m.body.length > 120 ? m.body.substring(0, 120) + '...' : m.body,
+            }));
+    }, [messages, pinnedIds]);
 
     // Сброс reply при смене комнаты
     useEffect(() => { setReplyTo(null); }, [activeRoomId]);
@@ -180,6 +193,9 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             activeCallRoomName={activeRoomName}
                             onJoinCall={handleJoinCall}
                             onLeaveCall={handleLeaveCall}
+                            pinnedMessages={pinnedMessages}
+                            onScrollToMessage={setScrollToEventId}
+                            onUnpin={togglePin}
                         />
 
                         {callError && (
@@ -207,6 +223,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             reactions={reactions}
                             pinnedIds={pinnedIds}
                             typingUsers={typingUsers}
+                            scrollToEventId={scrollToEventId}
+                            onScrollComplete={() => setScrollToEventId(null)}
                             onLoadMore={loadMore}
                             onReply={handleReply}
                             onReact={sendReaction}
