@@ -1,10 +1,17 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { ParsedMessage } from '../matrix/MessageFormatter';
-import { MessageBubble } from './MessageBubble';
+import { MessageBubble, ReactionInfo } from './MessageBubble';
 
 interface MessageListProps {
     messages: ParsedMessage[];
+    reactions?: Map<string, ReactionInfo[]>;
+    pinnedIds?: Set<string>;
+    typingUsers?: string[];
     onLoadMore: () => void;
+    onReply?: (msg: ParsedMessage) => void;
+    onReact?: (eventId: string, emoji: string) => void;
+    onRemoveReaction?: (reactionEventId: string) => void;
+    onPin?: (eventId: string) => void;
 }
 
 const SAME_AUTHOR_THRESHOLD = 5 * 60 * 1000; // 5 минут
@@ -26,7 +33,10 @@ function getDayKey(ts: number): string {
     return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, onLoadMore }) => {
+export const MessageList: React.FC<MessageListProps> = ({
+    messages, reactions, pinnedIds, typingUsers,
+    onLoadMore, onReply, onReact, onRemoveReaction, onPin,
+}) => {
     const listRef = useRef<HTMLDivElement>(null);
     const isAtBottom = useRef(true);
 
@@ -42,6 +52,17 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, onLoadMore }
             el.scrollTop = el.scrollHeight;
         }
     }, [messages]);
+
+    const scrollToMessage = useCallback((eventId: string) => {
+        const el = listRef.current;
+        if (!el) return;
+        const target = el.querySelector(`[data-event-id="${eventId}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('message-bubble--highlight');
+            setTimeout(() => target.classList.remove('message-bubble--highlight'), 2000);
+        }
+    }, []);
 
     const items: React.ReactNode[] = [];
     let lastDay = '';
@@ -65,7 +86,18 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, onLoadMore }
             || (msg.timestamp - lastTs > SAME_AUTHOR_THRESHOLD);
 
         items.push(
-            <MessageBubble key={msg.id} message={msg} showAuthor={showAuthor} />
+            <MessageBubble
+                key={msg.id}
+                message={msg}
+                showAuthor={showAuthor}
+                reactions={reactions?.get(msg.id)}
+                isPinned={pinnedIds?.has(msg.id)}
+                onReply={onReply}
+                onReact={onReact}
+                onRemoveReaction={onRemoveReaction}
+                onPin={onPin}
+                onScrollToMessage={scrollToMessage}
+            />
         );
 
         lastSender = msg.sender;
@@ -78,6 +110,17 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, onLoadMore }
                 <button onClick={onLoadMore}>Загрузить ранее</button>
             </div>
             {items}
+            {typingUsers && typingUsers.length > 0 && (
+                <div className="typing-indicator">
+                    <span className="typing-indicator__dots">
+                        <span /><span /><span />
+                    </span>
+                    <span className="typing-indicator__text">
+                        {typingUsers.join(', ')}
+                        {typingUsers.length === 1 ? ' набирает...' : ' набирают...'}
+                    </span>
+                </div>
+            )}
         </div>
     );
 };

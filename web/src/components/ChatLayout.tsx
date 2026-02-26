@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRooms } from '../hooks/useRooms';
 import { useMessages } from '../hooks/useMessages';
+import { ParsedMessage } from '../matrix/MessageFormatter';
+import { ReplyToInfo } from './MessageInput';
 import { useUsers } from '../hooks/useUsers';
 import { useLiveKit } from '../hooks/useLiveKit';
 import { useCallSignaling } from '../hooks/useCallSignaling';
@@ -34,7 +36,22 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const [showCreateSpace, setShowCreateSpace] = useState(false);
     const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
-    const { messages, sendMessage, sendFile, loadMore } = useMessages(activeRoomId);
+    const [replyTo, setReplyTo] = useState<ReplyToInfo | null>(null);
+    const {
+        messages, reactions, pinnedIds, typingUsers,
+        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
+    } = useMessages(activeRoomId);
+
+    // Сброс reply при смене комнаты
+    useEffect(() => { setReplyTo(null); }, [activeRoomId]);
+
+    const handleReply = useCallback((msg: ParsedMessage) => {
+        setReplyTo({
+            eventId: msg.id,
+            sender: msg.senderDisplayName,
+            body: msg.body.length > 100 ? msg.body.substring(0, 100) + '...' : msg.body,
+        });
+    }, []);
 
     const {
         callState, participants, duration, isMuted, isCameraOn,
@@ -185,11 +202,25 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             </>
                         )}
 
-                        <MessageList messages={messages} onLoadMore={loadMore} />
+                        <MessageList
+                            messages={messages}
+                            reactions={reactions}
+                            pinnedIds={pinnedIds}
+                            typingUsers={typingUsers}
+                            onLoadMore={loadMore}
+                            onReply={handleReply}
+                            onReact={sendReaction}
+                            onRemoveReaction={removeReaction}
+                            onPin={togglePin}
+                        />
                         <MessageInput
                             onSend={sendMessage}
+                            onSendReply={sendReply}
                             onSendFile={sendFile}
+                            roomId={activeRoomId || undefined}
                             roomName={activeRoom.name}
+                            replyTo={replyTo}
+                            onCancelReply={() => setReplyTo(null)}
                         />
                     </>
                 ) : (

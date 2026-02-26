@@ -24,6 +24,10 @@ export interface ParsedMessage {
     mimetype?: string;
     imageWidth?: number;
     imageHeight?: number;
+    // Reply
+    replyToEventId?: string;
+    replyToSender?: string;
+    replyToBody?: string;
 }
 
 export function parseEvent(
@@ -67,11 +71,32 @@ export function parseEvent(
         }
     }
 
+    // Reply info
+    const relatesTo = content['m.relates_to'];
+    const inReplyTo = relatesTo?.['m.in_reply_to'];
+    let replyToEventId: string | undefined;
+    let replyToSender: string | undefined;
+    let replyToBody: string | undefined;
+
+    if (inReplyTo?.event_id) {
+        replyToEventId = inReplyTo.event_id;
+        // Reply info (sender, body) заполняется в useMessages через MatrixService.findEventInRoom
+    }
+
+    // Убрать fallback-цитату из body (> <@user:server> текст\n\n)
+    let body = content.body || '';
+    if (replyToEventId && body.startsWith('> ')) {
+        const emptyLineIdx = body.indexOf('\n\n');
+        if (emptyLineIdx !== -1) {
+            body = body.substring(emptyLineIdx + 2);
+        }
+    }
+
     if (content['dev.uplink.code_context']) {
         return {
             id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
             timestamp: event.getTs(), type: 'code',
-            body: content.body || '',
+            body,
             codeContext: content['dev.uplink.code_context'],
         };
     }
@@ -80,7 +105,7 @@ export function parseEvent(
         id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
         timestamp: event.getTs(),
         type: content.msgtype === 'm.image' ? 'image' : content.msgtype === 'm.file' ? 'file' : 'text',
-        body: content.body || '',
+        body,
         formattedBody: content.formatted_body,
         imageUrl,
         thumbnailUrl,
@@ -89,5 +114,8 @@ export function parseEvent(
         mimetype: info.mimetype,
         imageWidth: info.w,
         imageHeight: info.h,
+        replyToEventId,
+        replyToSender,
+        replyToBody,
     };
 }

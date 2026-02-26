@@ -34,6 +34,7 @@ export class MatrixService {
     private _connectionListeners = new Set<Listener<(state: ConnectionState) => void>>();
     private _roomsListeners = new Set<Listener<() => void>>();
     private _messageListeners = new Set<Listener<(roomId: string, event: sdk.MatrixEvent) => void>>();
+    private _typingListeners = new Set<Listener<(roomId: string, userIds: string[]) => void>>();
 
     get connectionState(): ConnectionState { return this._connectionState; }
     get isConnected(): boolean { return this._connectionState === 'connected'; }
@@ -51,6 +52,11 @@ export class MatrixService {
     onNewMessage(fn: (roomId: string, event: sdk.MatrixEvent) => void): () => void {
         this._messageListeners.add(fn);
         return () => { this._messageListeners.delete(fn); };
+    }
+
+    onTyping(fn: (roomId: string, userIds: string[]) => void): () => void {
+        this._typingListeners.add(fn);
+        return () => { this._typingListeners.delete(fn); };
     }
 
     private emitConnectionChange(state: ConnectionState): void {
@@ -156,10 +162,26 @@ export class MatrixService {
 
         this.client.on(sdk.RoomEvent.Timeline, (event: sdk.MatrixEvent, room: sdk.Room | undefined) => {
             if (!room) return;
-            if (event.getType() === 'm.room.message' || event.getType() === 'm.room.encrypted') {
+            const evType = event.getType();
+            if (evType === 'm.room.message' || evType === 'm.room.encrypted' || evType === 'm.reaction') {
                 this.emitNewMessage(room.roomId, event);
                 this.emitRoomsUpdated();
             }
+        });
+
+        // Typing indicator
+        this.client.on('RoomMember.typing' as any, (_event: any, member: any) => {
+            if (!this.client) return;
+            const roomId = member.roomId;
+            const room = this.client.getRoom(roomId);
+            if (!room) return;
+            const myUserId = this.client.getUserId();
+            const typingIds = room.getMembers()
+                .filter((m: any) => m.typing)
+                .map((m: any) => m.userId)
+                .filter((id: string) => id !== myUserId);
+            const displayNames = typingIds.map((id: string) => this.getDisplayName(id));
+            this._typingListeners.forEach(fn => fn(roomId, displayNames));
         });
 
         this.client.on(sdk.RoomEvent.MyMembership, (room: sdk.Room, membership: string) => {
@@ -265,6 +287,14 @@ export class MatrixService {
         return this.client.getRooms().filter(r => r.getMyMembership() === 'join');
     }
 
+    /** Найти событие по ID в timeline комнаты */
+    findEventInRoom(roomId: string, eventId: string): sdk.MatrixEvent | undefined {
+        if (!this.client) return undefined;
+        const room = this.client.getRoom(roomId);
+        if (!room) return undefined;
+        return room.findEventById(eventId);
+    }
+
     getRoomTimeline(roomId: string): sdk.MatrixEvent[] {
         if (!this.client) return [];
         const room = this.client.getRoom(roomId);
@@ -286,6 +316,115 @@ export class MatrixService {
     async sendMessage(roomId: string, body: string): Promise<void> {
         if (!this.client) return;
         await this.client.sendTextMessage(roomId, body);
+    }
+
+    /** Отправить ответ на сообщение (reply) */
+    async sendReply(roomId: string, replyToEventId: string, body: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const room = this.client.getRoom(roomId);
+        const replyEvent = room?.findEventById(replyToEventId);
+        const originalBody = replyEvent?.getContent()?.body || '';
+        const originalSender = replyEvent?.getSender() || '';
+
+        const fallbackBody = `> <${originalSender}> ${originalBody}\n\n${body}`;
+
+        await this.client.sendEvent(roomId, 'm.room.message' as any, {
+            msgtype: 'm.text',
+            body: fallbackBody,
+            format: 'org.matrix.custom.html',
+            formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${replyToEventId}">In reply to</a> <a href="https://matrix.to/#/${originalSender}">${originalSender}</a><br>${originalBody}</blockquote></mx-reply>${body}`,
+            'm.relates_to': {
+                'm.in_reply_to': {
+                    event_id: replyToEventId,
+                },
+            },
+        });
+    }
+
+    // === Реакции ===
+
+    /** Отправить реакцию на сообщение */
+    async sendReaction(roomId: string, eventId: string, emoji: string): Promise<string> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const resp = await this.client.sendEvent(roomId, 'm.reaction' as any, {
+            'm.relates_to': {
+                rel_type: 'm.annotation',
+                event_id: eventId,
+                key: emoji,
+            },
+        });
+        return resp.event_id;
+    }
+
+    /** Убрать свою реакцию (redact) */
+    async removeReaction(roomId: string, reactionEventId: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        await this.client.redactEvent(roomId, reactionEventId);
+    }
+
+    /** Получить все реакции для событий в timeline комнаты */
+    getReactionsForRoom(roomId: string): Map<string, Array<{ emoji: string; userId: string; eventId: string }>> {
+        const result = new Map<string, Array<{ emoji: string; userId: string; eventId: string }>>();
+        if (!this.client) return result;
+        const room = this.client.getRoom(roomId);
+        if (!room) return result;
+
+        const events = room.getLiveTimeline().getEvents();
+        for (const event of events) {
+            if (event.getType() !== 'm.reaction') continue;
+            if (event.isRedacted()) continue;
+            const relation = event.getContent()['m.relates_to'];
+            if (!relation || relation.rel_type !== 'm.annotation') continue;
+
+            const targetId = relation.event_id as string | undefined;
+            const emoji = relation.key as string | undefined;
+            const userId = event.getSender();
+            const eid = event.getId();
+            if (!targetId || !emoji || !userId || !eid) continue;
+
+            if (!result.has(targetId)) result.set(targetId, []);
+            result.get(targetId)!.push({ emoji, userId, eventId: eid });
+        }
+        return result;
+    }
+
+    // === Закреплённые сообщения ===
+
+    /** Закрепить сообщение */
+    async pinMessage(roomId: string, eventId: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const room = this.client.getRoom(roomId);
+        if (!room) return;
+        const current = room.currentState
+            .getStateEvents('m.room.pinned_events', '')
+            ?.getContent()?.pinned || [];
+        if (current.includes(eventId)) return;
+        await this.client.sendStateEvent(roomId, 'm.room.pinned_events' as any, {
+            pinned: [...current, eventId],
+        }, '');
+    }
+
+    /** Открепить сообщение */
+    async unpinMessage(roomId: string, eventId: string): Promise<void> {
+        if (!this.client) throw new Error('Клиент не инициализирован');
+        const room = this.client.getRoom(roomId);
+        if (!room) return;
+        const current = room.currentState
+            .getStateEvents('m.room.pinned_events', '')
+            ?.getContent()?.pinned || [];
+        await this.client.sendStateEvent(roomId, 'm.room.pinned_events' as any, {
+            pinned: current.filter((id: string) => id !== eventId),
+        }, '');
+    }
+
+    /** Получить IDs закреплённых сообщений */
+    getPinnedEventIds(roomId: string): string[] {
+        if (!this.client) return [];
+        const room = this.client.getRoom(roomId);
+        if (!room) return [];
+        return room.currentState
+            .getStateEvents('m.room.pinned_events', '')
+            ?.getContent()?.pinned || [];
     }
 
     async sendTyping(roomId: string, isTyping: boolean): Promise<void> {

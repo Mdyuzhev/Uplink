@@ -1,17 +1,31 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { matrixService } from '../matrix/MatrixService';
+
+export interface ReplyToInfo {
+    eventId: string;
+    sender: string;
+    body: string;
+}
 
 interface MessageInputProps {
     onSend: (body: string) => void;
+    onSendReply?: (replyToEventId: string, body: string) => void;
     onSendFile: (file: File) => void;
+    roomId?: string;
     roomName?: string;
+    replyTo?: ReplyToInfo | null;
+    onCancelReply?: () => void;
 }
 
-export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, roomName }) => {
+export const MessageInput: React.FC<MessageInputProps> = ({
+    onSend, onSendReply, onSendFile, roomId, roomName, replyTo, onCancelReply,
+}) => {
     const [text, setText] = useState('');
     const [isDragOver, setIsDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
     const adjustHeight = useCallback(() => {
         const ta = textareaRef.current;
@@ -20,13 +34,56 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, 
         ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
     }, []);
 
+    // Фокус на textarea при выборе reply
+    useEffect(() => {
+        if (replyTo) {
+            textareaRef.current?.focus();
+        }
+    }, [replyTo]);
+
+    // Сброс typing при unmount
+    useEffect(() => {
+        return () => {
+            if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        };
+    }, [roomId]);
+
     const handleSend = () => {
         const trimmed = text.trim();
         if (!trimmed) return;
-        onSend(trimmed);
+
+        if (replyTo && onSendReply) {
+            onSendReply(replyTo.eventId, trimmed);
+            onCancelReply?.();
+        } else {
+            onSend(trimmed);
+        }
+
         setText('');
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
+        }
+
+        // Сбросить typing
+        if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setText(e.target.value);
+        adjustHeight();
+
+        // Typing indicator
+        if (roomId && e.target.value.length > 0) {
+            matrixService.sendTyping(roomId, true).catch(() => {});
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+            }, 4000);
+        } else if (roomId) {
+            matrixService.sendTyping(roomId, false).catch(() => {});
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         }
     };
 
@@ -34,6 +91,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
+        }
+        if (e.key === 'Escape' && replyTo) {
+            onCancelReply?.();
         }
     };
 
@@ -113,6 +173,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, 
                     Загрузка файла...
                 </div>
             )}
+            {replyTo && (
+                <div className="message-input__reply-preview">
+                    <div className="message-input__reply-line" />
+                    <div className="message-input__reply-content">
+                        <span className="message-input__reply-sender">{replyTo.sender}</span>
+                        <span className="message-input__reply-text">{replyTo.body}</span>
+                    </div>
+                    <button className="message-input__reply-close" onClick={onCancelReply}>✕</button>
+                </div>
+            )}
             <div className="message-input__wrapper">
                 <button
                     className="message-input__attach"
@@ -132,7 +202,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ onSend, onSendFile, 
                     ref={textareaRef}
                     className="message-input__textarea"
                     value={text}
-                    onChange={e => { setText(e.target.value); adjustHeight(); }}
+                    onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
                     placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
