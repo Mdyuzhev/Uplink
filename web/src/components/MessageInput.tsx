@@ -168,53 +168,62 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                     Отпустите чтобы отправить файл
                 </div>
             )}
-            {uploading && (
-                <div className="message-input__uploading">
-                    Загрузка файла...
-                </div>
-            )}
-            {replyTo && (
-                <div className="message-input__reply-preview">
-                    <div className="message-input__reply-line" />
-                    <div className="message-input__reply-content">
-                        <span className="message-input__reply-sender">{replyTo.sender}</span>
-                        <span className="message-input__reply-text">{replyTo.body}</span>
-                    </div>
-                    <button className="message-input__reply-close" onClick={onCancelReply}>✕</button>
-                </div>
-            )}
             <div className="message-input__wrapper">
-                <button
-                    className="message-input__attach"
-                    onClick={handleAttachClick}
-                    disabled={uploading}
-                    title="Прикрепить файл"
-                >
-                    +
-                </button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    style={{ display: 'none' }}
-                    onChange={handleFileInputChange}
-                />
-                <textarea
-                    ref={textareaRef}
-                    className="message-input__textarea"
-                    value={text}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
-                    placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
-                    rows={1}
-                />
-                <button
-                    className="message-input__send"
-                    onClick={handleSend}
-                    disabled={!text.trim() || uploading}
-                >
-                    &#8593;
-                </button>
+                {replyTo && (
+                    <div className="message-input__reply-preview">
+                        <div className="message-input__reply-line" />
+                        <div className="message-input__reply-content">
+                            <span className="message-input__reply-sender">{replyTo.sender}</span>
+                            <span className="message-input__reply-text">{replyTo.body}</span>
+                        </div>
+                        <button className="message-input__reply-close" onClick={onCancelReply}>✕</button>
+                    </div>
+                )}
+                {uploading && (
+                    <div className="message-input__uploading">
+                        Загрузка файла...
+                    </div>
+                )}
+                <div className="message-input__row">
+                    <textarea
+                        ref={textareaRef}
+                        className="message-input__textarea"
+                        value={text}
+                        onChange={handleChange}
+                        onKeyDown={handleKeyDown}
+                        onPaste={handlePaste}
+                        placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
+                        rows={1}
+                    />
+                    <div className="message-input__actions">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            style={{ display: 'none' }}
+                            onChange={handleFileInputChange}
+                        />
+                        <button
+                            className="message-input__action-btn"
+                            onClick={handleAttachClick}
+                            disabled={uploading}
+                            title="Прикрепить файл"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                            </svg>
+                        </button>
+                        <button
+                            className="message-input__send-btn"
+                            onClick={handleSend}
+                            disabled={!text.trim() || uploading}
+                            title="Отправить"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
