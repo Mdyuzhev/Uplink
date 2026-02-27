@@ -13,12 +13,10 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "window-state:default",
-    "updater:default",
     "deep-link:default",
     "core:event:default",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
-    "process:default"
+    "global-shortcut:allow-unregister"
   ]
 }

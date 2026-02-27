@@ -27,12 +27,8 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        // Авто-обновление
-        .plugin(tauri_plugin_updater::Builder::new().build())
         // Deep links (uplink:// протокол)
         .plugin(tauri_plugin_deep_link::init())
-        // Перезапуск приложения (для updater)
-        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // --- Контекстное меню трея ---
             let show = MenuItem::with_id(app, "show", "Показать Uplink", true, None::<&str>)?;
