@@ -44,6 +44,12 @@ async function handleStatus(roomId) {
  * Обработка webhook от CI-систем.
  */
 export async function handleWebhook(headers, body) {
+    // Deploy-webhook — уведомление о деплое сервера
+    if (headers['x-deploy-event'] === 'deploy') {
+        await handleDeployEvent(body);
+        return;
+    }
+
     // GitHub Actions — workflow_run
     if (headers['x-github-event'] === 'workflow_run') {
         const run = body.workflow_run;
@@ -70,6 +76,49 @@ export async function handleWebhook(headers, body) {
             icon, name: `Pipeline #${pipeline.id}`, status: pipeline.status, branch: pipeline.ref,
         });
     }
+}
+
+/**
+ * Обработка событий деплоя от deploy-webhook.
+ */
+async function handleDeployEvent(data) {
+    const ok = data.status === 'success';
+    const icon = ok ? '✅' : '❌';
+    const commit = data.commit || {};
+
+    let text = `${icon} **Деплой ${ok ? 'успешен' : 'провален'}**`;
+
+    if (data.elapsed) {
+        text += ` за ${data.elapsed}s`;
+    }
+
+    text += '\n';
+
+    if (commit.hash) {
+        text += `Коммит: \`${commit.hash}\` — ${commit.message || ''}`;
+        if (commit.author) text += ` (${commit.author})`;
+        text += '\n';
+    }
+
+    if (data.pusher) {
+        text += `Запустил: ${data.pusher}\n`;
+    }
+
+    if (data.compare_url) {
+        text += `Изменения: ${data.compare_url}\n`;
+    }
+
+    if (!ok && data.error) {
+        const shortError = data.error.length > 200 ? data.error.slice(0, 200) + '...' : data.error;
+        text += `Ошибка: \`${shortError}\`\n`;
+    }
+
+    await sendToSubscribedRooms(text, {
+        icon: ok ? '[OK]' : '[FAIL]',
+        name: 'Deploy',
+        status: data.status,
+        branch: 'main',
+    });
 }
 
 async function sendToSubscribedRooms(text, historyEntry) {

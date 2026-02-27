@@ -6,6 +6,7 @@ const PORT = 9000;
 const SECRET = process.env.WEBHOOK_SECRET || '';
 const REPO_PATH = '/repo';
 const COMPOSE_FILE = '/repo/docker/docker-compose.yml';
+const BOTSERVICE_URL = 'http://uplink-botservice:7891';
 
 /**
  * Проверка подписи GitHub Webhook (HMAC-SHA256).
@@ -24,8 +25,53 @@ function verifySignature(payload, signature) {
     );
 }
 
+/**
+ * Получить информацию о последнем коммите.
+ */
+function getLastCommitInfo() {
+    try {
+        const log = execSync('git log -1 --format="%h|%s|%an"', {
+            cwd: REPO_PATH, encoding: 'utf-8',
+        }).trim();
+        const [hash, message, author] = log.split('|');
+        return { hash, message, author };
+    } catch {
+        return { hash: '???', message: 'unknown', author: 'unknown' };
+    }
+}
+
+/**
+ * Уведомить botservice о результате деплоя.
+ */
+async function notifyDeploy(result, commitInfo, pushPayload) {
+    try {
+        const payload = {
+            event: 'deploy',
+            status: result.ok ? 'success' : 'failure',
+            elapsed: result.elapsed || null,
+            error: result.error || null,
+            commit: commitInfo,
+            pusher: pushPayload?.pusher?.name || pushPayload?.sender?.login || null,
+            compare_url: pushPayload?.compare || null,
+            timestamp: new Date().toISOString(),
+        };
+
+        const resp = await fetch(`${BOTSERVICE_URL}/hooks/ci`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-deploy-event': 'deploy',
+            },
+            body: JSON.stringify(payload),
+        });
+        console.log(`Уведомление botservice: ${resp.status}`);
+    } catch (err) {
+        console.warn('Не удалось уведомить botservice:', err.message);
+    }
+}
+
 /** Выполнить деплой: git pull → docker compose up --build -d */
-function deploy() {
+async function deploy(pushPayload) {
     const started = Date.now();
     console.log(`[${new Date().toISOString()}] Начинаю деплой...`);
 
@@ -52,17 +98,24 @@ function deploy() {
         // --no-deps критичен: без него compose пересоздаёт synapse с невалидными volume путями
         // (контейнерный путь /repo/docker/synapse не существует на хосте)
         const composeResult = execSync(
-            `docker compose -f ${COMPOSE_FILE} up --build --no-deps -d uplink livekit-token`,
+            `docker compose -f ${COMPOSE_FILE} up --build --no-deps -d uplink livekit-token uplink-botservice`,
             { cwd: REPO_PATH, encoding: 'utf-8', timeout: 300_000 }
         );
         console.log('docker compose:', composeResult.trim());
 
         const elapsed = ((Date.now() - started) / 1000).toFixed(1);
         console.log(`Деплой завершён за ${elapsed}s`);
-        return { ok: true, elapsed };
+
+        const result = { ok: true, elapsed };
+        const commitInfo = getLastCommitInfo();
+        await notifyDeploy(result, commitInfo, pushPayload);
+        return result;
     } catch (err) {
         console.error('Ошибка деплоя:', err.message);
-        return { ok: false, error: err.message };
+        const result = { ok: false, error: err.message };
+        const commitInfo = getLastCommitInfo();
+        await notifyDeploy(result, commitInfo, pushPayload);
+        return result;
     }
 }
 
@@ -106,8 +159,10 @@ const server = http.createServer((req, res) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ status: 'deploying' }));
 
-            // Деплой в фоне
-            setTimeout(() => deploy(), 100);
+            // Деплой в фоне (передаём payload для уведомлений)
+            let pushPayload = null;
+            try { pushPayload = JSON.parse(body); } catch {}
+            setTimeout(() => deploy(pushPayload), 100);
         });
         return;
     }
