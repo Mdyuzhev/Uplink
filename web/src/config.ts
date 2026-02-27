@@ -31,6 +31,11 @@ export const config = {
     botApiUrl: isDev
         ? `http://${host}:7891/api`
         : `${window.location.origin}/bot-api`,
+
+    /** Bot WebSocket gateway (для SDK-ботов) */
+    botWsUrl: isDev
+        ? `ws://${host}:7891/bot-ws`
+        : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/bot-ws`,
 };
 
 export function getConfig() {

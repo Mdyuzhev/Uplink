@@ -1,0 +1,19 @@
+{
+  "name": "@uplink/bot-sdk",
+  "version": "0.1.0",
+  "description": "SDK для создания ботов в Uplink мессенджере",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "example:echo": "node examples/echo-bot.mjs",
+    "example:weather": "node examples/weather-bot.mjs"
+  },
+  "keywords": ["uplink", "bot", "matrix", "messenger"],
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

@@ -134,6 +134,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             {chat.showBotSettings && chat.activeRoomId && (
                                 <BotSettings
                                     roomId={chat.activeRoomId}
+                                    currentUserId={matrixService.getUserId()}
                                     onClose={() => chat.setShowBotSettings(false)}
                                 />
                             )}
