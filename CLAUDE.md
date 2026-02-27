@@ -150,6 +150,41 @@ WORKFLOW РАЗРАБОТКИ
   Блокер: нужен Windows 10/11 SDK для линковки (LNK1181: kernel32.lib)
 
 
+SSH-ДОСТУП К СЕРВЕРУ (аварийные процедуры)
+
+Из Git Bash на Windows нельзя использовать `ssh` с паролем напрямую (sshpass недоступен,
+HOME с кириллицей ломает ~/.ssh). Для подключения использовать Python + paramiko:
+
+  python -c "
+  import paramiko
+  ssh = paramiko.SSHClient()
+  ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+  ssh.connect('flomasterserver', username='flomaster', password='Misha2021@1@', timeout=10)
+  stdin, stdout, stderr = ssh.exec_command('КОМАНДА')
+  print(stdout.read().decode())
+  print(stderr.read().decode())
+  ssh.close()
+  "
+
+Основные аварийные команды:
+  Статус контейнеров:     docker ps --filter name=uplink --format "table {{.Names}}\t{{.Status}}"
+  Логи контейнера:        docker logs uplink-web --tail 30 2>&1
+  Перезапуск контейнера:  docker restart uplink-web
+  Запуск упавшего:        cd ~/projects/uplink/docker && docker compose up -d <service> --no-deps
+  Пересборка одного:      cd ~/projects/uplink/docker && docker compose up -d --build <service> --no-deps
+  Полный редеплой:        cd ~/projects/uplink/docker && docker compose up -d --build
+  Sudo (если нужны права): echo "Misha2021@1@" | sudo -S <команда>
+
+ВАЖНО при аварии:
+  - Если nginx (uplink-web) не стартует — смотри логи, чаще всего "host not found in upstream".
+    После фикса nginx.conf (resolver + set $var) эта проблема не должна повторяться.
+    Nginx теперь резолвит upstream-хосты в runtime, а не при старте.
+  - Если контейнер не стартует из-за порта — проверить кто занял: docker ps --filter publish=ПОРТ.
+    Для postgres: POSTGRES_PORT=5433 в docker/.env (порт 5432 занят postgres-stage).
+  - Флаг --no-deps нужен чтобы не пересоздавать зависимости (postgres, redis) без причины.
+  - После запуска упавших сервисов перезапустить uplink-web: docker restart uplink-web
+
+
 ЗАВЕРШЁННЫЕ ЗАДАЧИ (для контекста, что уже сделано)
 
 001: Docker-инфраструктура (Synapse + Postgres + Redis)
@@ -184,11 +219,12 @@ WORKFLOW РАЗРАБОТКИ
 - vite.config.ts использует vite-plugin-wasm и vite-plugin-top-level-await для WASM
 - SharedArrayBuffer НЕ нужен для crypto-wasm v17+ — старая проверка была удалена
 - Synapse media_store: после docker compose up нужно chown 991:991 (делается в deploy.sh)
-- nginx внутри web-контейнера проксирует к другим контейнерам по Docker DNS (synapse, livekit-token)
+- nginx: все proxy_pass через переменные (set $var) + resolver 127.0.0.11 — чтобы nginx НЕ падал если upstream-контейнер ещё не запущен. Без этого nginx крашится при старте с "host not found in upstream"
 - config.ts определяет dev/prod по порту: 5173 = dev (прямые URL), иначе prod (через nginx прокси)
 - Регистрация на сервере отключена (enable_registration: false), пользователей создаём через synapse-admin или registration_shared_secret
 - CSP в Tauri отключён (csp: null) — нужен для WebSocket к LiveKit Cloud и Matrix
 - Tauri: определение среды через '__TAURI_INTERNALS__' in window
+- Порт PostgreSQL: на сервере порт 5432 занят postgres-stage, uplink-postgres маппит на 5433 (POSTGRES_PORT=5433 в docker/.env). Synapse ходит к postgres по Docker network, не по хост-порту
 
 
 ЧТО ДЕЛАТЬ ДАЛЬШЕ (примерные направления)
