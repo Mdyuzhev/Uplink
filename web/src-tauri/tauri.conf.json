@@ -34,6 +34,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -58,6 +59,19 @@
         "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
       },
       "appimage": {}
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/aspect-build/uplink/releases/latest/download/latest.json"
+      ],
+      "pubkey": "REPLACE_WITH_GENERATED_PUBKEY"
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["uplink"]
+      }
     }
   }
 }

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useMatrix } from './hooks/useMatrix';
 import { LoginScreen } from './components/LoginScreen';
 import { ChatLayout } from './components/ChatLayout';
+import { UpdateDialog } from './components/UpdateDialog';
 import { initStorage } from './utils/storage';
+import { checkForUpdates } from './utils/updater';
 
 export const App: React.FC = () => {
     const { connectionState, error, login, logout, restoreSession } = useMatrix();
@@ -12,6 +14,8 @@ export const App: React.FC = () => {
         initStorage().then(() => {
             restoreSession().finally(() => setLoading(false));
         });
+        // Проверка обновлений при запуске (только в Tauri)
+        checkForUpdates();
     }, []);
 
     if (loading) {
@@ -36,5 +40,10 @@ export const App: React.FC = () => {
         );
     }
 
-    return <ChatLayout onLogout={logout} />;
+    return (
+        <>
+            <ChatLayout onLogout={logout} />
+            <UpdateDialog />
+        </>
+    );
 };

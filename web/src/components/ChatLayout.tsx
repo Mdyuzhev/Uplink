@@ -19,6 +19,8 @@ import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
 import { ThreadPanel } from './ThreadPanel';
 import { BotSettings } from './BotSettings';
+import { initDeepLinkHandler } from '../utils/deepLink';
+import { storageSet } from '../utils/storage';
 import '../styles/chat.css';
 import '../styles/sidebar.css';
 import '../styles/room-header.css';
@@ -103,6 +105,23 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         },
         onStartCall: handleJoinCall,
     });
+
+    // Deep links (uplink:// протокол) — только Tauri
+    useEffect(() => {
+        let cleanup: (() => void) | undefined;
+        initDeepLinkHandler({
+            onNavigateRoom: (roomId) => chat.handleSelectRoom(roomId),
+            onStartCall: (roomId) => {
+                chat.handleSelectRoom(roomId);
+                setTimeout(() => handleJoinCall(), 500);
+            },
+            onSetServer: (serverUrl) => {
+                storageSet('uplink_preset_server', serverUrl);
+            },
+        }).then(fn => { cleanup = fn; });
+
+        return () => cleanup?.();
+    }, [chat.handleSelectRoom, handleJoinCall]);
 
     const showOutgoing = signalState === 'ringing-out' || signalState === 'rejected' || signalState === 'no-answer';
 
