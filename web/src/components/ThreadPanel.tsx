@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { X, Send } from 'lucide-react';
 import { useThread } from '../hooks/useThread';
 import { Avatar } from './Avatar';
 import { renderMarkdown } from '../utils/markdown';
@@ -58,7 +59,7 @@ export const ThreadPanel: React.FC<ThreadPanelProps> = ({ roomId, threadRootId, 
             {/* Заголовок */}
             <div className="thread-panel__header">
                 <span className="thread-panel__title">Тред</span>
-                <button className="thread-panel__close" onClick={onClose}>✕</button>
+                <button className="thread-panel__close" onClick={onClose}><X size={18} /></button>
             </div>
 
             {/* Корневое сообщение */}
@@ -119,7 +120,7 @@ export const ThreadPanel: React.FC<ThreadPanelProps> = ({ roomId, threadRootId, 
                     onClick={handleSend}
                     disabled={!input.trim() || sending}
                 >
-                    ➤
+                    <Send size={16} />
                 </button>
             </div>
         </div>

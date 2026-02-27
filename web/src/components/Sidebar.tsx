@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Settings, LogOut, Plus } from 'lucide-react';
 import { RoomInfo, SpaceInfo } from '../matrix/RoomsManager';
 import { UserInfo } from '../hooks/useUsers';
 import { SpaceItem } from './sidebar/SpaceItem';
@@ -69,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onClick={onAdminPanel}
                         title="Управление пользователями"
                     >
-                        &#x2699;
+                        <Settings size={16} />
                     </button>
                 )}
                 <div className="chat-sidebar__header-actions">
@@ -81,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {userName}
                     </button>
                     <button className="chat-sidebar__logout" onClick={onLogout} title="Выйти">
-                        &#x2192;
+                        <LogOut size={16} />
                     </button>
                 </div>
             </div>
@@ -108,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     onClick={onCreateSpace}
                                     title="Создать канал"
                                 >
-                                    +
+                                    <Plus size={14} />
                                 </button>
                             )}
                         </div>

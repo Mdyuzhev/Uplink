@@ -1,4 +1,5 @@
 import React from 'react';
+import { Bot } from 'lucide-react';
 
 interface AvatarProps {
     name: string;
@@ -42,7 +43,7 @@ export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online, imageUr
                 letter
             )}
             {online && <span className="avatar__online-dot" />}
-            {isBot && <span className="avatar__bot-indicator" title="Бот">B</span>}
+            {isBot && <span className="avatar__bot-indicator" title="Бот"><Bot size={10} /></span>}
         </div>
     );
 };

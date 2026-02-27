@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Pin, X, ArrowLeft, Phone, PhoneOff, Bot } from 'lucide-react';
 import { RoomInfo } from '../matrix/RoomsManager';
 import { CallState } from '../livekit/LiveKitService';
 interface PinnedMessageInfo {
@@ -48,7 +49,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
         <div className="room-header">
             {onBack && (
                 <button className="room-header__back" onClick={onBack}>
-                    &#8592;
+                    <ArrowLeft size={20} />
                 </button>
             )}
             <div className="room-header__info">
@@ -68,7 +69,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                             onClick={() => setShowPinned(!showPinned)}
                             title={`Закреплённые сообщения (${pinCount})`}
                         >
-                            📌 {pinCount}
+                            <Pin size={14} /> {pinCount}
                         </button>
 
                         {showPinned && (
@@ -96,7 +97,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                                                         onUnpin(msg.id);
                                                     }}
                                                     title="Открепить"
-                                                >✕</button>
+                                                ><X size={12} /></button>
                                             )}
                                         </div>
                                     ))}
@@ -113,7 +114,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                         onClick={onToggleBotSettings}
                         title="Боты"
                     >
-                        B
+                        <Bot size={16} />
                     </button>
                 )}
 
@@ -125,7 +126,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                                 onClick={onLeaveCall}
                                 title="Завершить звонок"
                             >
-                                &#x2715;
+                                <PhoneOff size={16} />
                             </button>
                         ) : (
                             <button
@@ -134,7 +135,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                                 disabled={isOtherRoomInCall || callState === 'connecting'}
                                 title={isOtherRoomInCall ? 'Сначала завершите текущий звонок' : 'Начать звонок'}
                             >
-                                {callState === 'connecting' ? '...' : '\u260E'}
+                                {callState === 'connecting' ? '...' : <Phone size={16} />}
                             </button>
                     )}
                 </div>

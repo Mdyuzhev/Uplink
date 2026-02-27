@@ -1,4 +1,5 @@
 import React from 'react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
 import { CallParticipant } from '../livekit/LiveKitService';
 
 interface CallBarProps {
@@ -47,21 +48,21 @@ export const CallBar: React.FC<CallBarProps> = ({
                     onClick={onToggleMute}
                     title={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
                 >
-                    {isMuted ? 'Unmute' : 'Mute'}
+                    {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
                 <button
                     className={`call-bar__btn call-bar__btn--camera ${isCameraOn ? 'call-bar__btn--active' : ''}`}
                     onClick={onToggleCamera}
                     title={isCameraOn ? 'Выключить камеру' : 'Включить камеру'}
                 >
-                    {isCameraOn ? 'Камера вкл' : 'Камера'}
+                    {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                 </button>
                 <button
                     className="call-bar__btn call-bar__btn--leave"
                     onClick={onLeave}
                     title="Завершить звонок"
                 >
-                    Завершить
+                    <PhoneOff size={16} />
                 </button>
             </div>
         </div>

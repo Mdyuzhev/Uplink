@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { SmilePlus, Reply, MessageSquare, Pin, ChevronRight, FileText, Download } from 'lucide-react';
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { Avatar } from './Avatar';
 import { CodeSnippet } from './CodeSnippet';
@@ -82,22 +83,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     className="message-bubble__action-btn"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     title="Реакция"
-                >😀</button>
+                ><SmilePlus size={16} /></button>
                 <button
                     className="message-bubble__action-btn"
                     onClick={() => onReply?.(message)}
                     title="Ответить"
-                >↩</button>
+                ><Reply size={16} /></button>
                 <button
                     className="message-bubble__action-btn"
                     onClick={() => onOpenThread?.(message.id)}
                     title="Тред"
-                >💬</button>
+                ><MessageSquare size={16} /></button>
                 <button
                     className="message-bubble__action-btn"
                     onClick={() => onPin?.(message.id)}
                     title={isPinned ? 'Открепить' : 'Закрепить'}
-                >📌</button>
+                ><Pin size={16} /></button>
             </div>
 
             {/* Quick emoji picker */}
@@ -135,7 +136,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             <span className="message-bubble__bot-badge">БОТ</span>
                         )}
                         <span className="message-bubble__time">{formatTime(message.timestamp)}</span>
-                        {isPinned && <span className="message-bubble__pin-badge" title="Закреплено">📌</span>}
+                        {isPinned && <span className="message-bubble__pin-badge" title="Закреплено"><Pin size={12} /></span>}
                     </div>
                 )}
                 {message.type === 'code' ? (
@@ -159,7 +160,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </div>
                 ) : message.type === 'file' ? (
                     <div className="message-bubble__file">
-                        <span className="message-bubble__file-icon">&#9741;</span>
+                        <span className="message-bubble__file-icon"><FileText size={24} /></span>
                         <div className="message-bubble__file-info">
                             <span className="message-bubble__file-name">{message.body}</span>
                             <span className="message-bubble__file-size">
@@ -173,7 +174,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 className="message-bubble__file-download"
                                 title="Скачать"
                             >
-                                &#8595;
+                                <Download size={18} />
                             </a>
                         )}
                     </div>
@@ -204,7 +205,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {/* Индикатор треда */}
                 {threadSummary && threadSummary.replyCount > 0 && (
                     <div className="thread-indicator" onClick={() => onOpenThread?.(message.id)}>
-                        <span className="thread-indicator__icon">💬</span>
+                        <span className="thread-indicator__icon"><MessageSquare size={14} /></span>
                         <span className="thread-indicator__count">
                             {threadSummary.replyCount} {pluralReplies(threadSummary.replyCount)}
                         </span>
@@ -213,7 +214,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 {threadSummary.lastReply.sender} · {formatTime(threadSummary.lastReply.ts)}
                             </span>
                         )}
-                        <span className="thread-indicator__arrow">→</span>
+                        <span className="thread-indicator__arrow"><ChevronRight size={12} /></span>
                     </div>
                 )}
             </div>
@@ -222,11 +223,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             {showMobileActions && isTouchDevice && (
                 <div className="mobile-action-sheet-overlay" onClick={() => setShowMobileActions(false)}>
                     <div className="mobile-action-sheet" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => { onReply?.(message); setShowMobileActions(false); }}>↩ Ответить</button>
-                        <button onClick={() => { setShowMobileActions(false); setShowEmojiPicker(true); }}>😀 Реакция</button>
-                        <button onClick={() => { onOpenThread?.(message.id); setShowMobileActions(false); }}>💬 Тред</button>
+                        <button onClick={() => { onReply?.(message); setShowMobileActions(false); }}><Reply size={18} /> Ответить</button>
+                        <button onClick={() => { setShowMobileActions(false); setShowEmojiPicker(true); }}><SmilePlus size={18} /> Реакция</button>
+                        <button onClick={() => { onOpenThread?.(message.id); setShowMobileActions(false); }}><MessageSquare size={18} /> Тред</button>
                         <button onClick={() => { onPin?.(message.id); setShowMobileActions(false); }}>
-                            📌 {isPinned ? 'Открепить' : 'Закрепить'}
+                            <Pin size={18} /> {isPinned ? 'Открепить' : 'Закрепить'}
                         </button>
                         <button className="mobile-action-sheet__cancel" onClick={() => setShowMobileActions(false)}>Отмена</button>
                     </div>

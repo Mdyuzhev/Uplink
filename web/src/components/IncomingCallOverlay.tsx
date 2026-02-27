@@ -1,4 +1,5 @@
 import React from 'react';
+import { Phone, PhoneOff } from 'lucide-react';
 import { CallInfo } from '../livekit/CallSignalingService';
 
 interface IncomingCallOverlayProps {
@@ -25,14 +26,14 @@ export const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
                         onClick={onReject}
                         title="Отклонить"
                     >
-                        &#x2715;
+                        <PhoneOff size={24} />
                     </button>
                     <button
                         className="incoming-call-overlay__btn incoming-call-overlay__btn--accept"
                         onClick={onAccept}
                         title="Принять"
                     >
-                        &#x2713;
+                        <Phone size={24} />
                     </button>
                 </div>
             </div>
