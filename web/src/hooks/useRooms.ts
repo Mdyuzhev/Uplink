@@ -22,7 +22,7 @@ export function useRooms() {
     // Проверка админа — один раз при подключении
     useEffect(() => {
         if (matrixService.isConnected) {
-            matrixService.checkIsAdmin().then(setIsAdmin);
+            matrixService.admin.checkIsAdmin().then(setIsAdmin);
         }
     }, []);
 

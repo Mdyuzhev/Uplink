@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRooms } from '../hooks/useRooms';
-import { useMessages } from '../hooks/useMessages';
-import { ParsedMessage } from '../matrix/MessageFormatter';
-import { ReplyToInfo } from './MessageInput';
-import { useUsers } from '../hooks/useUsers';
+import React, { useEffect, useCallback } from 'react';
+import { useChatState } from '../hooks/useChatState';
 import { useLiveKit } from '../hooks/useLiveKit';
 import { useCallSignaling } from '../hooks/useCallSignaling';
 import { callSignalingService } from '../livekit/CallSignalingService';
@@ -21,52 +17,22 @@ import { CreateSpaceModal } from './CreateSpaceModal';
 import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
 import { ThreadPanel } from './ThreadPanel';
-import { useNotifications } from '../hooks/useNotifications';
 import '../styles/chat.css';
+import '../styles/sidebar.css';
+import '../styles/room-header.css';
+import '../styles/messages.css';
+import '../styles/message-input.css';
+import '../styles/call.css';
+import '../styles/profile.css';
+import '../styles/admin.css';
+import '../styles/thread.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;
 }
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
-    const { spaces, channels, directs, isAdmin, refresh } = useRooms();
-    const { users, loading: usersLoading } = useUsers();
-    const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-    const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
-    const [showProfile, setShowProfile] = useState(false);
-    const [showCreateSpace, setShowCreateSpace] = useState(false);
-    const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
-    const [showAdminPanel, setShowAdminPanel] = useState(false);
-    const [replyTo, setReplyTo] = useState<ReplyToInfo | null>(null);
-    const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
-    const [activeThread, setActiveThread] = useState<{ roomId: string; threadRootId: string } | null>(null);
-    const {
-        messages, reactions, pinnedIds, threadSummaries, typingUsers,
-        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
-    } = useMessages(activeRoomId);
-
-    // Закреплённые сообщения для панели в шапке
-    const pinnedMessages = useMemo(() => {
-        if (!pinnedIds || pinnedIds.size === 0) return [];
-        return messages
-            .filter(m => pinnedIds.has(m.id))
-            .map(m => ({
-                id: m.id,
-                sender: m.senderDisplayName,
-                body: m.body.length > 120 ? m.body.substring(0, 120) + '...' : m.body,
-            }));
-    }, [messages, pinnedIds]);
-
-    // Сброс reply при смене комнаты
-    useEffect(() => { setReplyTo(null); }, [activeRoomId]);
-
-    const handleReply = useCallback((msg: ParsedMessage) => {
-        setReplyTo({
-            eventId: msg.id,
-            sender: msg.senderDisplayName,
-            body: msg.body.length > 100 ? msg.body.substring(0, 100) + '...' : msg.body,
-        });
-    }, []);
+    const chat = useChatState();
 
     const {
         callState, participants, duration, isMuted, isCameraOn,
@@ -76,14 +42,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const {
         signalState, callInfo, startCall, acceptCall, rejectCall, cancelCall, resetSignaling,
     } = useCallSignaling();
-
-    // Собрать все комнаты для поиска activeRoom (включая вложенные в Spaces)
-    const allRooms = [
-        ...channels,
-        ...directs,
-        ...spaces.flatMap(s => s.rooms),
-    ];
-    const activeRoom = allRooms.find(r => r.id === activeRoomId) || null;
 
     // Запуск слушателя сигнализации звонков
     useEffect(() => {
@@ -105,116 +63,78 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         }
     }, [callState, signalState, resetSignaling]);
 
-    const handleSelectRoom = (roomId: string) => {
-        setActiveRoomId(roomId);
-        setActiveThread(null);
-        setMobileView('chat');
-        // Сбросить счётчик непрочитанных при открытии чата
-        matrixService.markRoomAsRead(roomId).then(() => refresh());
-    };
-
-    const handleOpenThread = useCallback((threadRootId: string) => {
-        if (activeRoomId) {
-            setActiveThread({ roomId: activeRoomId, threadRootId });
-        }
-    }, [activeRoomId]);
-
-    // Push-уведомления о новых сообщениях в других чатах
-    useNotifications(activeRoomId, handleSelectRoom);
-
-    const handleBack = () => {
-        setMobileView('sidebar');
-    };
-
-    const handleOpenDM = async (userId: string) => {
-        try {
-            const roomId = await matrixService.getOrCreateDM(userId);
-            refresh();
-            setActiveRoomId(roomId);
-            setMobileView('chat');
-        } catch (err) {
-            console.error('Ошибка открытия DM:', err);
-        }
-    };
-
     // Кнопка «Позвонить» — DM: invite, канал: сразу LiveKit
-    const handleJoinCall = () => {
-        if (!activeRoom) return;
-
-        if (activeRoom.type === 'direct') {
-            // DM → отправить invite, ждать ответа
-            startCall(activeRoom.id, activeRoom.name);
+    const handleJoinCall = useCallback(() => {
+        if (!chat.activeRoom) return;
+        if (chat.activeRoom.type === 'direct') {
+            startCall(chat.activeRoom.id, chat.activeRoom.name);
         } else {
-            // Канал → сразу подключиться (как раньше)
-            joinCall(activeRoom.id);
+            joinCall(chat.activeRoom.id);
         }
-    };
+    }, [chat.activeRoom, startCall, joinCall]);
 
     // Принять входящий → подключиться к LiveKit
-    const handleAcceptCall = async () => {
+    const handleAcceptCall = useCallback(async () => {
         await acceptCall();
-        if (callInfo) {
-            joinCall(callInfo.roomId);
-        }
-    };
+        if (callInfo) joinCall(callInfo.roomId);
+    }, [acceptCall, callInfo, joinCall]);
 
     // Завершить звонок — отправить hangup + отключиться от LiveKit
-    const handleLeaveCall = async () => {
+    const handleLeaveCall = useCallback(async () => {
         await leaveCall();
         await callSignalingService.cancelOrHangup();
-    };
+    }, [leaveCall]);
 
-    // Показывать оверлей исходящего звонка
     const showOutgoing = signalState === 'ringing-out' || signalState === 'rejected' || signalState === 'no-answer';
 
     return (
         <div className="chat-layout">
-            <div className={`chat-sidebar ${mobileView === 'chat' ? 'chat-sidebar--hidden' : ''}`}>
+            <div className={`chat-sidebar ${chat.mobileView === 'chat' ? 'chat-sidebar--hidden' : ''}`}>
                 <Sidebar
-                    spaces={spaces}
-                    channels={channels}
-                    directs={directs}
-                    users={users}
-                    usersLoading={usersLoading}
-                    activeRoomId={activeRoomId}
-                    userName={matrixService.getMyDisplayName()}
-                    isAdmin={isAdmin}
-                    onSelectRoom={handleSelectRoom}
-                    onOpenDM={handleOpenDM}
-                    onProfileClick={() => setShowProfile(true)}
+                    spaces={chat.spaces}
+                    channels={chat.channels}
+                    directs={chat.directs}
+                    users={chat.users}
+                    usersLoading={chat.usersLoading}
+                    activeRoomId={chat.activeRoomId}
+                    userName={matrixService.users.getMyDisplayName()}
+                    isAdmin={chat.isAdmin}
+                    onSelectRoom={chat.handleSelectRoom}
+                    onOpenDM={chat.handleOpenDM}
+                    onProfileClick={() => chat.setShowProfile(true)}
                     onLogout={onLogout}
-                    onCreateSpace={() => setShowCreateSpace(true)}
+                    onCreateSpace={() => chat.setShowCreateSpace(true)}
                     onCreateRoom={(spaceId) => {
-                        const space = spaces.find(s => s.id === spaceId);
-                        setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
+                        const space = chat.spaces.find(s => s.id === spaceId);
+                        chat.setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
                     }}
-                    onAdminPanel={() => setShowAdminPanel(true)}
+                    onAdminPanel={() => chat.setShowAdminPanel(true)}
                 />
             </div>
 
-            <div className={`chat-main ${activeThread ? 'chat-main--with-thread' : ''}`}>
-                {activeRoom ? (
+            <div className={`chat-main ${chat.activeThread ? 'chat-main--with-thread' : ''}`}>
+                {chat.activeRoom ? (
                     <>
                         <RoomHeader
-                            room={activeRoom}
-                            onBack={handleBack}
+                            room={chat.activeRoom}
+                            onBack={chat.handleBack}
                             callState={callState}
                             activeCallRoomName={activeRoomName}
                             onJoinCall={handleJoinCall}
                             onLeaveCall={handleLeaveCall}
-                            pinnedMessages={pinnedMessages}
-                            onScrollToMessage={setScrollToEventId}
-                            onUnpin={togglePin}
+                            pinnedMessages={chat.pinnedMessages}
+                            onScrollToMessage={chat.setScrollToEventId}
+                            onUnpin={chat.togglePin}
                         />
 
                         {callError && (
                             <div className="call-error">{callError}</div>
                         )}
 
-                        {callState === 'connected' && activeRoomName === activeRoom.id && (
+                        {callState === 'connected' && activeRoomName === chat.activeRoom.id && (
                             <>
                                 <CallBar
-                                    roomName={activeRoom.name}
+                                    roomName={chat.activeRoom.name}
                                     participants={participants}
                                     isMuted={isMuted}
                                     isCameraOn={isCameraOn}
@@ -228,28 +148,28 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                         )}
 
                         <MessageList
-                            messages={messages}
-                            reactions={reactions}
-                            pinnedIds={pinnedIds}
-                            threadSummaries={threadSummaries}
-                            typingUsers={typingUsers}
-                            scrollToEventId={scrollToEventId}
-                            onScrollComplete={() => setScrollToEventId(null)}
-                            onLoadMore={loadMore}
-                            onReply={handleReply}
-                            onReact={sendReaction}
-                            onRemoveReaction={removeReaction}
-                            onPin={togglePin}
-                            onOpenThread={handleOpenThread}
+                            messages={chat.messages}
+                            reactions={chat.reactions}
+                            pinnedIds={chat.pinnedIds}
+                            threadSummaries={chat.threadSummaries}
+                            typingUsers={chat.typingUsers}
+                            scrollToEventId={chat.scrollToEventId}
+                            onScrollComplete={() => chat.setScrollToEventId(null)}
+                            onLoadMore={chat.loadMore}
+                            onReply={chat.handleReply}
+                            onReact={chat.sendReaction}
+                            onRemoveReaction={chat.removeReaction}
+                            onPin={chat.togglePin}
+                            onOpenThread={chat.handleOpenThread}
                         />
                         <MessageInput
-                            onSend={sendMessage}
-                            onSendReply={sendReply}
-                            onSendFile={sendFile}
-                            roomId={activeRoomId || undefined}
-                            roomName={activeRoom.name}
-                            replyTo={replyTo}
-                            onCancelReply={() => setReplyTo(null)}
+                            onSend={chat.sendMessage}
+                            onSendReply={chat.sendReply}
+                            onSendFile={chat.sendFile}
+                            roomId={chat.activeRoomId || undefined}
+                            roomName={chat.activeRoom.name}
+                            replyTo={chat.replyTo}
+                            onCancelReply={() => chat.setReplyTo(null)}
                         />
                     </>
                 ) : (
@@ -260,11 +180,11 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
             </div>
 
             {/* Панель треда */}
-            {activeThread && (
+            {chat.activeThread && (
                 <ThreadPanel
-                    roomId={activeThread.roomId}
-                    threadRootId={activeThread.threadRootId}
-                    onClose={() => setActiveThread(null)}
+                    roomId={chat.activeThread.roomId}
+                    threadRootId={chat.activeThread.threadRootId}
+                    onClose={() => chat.setActiveThread(null)}
                 />
             )}
 
@@ -287,34 +207,34 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
             )}
 
             {/* Модалка профиля */}
-            {showProfile && (
+            {chat.showProfile && (
                 <ProfileModal
-                    onClose={() => setShowProfile(false)}
+                    onClose={() => chat.setShowProfile(false)}
                     onLogout={onLogout}
                 />
             )}
 
             {/* Модалка создания канала */}
-            {showCreateSpace && (
+            {chat.showCreateSpace && (
                 <CreateSpaceModal
-                    onClose={() => setShowCreateSpace(false)}
-                    onCreated={refresh}
+                    onClose={() => chat.setShowCreateSpace(false)}
+                    onCreated={chat.refresh}
                 />
             )}
 
             {/* Модалка создания комнаты в канале */}
-            {createRoomForSpace && (
+            {chat.createRoomForSpace && (
                 <CreateRoomModal
-                    spaceId={createRoomForSpace.id}
-                    spaceName={createRoomForSpace.name}
-                    onClose={() => setCreateRoomForSpace(null)}
-                    onCreated={refresh}
+                    spaceId={chat.createRoomForSpace.id}
+                    spaceName={chat.createRoomForSpace.name}
+                    onClose={() => chat.setCreateRoomForSpace(null)}
+                    onCreated={chat.refresh}
                 />
             )}
 
             {/* Админ-панель */}
-            {showAdminPanel && (
-                <AdminPanel onClose={() => setShowAdminPanel(false)} />
+            {chat.showAdminPanel && (
+                <AdminPanel onClose={() => chat.setShowAdminPanel(false)} />
             )}
         </div>
     );

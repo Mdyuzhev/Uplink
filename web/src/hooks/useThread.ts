@@ -13,20 +13,20 @@ export function useThread(roomId: string | null, threadRootId: string | null) {
             return;
         }
 
-        const getDisplayName = (userId: string) => matrixService.getDisplayName(userId);
-        const getAvatarUrl = (userId: string) => matrixService.getUserAvatarUrl(userId);
-        const mxcToHttp = (url: string, size?: number) => matrixService.mxcToHttp(url, size);
-        const mxcToHttpDownload = (url: string) => matrixService.mxcToHttpDownload(url);
+        const getDisplayName = (userId: string) => matrixService.users.getDisplayName(userId);
+        const getAvatarUrl = (userId: string) => matrixService.users.getUserAvatarUrl(userId);
+        const mxcToHttp = (url: string, size?: number) => matrixService.media.mxcToHttp(url, size);
+        const mxcToHttpDownload = (url: string) => matrixService.media.mxcToHttpDownload(url);
 
         // Корневое сообщение
-        const rootEvent = matrixService.findEventInRoom(roomId, threadRootId);
+        const rootEvent = matrixService.messages.findEventInRoom(roomId, threadRootId);
         if (rootEvent) {
             const parsed = parseEvent(rootEvent, getDisplayName, getAvatarUrl, mxcToHttp, mxcToHttpDownload);
             setRootMessage(parsed);
         }
 
         // Сообщения треда
-        const events = matrixService.getThreadMessages(roomId, threadRootId);
+        const events = matrixService.threads.getThreadMessages(roomId, threadRootId);
         const parsed = events
             .map(e => parseEvent(e, getDisplayName, getAvatarUrl, mxcToHttp, mxcToHttpDownload))
             .filter((m): m is ParsedMessage => m !== null);
@@ -48,7 +48,7 @@ export function useThread(roomId: string | null, threadRootId: string | null) {
 
     const sendMessage = useCallback(async (body: string) => {
         if (!roomId || !threadRootId || !body.trim()) return;
-        await matrixService.sendThreadMessage(roomId, threadRootId, body.trim());
+        await matrixService.threads.sendThreadMessage(roomId, threadRootId, body.trim());
     }, [roomId, threadRootId]);
 
     return { rootMessage, messages, sendMessage, refresh };

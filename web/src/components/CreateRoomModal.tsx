@@ -19,7 +19,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ spaceId, space
         setLoading(true);
         setError('');
         try {
-            await matrixService.createRoomInSpace(spaceId, name.trim(), topic.trim() || undefined);
+            await matrixService.rooms.createRoomInSpace(spaceId, name.trim(), topic.trim() || undefined);
             onCreated();
             onClose();
         } catch (err) {

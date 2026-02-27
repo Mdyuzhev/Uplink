@@ -20,7 +20,7 @@ export function useUsers() {
         setLoading(true);
         try {
             // Пробуем Admin API — видит ВСЕХ пользователей сервера
-            const serverUsers = await matrixService.listServerUsers();
+            const serverUsers = await matrixService.admin.listServerUsers();
             const myUserId = matrixService.getUserId();
             setUsers(serverUsers
                 .filter(u => u.userId !== myUserId && !u.deactivated)
@@ -29,7 +29,7 @@ export function useUsers() {
         } catch {
             // Не админ — фолбэк на User Directory
             try {
-                const result = await matrixService.searchUsers('');
+                const result = await matrixService.users.searchUsers('');
                 setUsers(result);
             } catch (err) {
                 console.error('Ошибка загрузки пользователей:', err);

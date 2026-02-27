@@ -17,7 +17,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({ onClose, onC
         setLoading(true);
         setError('');
         try {
-            await matrixService.createSpace(name.trim(), topic.trim() || undefined);
+            await matrixService.rooms.createSpace(name.trim(), topic.trim() || undefined);
             onCreated();
             onClose();
         } catch (err) {

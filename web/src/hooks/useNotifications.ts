@@ -69,7 +69,7 @@ export function useNotifications(
             if (senderId === matrixService.getUserId()) return;
             if (roomId === activeRoomIdRef.current && document.hasFocus()) return;
 
-            const senderName = matrixService.getDisplayName(senderId!);
+            const senderName = matrixService.users.getDisplayName(senderId!);
             const content = event.getContent();
             const msgtype = content.msgtype;
 

@@ -44,7 +44,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     // Сброс typing при unmount
     useEffect(() => {
         return () => {
-            if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+            if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
     }, [roomId]);
@@ -66,7 +66,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }
 
         // Сбросить typing
-        if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+        if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
 
@@ -76,13 +76,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
         // Typing indicator
         if (roomId && e.target.value.length > 0) {
-            matrixService.sendTyping(roomId, true).catch(() => {});
+            matrixService.users.sendTyping(roomId, true).catch(() => {});
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = setTimeout(() => {
-                if (roomId) matrixService.sendTyping(roomId, false).catch(() => {});
+                if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
             }, 4000);
         } else if (roomId) {
-            matrixService.sendTyping(roomId, false).catch(() => {});
+            matrixService.users.sendTyping(roomId, false).catch(() => {});
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         }
     };

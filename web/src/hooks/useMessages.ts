@@ -18,11 +18,11 @@ export function useMessages(roomId: string | null) {
             setThreadSummaries(new Map());
             return;
         }
-        const events = matrixService.getRoomTimeline(roomId);
-        const getDisplayName = (userId: string) => matrixService.getDisplayName(userId);
-        const getAvatarUrl = (userId: string) => matrixService.getUserAvatarUrl(userId);
-        const mxcToHttp = (url: string, size?: number) => matrixService.mxcToHttp(url, size);
-        const mxcToHttpDownload = (url: string) => matrixService.mxcToHttpDownload(url);
+        const events = matrixService.messages.getRoomTimeline(roomId);
+        const getDisplayName = (userId: string) => matrixService.users.getDisplayName(userId);
+        const getAvatarUrl = (userId: string) => matrixService.users.getUserAvatarUrl(userId);
+        const mxcToHttp = (url: string, size?: number) => matrixService.media.mxcToHttp(url, size);
+        const mxcToHttpDownload = (url: string) => matrixService.media.mxcToHttpDownload(url);
 
         // Фильтрация: скрыть сообщения, принадлежащие тредам (но показывать корневые)
         const filteredEvents = events.filter(e => {
@@ -39,7 +39,7 @@ export function useMessages(roomId: string | null) {
         // Заполнить reply info
         for (const msg of parsed) {
             if (msg.replyToEventId && !msg.replyToSender) {
-                const origEvent = matrixService.findEventInRoom(roomId, msg.replyToEventId);
+                const origEvent = matrixService.messages.findEventInRoom(roomId, msg.replyToEventId);
                 if (origEvent) {
                     msg.replyToSender = getDisplayName(origEvent.getSender()!);
                     let origBody = origEvent.getContent()?.body || '';
@@ -54,7 +54,7 @@ export function useMessages(roomId: string | null) {
         // Thread summaries для корневых сообщений
         const summaries = new Map<string, ThreadSummaryInfo>();
         for (const msg of parsed) {
-            const summary = matrixService.getThreadSummary(roomId, msg.id);
+            const summary = matrixService.threads.getThreadSummary(roomId, msg.id);
             if (summary && summary.replyCount > 0) {
                 summaries.set(msg.id, {
                     replyCount: summary.replyCount,
@@ -65,10 +65,10 @@ export function useMessages(roomId: string | null) {
         setThreadSummaries(summaries);
 
         // Реакции
-        setRawReactions(matrixService.getReactionsForRoom(roomId));
+        setRawReactions(matrixService.reactions.getReactionsForRoom(roomId));
 
         // Pinned
-        setPinnedIds(new Set(matrixService.getPinnedEventIds(roomId)));
+        setPinnedIds(new Set(matrixService.pins.getPinnedEventIds(roomId)));
     }, [roomId]);
 
     // Агрегировать реакции в Map<eventId, ReactionInfo[]>
@@ -84,7 +84,7 @@ export function useMessages(roomId: string | null) {
                 }
                 const info = byEmoji.get(emoji)!;
                 info.count++;
-                info.users.push(matrixService.getDisplayName(userId));
+                info.users.push(matrixService.users.getDisplayName(userId));
                 if (userId === myUserId) {
                     info.myReactionEventId = eventId;
                 }
@@ -96,12 +96,12 @@ export function useMessages(roomId: string | null) {
 
     useEffect(() => {
         loadMessages();
-        if (roomId) matrixService.markRoomAsRead(roomId);
+        if (roomId) matrixService.messages.markRoomAsRead(roomId);
 
         const unsub = matrixService.onNewMessage((msgRoomId) => {
             if (msgRoomId === roomId) {
                 loadMessages();
-                matrixService.markRoomAsRead(roomId);
+                matrixService.messages.markRoomAsRead(roomId);
             }
         });
         const unsubThread = matrixService.onThreadUpdate((rid) => {
@@ -124,37 +124,37 @@ export function useMessages(roomId: string | null) {
 
     const sendMessage = useCallback(async (body: string) => {
         if (!roomId) return;
-        await matrixService.sendMessage(roomId, body);
+        await matrixService.messages.sendMessage(roomId, body);
     }, [roomId]);
 
     const sendReply = useCallback(async (replyToEventId: string, body: string) => {
         if (!roomId) return;
-        await matrixService.sendReply(roomId, replyToEventId, body);
+        await matrixService.messages.sendReply(roomId, replyToEventId, body);
     }, [roomId]);
 
     const sendFile = useCallback(async (file: File) => {
         if (!roomId) return;
-        await matrixService.sendFile(roomId, file);
+        await matrixService.media.sendFile(roomId, file);
     }, [roomId]);
 
     const sendReaction = useCallback(async (eventId: string, emoji: string) => {
         if (!roomId) return;
-        await matrixService.sendReaction(roomId, eventId, emoji);
+        await matrixService.reactions.sendReaction(roomId, eventId, emoji);
     }, [roomId]);
 
     const removeReaction = useCallback(async (reactionEventId: string) => {
         if (!roomId) return;
-        await matrixService.removeReaction(roomId, reactionEventId);
+        await matrixService.reactions.removeReaction(roomId, reactionEventId);
     }, [roomId]);
 
     const togglePin = useCallback(async (eventId: string) => {
         if (!roomId) return;
         try {
             if (pinnedIds.has(eventId)) {
-                await matrixService.unpinMessage(roomId, eventId);
+                await matrixService.pins.unpinMessage(roomId, eventId);
                 setPinnedIds(prev => { const next = new Set(prev); next.delete(eventId); return next; });
             } else {
-                await matrixService.pinMessage(roomId, eventId);
+                await matrixService.pins.pinMessage(roomId, eventId);
                 setPinnedIds(prev => new Set(prev).add(eventId));
             }
         } catch (e) {
@@ -164,7 +164,7 @@ export function useMessages(roomId: string | null) {
 
     const loadMore = useCallback(async () => {
         if (!roomId) return;
-        await matrixService.loadMoreMessages(roomId);
+        await matrixService.messages.loadMoreMessages(roomId);
         loadMessages();
     }, [roomId, loadMessages]);
 

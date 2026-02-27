@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { RoomInfo, SpaceInfo } from '../matrix/RoomsManager';
 import { UserInfo } from '../hooks/useUsers';
-import { Avatar } from './Avatar';
+import { SpaceItem } from './sidebar/SpaceItem';
+import { RoomItem } from './sidebar/RoomItem';
+import { UserItem } from './sidebar/UserItem';
 
 interface SidebarProps {
     spaces: SpaceInfo[];
@@ -174,81 +176,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
 };
 
-const SpaceItem: React.FC<{
-    space: SpaceInfo;
-    activeRoomId: string | null;
-    isAdmin: boolean;
-    onSelectRoom: (roomId: string) => void;
-    onCreateRoom: (spaceId: string) => void;
-}> = ({ space, activeRoomId, isAdmin, onSelectRoom, onCreateRoom }) => {
-    const [collapsed, setCollapsed] = useState(false);
-
-    return (
-        <div className="sidebar-space">
-            <div className="sidebar-space__header" onClick={() => setCollapsed(!collapsed)}>
-                <span className={`sidebar-space__arrow ${collapsed ? 'sidebar-space__arrow--collapsed' : ''}`}>
-                    &#x25BE;
-                </span>
-                <span className="sidebar-space__name">{space.name}</span>
-                {isAdmin && (
-                    <button
-                        className="sidebar-space__add-btn"
-                        onClick={(e) => { e.stopPropagation(); onCreateRoom(space.id); }}
-                        title="Создать комнату"
-                    >
-                        +
-                    </button>
-                )}
-            </div>
-            {!collapsed && space.rooms.map(room => (
-                <RoomItem
-                    key={room.id}
-                    room={room}
-                    active={room.id === activeRoomId}
-                    onClick={() => onSelectRoom(room.id)}
-                    indent
-                />
-            ))}
-            {!collapsed && space.rooms.length === 0 && (
-                <div className="sidebar-space__empty">Нет комнат</div>
-            )}
-        </div>
-    );
-};
-
-const RoomItem: React.FC<{
-    room: RoomInfo;
-    active: boolean;
-    onClick: () => void;
-    indent?: boolean;
-}> = ({ room, active, onClick, indent }) => {
-    return (
-        <div
-            className={`sidebar-room-item ${active ? 'sidebar-room-item--active' : ''} ${indent ? 'sidebar-room-item--indent' : ''}`}
-            onClick={onClick}
-        >
-            <span className="sidebar-room-item__icon">
-                {room.type === 'channel' ? '#' : (
-                    <span className={`presence-dot presence-dot--${room.peerPresence || 'offline'}`} />
-                )}
-            </span>
-            <span className="sidebar-room-item__name">{room.name}</span>
-            {room.unreadCount > 0 && (
-                <span className="sidebar-room-item__badge">{room.unreadCount}</span>
-            )}
-        </div>
-    );
-};
-
-const UserItem: React.FC<{ user: { userId: string; displayName: string; avatarUrl?: string }; onClick: () => void }> = ({
-    user, onClick,
-}) => {
-    return (
-        <div className="sidebar-room-item sidebar-user-item" onClick={onClick}>
-            <span className="sidebar-room-item__icon">
-                <Avatar name={user.displayName} size={20} imageUrl={user.avatarUrl} />
-            </span>
-            <span className="sidebar-room-item__name">{user.displayName}</span>
-        </div>
-    );
-};

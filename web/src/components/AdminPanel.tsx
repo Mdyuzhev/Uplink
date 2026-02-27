@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { matrixService, SynapseUser } from '../matrix/MatrixService';
+import { matrixService } from '../matrix/MatrixService';
+import type { SynapseUser } from '../matrix/AdminService';
 import { Avatar } from './Avatar';
 
 interface AdminPanelProps {
@@ -27,7 +28,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         setUsersLoading(true);
         setUsersError('');
         try {
-            const list = await matrixService.listServerUsers();
+            const list = await matrixService.admin.listServerUsers();
             setUsers(list);
         } catch (err) {
             setUsersError((err as Error).message);
@@ -55,7 +56,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
         setCreateError('');
         setCreateSuccess('');
         try {
-            await matrixService.createUser(username, password, newDisplayName.trim() || undefined);
+            await matrixService.admin.createUser(username, password, newDisplayName.trim() || undefined);
             setCreateSuccess(`Пользователь ${username} создан`);
             setNewUsername('');
             setNewDisplayName('');
@@ -71,7 +72,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
     const handleToggleAdmin = async (userId: string, currentAdmin: boolean) => {
         try {
-            await matrixService.setUserAdmin(userId, !currentAdmin);
+            await matrixService.admin.setUserAdmin(userId, !currentAdmin);
             await loadUsers();
         } catch (err: any) {
             setUsersError(err.message || 'Ошибка изменения роли');
@@ -80,7 +81,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
 
     const handleDeactivate = async (userId: string) => {
         try {
-            await matrixService.deactivateUser(userId);
+            await matrixService.admin.deactivateUser(userId);
             setConfirmDeactivate(null);
             await loadUsers();
         } catch (err: any) {

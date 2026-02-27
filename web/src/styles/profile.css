@@ -1,0 +1,209 @@
+/* ═══════════════════════════════════
+   PROFILE MODAL
+   ═══════════════════════════════════ */
+.profile-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.15s ease;
+}
+
+.profile-modal {
+    background: var(--uplink-bg-secondary);
+    border-radius: var(--uplink-radius-lg);
+    width: 380px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+    border: none;
+    box-shadow: var(--uplink-shadow-elevated);
+}
+
+.profile-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-modal__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--uplink-text-primary);
+}
+
+.profile-modal__close {
+    background: none;
+    border: none;
+    color: var(--uplink-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--uplink-radius-sm);
+    transition: background 0.15s, color 0.15s;
+}
+
+.profile-modal__close:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--uplink-text-primary);
+}
+
+/* Avatar section */
+.profile-modal__avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.profile-modal__avatar {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.profile-modal__avatar:hover {
+    transform: scale(1.05);
+}
+
+.profile-modal__avatar--uploading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.profile-modal__avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-modal__avatar .avatar {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 32px !important;
+}
+
+.profile-modal__avatar-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    text-align: center;
+    font-size: 16px;
+    padding: 4px 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.profile-modal__avatar:hover .profile-modal__avatar-overlay {
+    opacity: 1;
+}
+
+.profile-modal__avatar-hint {
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    margin-top: 8px;
+}
+
+/* Sections */
+.profile-modal__section {
+    margin-bottom: 16px;
+}
+
+.profile-modal__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--uplink-text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-modal__input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--uplink-input-bg);
+    border: none;
+    border-radius: var(--uplink-radius-md);
+    color: var(--uplink-text-primary);
+    font-size: 14px;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+    transition: box-shadow 0.15s;
+}
+
+.profile-modal__input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--uplink-accent);
+}
+
+.profile-modal__input::placeholder {
+    color: var(--uplink-text-faint);
+}
+
+.profile-modal__btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: var(--uplink-radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    margin-top: 4px;
+    height: 40px;
+}
+
+.profile-modal__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.profile-modal__btn--primary {
+    background: var(--uplink-accent);
+    color: white;
+}
+
+.profile-modal__btn--primary:hover:not(:disabled) {
+    background: var(--uplink-accent-hover);
+}
+
+.profile-modal__btn--danger {
+    background: transparent;
+    color: var(--uplink-danger);
+    border: 1px solid var(--uplink-danger);
+}
+
+.profile-modal__btn--danger:hover {
+    background: var(--uplink-danger);
+    color: white;
+}
+
+.profile-modal__error {
+    color: var(--uplink-danger);
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.profile-modal__divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 16px 0;
+}
+

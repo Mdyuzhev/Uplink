@@ -256,7 +256,7 @@ class CallSignalingService {
                     callId,
                     roomId,
                     callerId: senderId,
-                    callerName: matrixService.getDisplayName(senderId),
+                    callerName: matrixService.users.getDisplayName(senderId),
                     direction: 'incoming',
                 };
 
