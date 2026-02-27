@@ -17,11 +17,13 @@ interface RoomHeaderProps {
     pinnedMessages?: PinnedMessageInfo[];
     onScrollToMessage?: (eventId: string) => void;
     onUnpin?: (eventId: string) => void;
+    showBotSettings?: boolean;
+    onToggleBotSettings?: () => void;
 }
 
 export const RoomHeader: React.FC<RoomHeaderProps> = ({
     room, onBack, callState, activeCallRoomName, onJoinCall, onLeaveCall,
-    pinnedMessages, onScrollToMessage, onUnpin,
+    pinnedMessages, onScrollToMessage, onUnpin, showBotSettings, onToggleBotSettings,
 }) => {
     const [showPinned, setShowPinned] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
@@ -102,6 +104,17 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* Кнопка ботов */}
+                {onToggleBotSettings && (
+                    <button
+                        className={`room-header__btn ${showBotSettings ? 'room-header__btn--active' : ''}`}
+                        onClick={onToggleBotSettings}
+                        title="Боты"
+                    >
+                        B
+                    </button>
                 )}
 
                 {/* Кнопка звонка */}

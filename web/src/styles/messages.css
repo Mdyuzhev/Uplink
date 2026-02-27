@@ -675,3 +675,36 @@
     border: 2px solid var(--uplink-bg-tertiary);
 }
 
+/* ═══════════════════════════════════
+   BOT INDICATORS
+   ═══════════════════════════════════ */
+.avatar__bot-indicator {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 8px;
+    font-weight: 700;
+    background: var(--uplink-accent);
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--uplink-bg-primary);
+}
+
+.message-bubble__bot-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--uplink-accent);
+    background: rgba(88, 101, 242, 0.12);
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+

@@ -16,6 +16,7 @@ export function useChatState() {
     const [showCreateSpace, setShowCreateSpace] = useState(false);
     const [createRoomForSpace, setCreateRoomForSpace] = useState<{ id: string; name: string } | null>(null);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const [showBotSettings, setShowBotSettings] = useState(false);
     const [replyTo, setReplyTo] = useState<ReplyToInfo | null>(null);
     const [scrollToEventId, setScrollToEventId] = useState<string | null>(null);
     const [activeThread, setActiveThread] = useState<{ roomId: string; threadRootId: string } | null>(null);
@@ -98,6 +99,7 @@ export function useChatState() {
         showCreateSpace, setShowCreateSpace,
         createRoomForSpace, setCreateRoomForSpace,
         showAdminPanel, setShowAdminPanel,
+        showBotSettings, setShowBotSettings,
         // Actions
         handleSelectRoom, handleBack, handleOpenDM, handleOpenThread, handleReply,
         setReplyTo, setScrollToEventId, setActiveThread,

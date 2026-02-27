@@ -5,6 +5,8 @@ interface AvatarProps {
     size?: number;
     online?: boolean;
     imageUrl?: string | null;
+    /** userId — для определения бота (@bot_*) */
+    userId?: string;
 }
 
 const COLORS = [
@@ -20,9 +22,10 @@ function hashColor(str: string): string {
     return COLORS[Math.abs(hash) % COLORS.length];
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online, imageUrl }) => {
+export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online, imageUrl, userId }) => {
     const letter = (name[0] || '?').toUpperCase();
     const bg = hashColor(name);
+    const isBot = userId?.startsWith('@bot_');
 
     return (
         <div
@@ -39,6 +42,7 @@ export const Avatar: React.FC<AvatarProps> = ({ name, size = 36, online, imageUr
                 letter
             )}
             {online && <span className="avatar__online-dot" />}
+            {isBot && <span className="avatar__bot-indicator" title="Бот">B</span>}
         </div>
     );
 };

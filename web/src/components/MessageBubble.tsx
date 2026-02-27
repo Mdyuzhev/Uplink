@@ -102,6 +102,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {showAuthor && (
                     <div className="message-bubble__header">
                         <span className="message-bubble__sender" style={{ color: getSenderColor(message.sender) }}>{message.senderDisplayName}</span>
+                        {message.sender.startsWith('@bot_') && (
+                            <span className="message-bubble__bot-badge">БОТ</span>
+                        )}
                         <span className="message-bubble__time">{formatTime(message.timestamp)}</span>
                         {isPinned && <span className="message-bubble__pin-badge" title="Закреплено">📌</span>}
                     </div>

@@ -26,4 +26,13 @@ export const config = {
     tokenServiceUrl: isDev
         ? `http://${host}:7890`
         : `${window.location.origin}/livekit-token`,
+
+    /** Bot Service admin API */
+    botApiUrl: isDev
+        ? `http://${host}:7891/api`
+        : `${window.location.origin}/bot-api`,
 };
+
+export function getConfig() {
+    return config;
+}

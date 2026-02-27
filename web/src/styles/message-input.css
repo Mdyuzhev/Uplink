@@ -7,6 +7,7 @@
 
 /* Контейнер-капсула с рамкой */
 .message-input__wrapper {
+    position: relative;
     display: flex;
     flex-direction: column;
     background: var(--uplink-bg-tertiary);
@@ -190,5 +191,65 @@
     font-weight: 600;
     z-index: 10;
     pointer-events: none;
+}
+
+/* ═══════════════════════════════════
+   SLASH COMMAND AUTOCOMPLETE
+   ═══════════════════════════════════ */
+.command-suggestions {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--uplink-bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--uplink-radius-md, 8px);
+    padding: 4px;
+    margin-bottom: 4px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 10;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.command-suggestions__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--uplink-radius-sm, 4px);
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.command-suggestions__item:hover,
+.command-suggestions__item--active {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.command-suggestions__command {
+    font-family: var(--uplink-font-mono, monospace);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--uplink-accent);
+    white-space: nowrap;
+}
+
+.command-suggestions__bot {
+    font-size: 11px;
+    color: var(--uplink-text-faint);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.command-suggestions__desc {
+    font-size: 13px;
+    color: var(--uplink-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
 }
 

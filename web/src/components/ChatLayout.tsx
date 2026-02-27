@@ -17,6 +17,7 @@ import { CreateSpaceModal } from './CreateSpaceModal';
 import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
 import { ThreadPanel } from './ThreadPanel';
+import { BotSettings } from './BotSettings';
 import '../styles/chat.css';
 import '../styles/sidebar.css';
 import '../styles/room-header.css';
@@ -26,6 +27,7 @@ import '../styles/call.css';
 import '../styles/profile.css';
 import '../styles/admin.css';
 import '../styles/thread.css';
+import '../styles/bots.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;
@@ -115,17 +117,27 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
             <div className={`chat-main ${chat.activeThread ? 'chat-main--with-thread' : ''}`}>
                 {chat.activeRoom ? (
                     <>
-                        <RoomHeader
-                            room={chat.activeRoom}
-                            onBack={chat.handleBack}
-                            callState={callState}
-                            activeCallRoomName={activeRoomName}
-                            onJoinCall={handleJoinCall}
-                            onLeaveCall={handleLeaveCall}
-                            pinnedMessages={chat.pinnedMessages}
-                            onScrollToMessage={chat.setScrollToEventId}
-                            onUnpin={chat.togglePin}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <RoomHeader
+                                room={chat.activeRoom}
+                                onBack={chat.handleBack}
+                                callState={callState}
+                                activeCallRoomName={activeRoomName}
+                                onJoinCall={handleJoinCall}
+                                onLeaveCall={handleLeaveCall}
+                                pinnedMessages={chat.pinnedMessages}
+                                onScrollToMessage={chat.setScrollToEventId}
+                                onUnpin={chat.togglePin}
+                                showBotSettings={chat.showBotSettings}
+                                onToggleBotSettings={() => chat.setShowBotSettings(!chat.showBotSettings)}
+                            />
+                            {chat.showBotSettings && chat.activeRoomId && (
+                                <BotSettings
+                                    roomId={chat.activeRoomId}
+                                    onClose={() => chat.setShowBotSettings(false)}
+                                />
+                            )}
+                        </div>
 
                         {callError && (
                             <div className="call-error">{callError}</div>

@@ -216,3 +216,30 @@
     background: rgba(218, 55, 60, 0.1);
 }
 
+/* Кнопка ботов */
+.room-header__btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.room-header__btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--uplink-text-secondary);
+}
+
+.room-header__btn--active {
+    color: var(--uplink-accent);
+    background: rgba(88, 101, 242, 0.12);
+}
+

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { matrixService } from '../matrix/MatrixService';
+import { commandRegistry, BotCommand } from '../bots/CommandRegistry';
 
 export interface ReplyToInfo {
     eventId: string;
@@ -23,9 +24,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const [text, setText] = useState('');
     const [isDragOver, setIsDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [suggestions, setSuggestions] = useState<BotCommand[]>([]);
+    const [selectedSuggestion, setSelectedSuggestion] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+    // Загрузить команды ботов при монтировании
+    useEffect(() => {
+        if (!commandRegistry.isLoaded()) {
+            commandRegistry.load();
+        }
+    }, []);
 
     const adjustHeight = useCallback(() => {
         const ta = textareaRef.current;
@@ -71,8 +81,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setText(e.target.value);
+        const value = e.target.value;
+        setText(value);
         adjustHeight();
+
+        // Автокомплит slash-команд
+        if (value.startsWith('/') && !value.includes('\n')) {
+            const matches = commandRegistry.search(value);
+            setSuggestions(matches);
+            setSelectedSuggestion(0);
+        } else {
+            setSuggestions([]);
+        }
 
         // Typing indicator
         if (roomId && e.target.value.length > 0) {
@@ -88,8 +108,34 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        // Навигация по подсказкам команд
+        if (suggestions.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedSuggestion(i => Math.min(i + 1, suggestions.length - 1));
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedSuggestion(i => Math.max(i - 1, 0));
+                return;
+            }
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const cmd = suggestions[selectedSuggestion];
+                setText(cmd.command + ' ');
+                setSuggestions([]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                setSuggestions([]);
+                return;
+            }
+        }
+
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            setSuggestions([]);
             handleSend();
         }
         if (e.key === 'Escape' && replyTo) {
@@ -169,6 +215,25 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 </div>
             )}
             <div className="message-input__wrapper">
+                {suggestions.length > 0 && (
+                    <div className="command-suggestions">
+                        {suggestions.map((cmd, i) => (
+                            <div
+                                key={cmd.command}
+                                className={`command-suggestions__item ${i === selectedSuggestion ? 'command-suggestions__item--active' : ''}`}
+                                onClick={() => {
+                                    setText(cmd.command + ' ');
+                                    setSuggestions([]);
+                                    textareaRef.current?.focus();
+                                }}
+                            >
+                                <span className="command-suggestions__command">{cmd.command}</span>
+                                <span className="command-suggestions__bot">{cmd.botName}</span>
+                                <span className="command-suggestions__desc">{cmd.description}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 {replyTo && (
                     <div className="message-input__reply-preview">
                         <div className="message-input__reply-line" />

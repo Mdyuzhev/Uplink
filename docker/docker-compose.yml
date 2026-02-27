@@ -96,6 +96,28 @@ services:
       synapse:
         condition: service_healthy
 
+  uplink-botservice:
+    build:
+      context: ./uplink-botservice
+      dockerfile: Dockerfile
+    container_name: uplink-botservice
+    restart: unless-stopped
+    environment:
+      HOMESERVER_URL: http://synapse:8008
+      AS_TOKEN: ${BOT_AS_TOKEN}
+      HS_TOKEN: ${BOT_HS_TOKEN}
+      SERVER_NAME: uplink.local
+    volumes:
+      - uplink-botservice-data:/app/data
+    depends_on:
+      synapse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:7891/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   deploy-webhook:
     build:
       context: ./deploy-webhook
@@ -119,3 +141,4 @@ volumes:
   uplink-postgres-data:
   uplink-redis-data:
   uplink-synapse-media:
+  uplink-botservice-data:

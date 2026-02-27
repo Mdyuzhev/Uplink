@@ -23,14 +23,14 @@ export function useUsers() {
             const serverUsers = await matrixService.admin.listServerUsers();
             const myUserId = matrixService.getUserId();
             setUsers(serverUsers
-                .filter(u => u.userId !== myUserId && !u.deactivated)
+                .filter(u => u.userId !== myUserId && !u.deactivated && !u.userId.startsWith('@bot_'))
                 .map(u => ({ userId: u.userId, displayName: u.displayName, avatarUrl: u.avatarUrl }))
             );
         } catch {
             // Не админ — фолбэк на User Directory
             try {
                 const result = await matrixService.users.searchUsers('');
-                setUsers(result);
+                setUsers(result.filter(u => !u.userId.startsWith('@bot_')));
             } catch (err) {
                 console.error('Ошибка загрузки пользователей:', err);
             }

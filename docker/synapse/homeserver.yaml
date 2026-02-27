@@ -86,3 +86,7 @@ user_directory:
   enabled: true
   search_all_users: true
   prefer_local_users: true
+
+# Application Services (боты)
+app_service_config_files:
+  - /data/appservice-bots.yaml
