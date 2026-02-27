@@ -1,0 +1,66 @@
+{
+    "name": "uplink",
+    "displayName": "Uplink",
+    "description": "Командный мессенджер со звонками, встроенный в VS Code",
+    "version": "0.1.0",
+    "publisher": "uplink-team",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": ["Other"],
+    "activationEvents": ["onStartupFinished"],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "uplink.openChat",
+                "title": "Uplink: Открыть чат",
+                "icon": "$(comment-discussion)"
+            },
+            {
+                "command": "uplink.disconnect",
+                "title": "Uplink: Отключиться"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "uplink",
+                    "title": "Uplink",
+                    "icon": "resources/icon.svg"
+                }
+            ]
+        },
+        "views": {
+            "uplink": [
+                {
+                    "type": "webview",
+                    "id": "uplink.chatPanel",
+                    "name": "Чат"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Uplink",
+            "properties": {
+                "uplink.serverUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "URL Matrix-сервера (например, https://uplink.example.com)"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run build",
+        "build": "node esbuild.config.mjs --production",
+        "watch": "node esbuild.config.mjs --watch",
+        "package": "vsce package"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@vscode/vsce": "^2.22.0",
+        "esbuild": "^0.19.0",
+        "typescript": "^5.3.0"
+    }
+}

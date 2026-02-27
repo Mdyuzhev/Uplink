@@ -7,12 +7,13 @@ import { ReactionService } from './ReactionService';
 import { ThreadService } from './ThreadService';
 import { UserService } from './UserService';
 import { RoomService } from './RoomService';
+import { storageGet, storageSet, storageRemove } from '../utils/storage';
 
 /**
  * Сервис подключения к Matrix для веб-приложения.
  *
  * В отличие от VS Code версии, работает напрямую в браузере:
- * - Токен хранится в localStorage (для PoC допустимо)
+ * - Токен хранится через storage.ts (localStorage / VS Code bridge)
  * - События передаются через callback-функции
  */
 
@@ -107,10 +108,10 @@ export class MatrixService {
                 initial_device_display_name: 'Uplink Web',
             });
 
-            localStorage.setItem(STORAGE_KEYS.HOMESERVER, homeserver);
-            localStorage.setItem(STORAGE_KEYS.USER_ID, response.user_id);
-            localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
-            localStorage.setItem(STORAGE_KEYS.DEVICE_ID, response.device_id);
+            storageSet(STORAGE_KEYS.HOMESERVER, homeserver);
+            storageSet(STORAGE_KEYS.USER_ID, response.user_id);
+            storageSet(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
+            storageSet(STORAGE_KEYS.DEVICE_ID, response.device_id);
 
             await this.initClient(
                 homeserver,
@@ -125,10 +126,10 @@ export class MatrixService {
     }
 
     async restoreSession(): Promise<boolean> {
-        const homeserver = localStorage.getItem(STORAGE_KEYS.HOMESERVER);
-        const userId = localStorage.getItem(STORAGE_KEYS.USER_ID);
-        const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-        const deviceId = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
+        const homeserver = storageGet(STORAGE_KEYS.HOMESERVER);
+        const userId = storageGet(STORAGE_KEYS.USER_ID);
+        const token = storageGet(STORAGE_KEYS.ACCESS_TOKEN);
+        const deviceId = storageGet(STORAGE_KEYS.DEVICE_ID);
 
         if (!homeserver || !userId || !token || !deviceId) {
             return false;
@@ -371,7 +372,7 @@ export class MatrixService {
     }
 
     clearSession(): void {
-        Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+        Object.values(STORAGE_KEYS).forEach(key => storageRemove(key));
     }
 
     private setConnectionState(state: ConnectionState): void {

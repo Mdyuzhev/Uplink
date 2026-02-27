@@ -10,7 +10,8 @@
     "lint": "eslint . --ext ts,tsx",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "build:vscode": "tsc && vite build --outDir dist-vscode --base ./"
   },
   "dependencies": {
     "@matrix-org/matrix-sdk-crypto-wasm": "^17.1.0",

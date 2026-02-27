@@ -1,11 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { matrixService } from '../matrix/MatrixService';
 
-// Проверить, работаем ли мы внутри Tauri
+// Проверить среду выполнения
 const isTauri = '__TAURI_INTERNALS__' in window;
+const isVSCode = !!(window as any).__VSCODE__;
 
-/** Показать уведомление — нативное (Tauri) или браузерное */
+/** Показать уведомление — VS Code / Tauri / браузерное */
 async function showNotification(title: string, body: string, onClick?: () => void) {
+    if (isVSCode) {
+        (window as any).__VSCODE_API__?.postMessage({
+            type: 'notification', title, body,
+        });
+        return;
+    }
     if (isTauri) {
         try {
             const { sendNotification, isPermissionGranted, requestPermission } =

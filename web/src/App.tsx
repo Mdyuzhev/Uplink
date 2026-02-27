@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useMatrix } from './hooks/useMatrix';
 import { LoginScreen } from './components/LoginScreen';
 import { ChatLayout } from './components/ChatLayout';
+import { initStorage } from './utils/storage';
 
 export const App: React.FC = () => {
     const { connectionState, error, login, logout, restoreSession } = useMatrix();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        restoreSession().finally(() => setLoading(false));
+        initStorage().then(() => {
+            restoreSession().finally(() => setLoading(false));
+        });
     }, []);
 
     if (loading) {
