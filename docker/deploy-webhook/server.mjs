@@ -42,32 +42,43 @@ function getLastCommitInfo() {
 
 /**
  * Уведомить botservice о результате деплоя.
+ * Retry с задержкой — botservice может ещё не подняться после docker compose up.
  */
 async function notifyDeploy(result, commitInfo, pushPayload) {
-    try {
-        const payload = {
-            event: 'deploy',
-            status: result.ok ? 'success' : 'failure',
-            elapsed: result.elapsed || null,
-            error: result.error || null,
-            commit: commitInfo,
-            pusher: pushPayload?.pusher?.name || pushPayload?.sender?.login || null,
-            compare_url: pushPayload?.compare || null,
-            timestamp: new Date().toISOString(),
-        };
+    const payload = {
+        event: 'deploy',
+        status: result.ok ? 'success' : 'failure',
+        elapsed: result.elapsed || null,
+        error: result.error || null,
+        commit: commitInfo,
+        pusher: pushPayload?.pusher?.name || pushPayload?.sender?.login || null,
+        compare_url: pushPayload?.compare || null,
+        timestamp: new Date().toISOString(),
+    };
 
-        const resp = await fetch(`${BOTSERVICE_URL}/hooks/ci`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-deploy-event': 'deploy',
-            },
-            body: JSON.stringify(payload),
-        });
-        console.log(`Уведомление botservice: ${resp.status}`);
-    } catch (err) {
-        console.warn('Не удалось уведомить botservice:', err.message);
+    const maxRetries = 5;
+    const delayMs = 3000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const resp = await fetch(`${BOTSERVICE_URL}/hooks/ci`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-deploy-event': 'deploy',
+                },
+                body: JSON.stringify(payload),
+            });
+            console.log(`Уведомление botservice: ${resp.status}`);
+            return;
+        } catch (err) {
+            console.warn(`Попытка ${attempt}/${maxRetries} — botservice недоступен: ${err.message}`);
+            if (attempt < maxRetries) {
+                await new Promise(r => setTimeout(r, delayMs));
+            }
+        }
     }
+    console.warn('Не удалось уведомить botservice после всех попыток');
 }
 
 /** Выполнить деплой: git pull → docker compose up --build -d */
