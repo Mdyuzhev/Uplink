@@ -26,7 +26,8 @@
 }
 
 /* ═══════════════════════════════════
-   MOBILE
+   MOBILE — базовая раскладка (sidebar toggle)
+   Детальная адаптация — в mobile.css
    ═══════════════════════════════════ */
 @media (max-width: 768px) {
     .chat-layout {
@@ -56,23 +57,7 @@
         display: block;
     }
 
-    .room-header__info {
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .room-header__topic {
-        border-left: none;
-        padding-left: 0;
-    }
-
-    .message-input {
-        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    }
-}
-
-/* Sidebar overlay on mobile */
-@media (max-width: 768px) {
+    /* Sidebar overlay */
     .chat-sidebar::after {
         content: '';
         position: fixed;
@@ -89,23 +74,6 @@
     .chat-sidebar:not(.chat-sidebar--hidden)::after {
         opacity: 1;
         pointer-events: auto;
-    }
-}
-
-/* Touch targets */
-@media (pointer: coarse) {
-    .sidebar-room-item {
-        min-height: 44px;
-    }
-    .message-input__textarea {
-        font-size: 16px;
-    }
-    .incoming-call-overlay__btn {
-        width: 64px;
-        height: 64px;
-    }
-    .call-bar__btn {
-        min-height: 44px;
     }
 }
 

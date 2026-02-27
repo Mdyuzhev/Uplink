@@ -1,0 +1,810 @@
+/* ═══════════════════════════════════════════════════════════
+   MOBILE.CSS — Адаптация для мобильных браузеров
+   
+   Цель: приблизить к нативному приложению.
+   Все мобильные правки собраны здесь, не размазаны по файлам.
+   Подключается последним — перекрывает десктопные стили.
+   ═══════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────────────────
+   1. ФУНДАМЕНТ — убираем "браузерность"
+   ───────────────────────────────────────────────────────── */
+
+/* Всё что ниже — только для мобильных экранов */
+@media (max-width: 768px) {
+
+    /* Использовать реальную высоту viewport (учитывает клавиатуру на iOS) */
+    body, #root, .chat-layout {
+        height: var(--vh, 100dvh);
+    }
+
+    /* Отключить pull-to-refresh и rubber band эффект */
+    html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Убрать синюю подсветку при тапе (Android Chrome) */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Отключить double-tap zoom на интерактивных элементах */
+    button, a, input, textarea, select,
+    .sidebar-room-item,
+    .message-bubble,
+    .reaction-chip,
+    .thread-indicator {
+        touch-action: manipulation;
+    }
+
+    /* Запретить длинное нажатие (callout) на кнопках */
+    button, .message-bubble__action-btn {
+        -webkit-touch-callout: none;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   2. SAFE AREA INSETS — для вырезов, островов, жестовых полос
+   ───────────────────────────────────────────────────────── */
+
+    /* Шапка sidebar — отступ сверху под вырез */
+    .chat-sidebar__header {
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+        min-height: calc(52px + env(safe-area-inset-top, 0px));
+    }
+
+    /* Шапка комнаты — отступ сверху */
+    .room-header {
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+        min-height: calc(52px + env(safe-area-inset-top, 0px));
+    }
+
+    /* Поле ввода — отступ снизу под жестовую полосу */
+    .message-input {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Тред: инпут тоже снизу */
+    .thread-panel__input {
+        margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* CallBar — снизу */
+    .call-bar {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Overlay звонка — safe area со всех сторон */
+    .incoming-call-overlay__card {
+        margin: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
+        padding: 32px 24px;
+        min-width: auto;
+        width: calc(100% - 32px);
+        max-width: 340px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   3. SIDEBAR — на мобильном как drawer
+   ───────────────────────────────────────────────────────── */
+
+    .chat-sidebar {
+        width: 85vw;          /* не 100%, чтобы видно было край чата */
+        min-width: 85vw;
+        max-width: 320px;
+    }
+
+    /* Поиск: font-size 16px чтобы iOS не зумил */
+    .chat-sidebar__search-input {
+        font-size: 16px;
+    }
+
+    /* Room item — увеличить touch target */
+    .sidebar-room-item {
+        min-height: 48px;
+        padding: 8px 12px;
+    }
+
+    .sidebar-room-item__name {
+        font-size: 15px;
+    }
+
+    /* Пространства — увеличить touch target */
+    .sidebar-space__header {
+        min-height: 40px;
+        padding: 8px 12px;
+    }
+
+    /* Кнопки в header sidebar — крупнее */
+    .chat-sidebar__profile-btn {
+        font-size: 14px;
+        padding: 6px 12px;
+        min-height: 36px;
+    }
+
+    .chat-sidebar__logout {
+        padding: 8px;
+        font-size: 20px;
+        min-width: 36px;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   4. ROOM HEADER — компактный на мобильном
+   ───────────────────────────────────────────────────────── */
+
+    .room-header {
+        padding: 8px 12px;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        gap: 8px;
+    }
+
+    /* Кнопка "назад" — крупный touch target */
+    .room-header__back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 22px;
+        padding: 0;
+    }
+
+    /* Имя и топик — вертикально */
+    .room-header__info {
+        flex-direction: column;
+        gap: 1px;
+        min-width: 0;
+    }
+
+    .room-header__name {
+        font-size: 15px;
+    }
+
+    .room-header__topic {
+        border-left: none;
+        padding-left: 0;
+        font-size: 12px;
+        max-width: 100%;
+    }
+
+    /* Actions — компактнее */
+    .room-header__actions {
+        gap: 2px;
+    }
+
+    .room-header__call-btn,
+    .room-header__btn {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+    }
+
+    /* Pin panel — на весь экран */
+    .pinned-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        margin-top: 0;
+        z-index: 50;
+    }
+
+    .pinned-panel__header {
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    }
+
+    .room-header__pin-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   5. СООБЩЕНИЯ — компактнее, без hover-зависимостей
+   ───────────────────────────────────────────────────────── */
+
+    /* Уменьшить отступы — на 375px экране каждый пиксель на счету */
+    .message-bubble {
+        padding: 2px 12px 2px 52px;
+    }
+
+    .message-bubble--full {
+        margin-top: 12px;
+    }
+
+    /* Аватар меньше и ближе к краю */
+    .message-bubble__avatar-col {
+        left: 10px;
+        width: 32px;
+    }
+
+    .message-bubble__avatar-col .avatar {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 13px !important;
+    }
+
+    /* Текст */
+    .message-bubble__body {
+        font-size: 15px;
+    }
+
+    /* Reply цитата — компактнее */
+    .message-bubble__reply-quote {
+        max-width: 100%;
+    }
+
+    .message-bubble__reply-text {
+        max-width: calc(100vw - 120px);
+    }
+
+    /* Код — по ширине экрана */
+    .code-snippet,
+    .md-code-block {
+        max-width: 100%;
+    }
+
+    .code-snippet__body {
+        font-size: 12px;
+    }
+
+    /* Картинки — ограничить */
+    .message-bubble__image-img {
+        max-width: calc(100vw - 80px);
+        max-height: 300px;
+    }
+
+    /* Файл — компактнее */
+    .message-bubble__file {
+        max-width: 100%;
+    }
+
+    /* ──── ACTION BAR: на тачах hover не работает ──── */
+    
+    /* Скрыть hover action-bar — он бесполезен на тач-устройствах */
+    .message-bubble__action-bar {
+        display: none;
+    }
+
+    /* Вместо hover — long press (tap-hold) обработка в JS.
+       Но пока fallback: показывать action-bar при :active на сообщении.
+       Пользователь может использовать long-tap для контекстного меню. */
+
+    /* Emoji picker — тоже адаптировать */
+    .message-bubble__emoji-picker {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: var(--uplink-radius-lg) var(--uplink-radius-lg) 0 0;
+        padding: 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        justify-content: center;
+        gap: 8px;
+        z-index: 50;
+    }
+
+    .message-bubble__emoji-picker-btn {
+        font-size: 28px;
+        padding: 8px 10px;
+    }
+
+    /* Реакции — touch-friendly */
+    .reaction-chip {
+        padding: 4px 10px;
+        min-height: 32px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   6. ПОЛЕ ВВОДА — iOS keyboard, safe area
+   ───────────────────────────────────────────────────────── */
+
+    .message-input {
+        padding: 0 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .message-input__wrapper {
+        border-radius: 20px;
+    }
+
+    /* ВАЖНО: 16px минимум чтобы iOS не зумил при фокусе */
+    .message-input__textarea {
+        font-size: 16px;
+        min-height: 36px;
+        padding: 6px 0;
+    }
+
+    .message-input__row {
+        padding: 3px 4px 3px 14px;
+    }
+
+    /* Кнопки — крупнее для пальцев */
+    .message-input__action-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .message-input__send-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Reply preview — компактнее */
+    .message-input__reply-preview {
+        padding: 8px 12px 0;
+    }
+
+    .message-input__reply-line {
+        height: 24px;
+    }
+
+    /* Slash-автокомплит — компактнее */
+    .command-suggestions {
+        max-height: 200px;
+    }
+
+    .command-suggestions__bot {
+        display: none;  /* скрыть имя бота — экономим место */
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   7. THREAD PANEL — полноэкранный
+   ───────────────────────────────────────────────────────── */
+
+    .thread-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        min-width: 100%;
+        z-index: 20;
+        border-left: none;
+    }
+
+    .thread-panel__header {
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+        min-height: calc(52px + env(safe-area-inset-top, 0px));
+    }
+
+    /* Кнопка закрытия — крупнее */
+    .thread-panel__close {
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .thread-panel__input {
+        margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Thread textarea — 16px для iOS */
+    .thread-panel__textarea {
+        font-size: 16px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   8. ЗВОНКИ — адаптация
+   ───────────────────────────────────────────────────────── */
+
+    .call-bar {
+        padding: 10px 12px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .call-bar__controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .call-bar__btn {
+        min-height: 44px;
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    /* Video grid — вертикальная на телефоне */
+    .video-grid {
+        flex-direction: column;
+        max-height: none;
+        padding: 4px 8px;
+    }
+
+    .video-tile {
+        height: auto;
+        width: 100%;
+        max-height: 200px;
+    }
+
+    /* Входящий звонок — кнопки крупнее */
+    .incoming-call-overlay__btn {
+        width: 64px;
+        height: 64px;
+        font-size: 26px;
+    }
+
+    .incoming-call-overlay__actions {
+        gap: 32px;
+    }
+
+    .incoming-call-overlay__caller {
+        font-size: 20px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   9. МОДАЛКИ — fullscreen на мобильном
+   ───────────────────────────────────────────────────────── */
+
+    /* Profile modal */
+    .profile-modal__overlay {
+        align-items: flex-end; /* снизу, как bottom sheet */
+    }
+
+    .profile-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 90vh;
+        border-radius: var(--uplink-radius-lg) var(--uplink-radius-lg) 0 0;
+        margin: 0;
+    }
+
+    /* Create room / space modals */
+    .create-room-modal,
+    .create-space-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 90vh;
+        border-radius: var(--uplink-radius-lg) var(--uplink-radius-lg) 0 0;
+        margin: 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    /* Модалка создания бота — полноэкранная */
+    .bot-create-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    /* Bot settings — fullscreen */
+    .bot-settings {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: 30;
+        border-radius: 0;
+    }
+
+    .bot-settings__header {
+        padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    }
+
+    /* Admin panel — fullscreen */
+    .admin-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: 25;
+    }
+
+    /* Все модальные input-ы — 16px */
+    .profile-modal input,
+    .profile-modal textarea,
+    .create-room-modal input,
+    .create-room-modal textarea,
+    .create-space-modal input,
+    .bot-create-modal input,
+    .bot-create-modal textarea,
+    .admin-panel input,
+    .admin-panel textarea {
+        font-size: 16px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   10. LOGIN — мобильная адаптация
+   ───────────────────────────────────────────────────────── */
+
+    .login-container {
+        padding: 20px 16px;
+        padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    }
+
+    .login-card {
+        max-width: 100%;
+        padding: 24px 20px;
+    }
+
+    .login-card input {
+        font-size: 16px;    /* iOS zoom prevention */
+        min-height: 44px;
+    }
+
+    .login-card button {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   11. TYPING INDICATOR — ближе к вводу
+   ───────────────────────────────────────────────────────── */
+
+    .typing-indicator {
+        padding: 2px 12px 4px 52px;
+        font-size: 11px;
+    }
+
+
+/* ─────────────────────────────────────────────────────────
+   12. SCROLLBAR — скрыть на тач-устройствах
+   ───────────────────────────────────────────────────────── */
+
+    /* На мобильных нативный скролл, системный scrollbar */
+    .message-list::-webkit-scrollbar,
+    .chat-sidebar__rooms::-webkit-scrollbar,
+    .thread-panel__messages::-webkit-scrollbar {
+        display: none;
+    }
+
+    .message-list,
+    .chat-sidebar__rooms,
+    .thread-panel__messages {
+        scrollbar-width: none;
+    }
+
+} /* end @media (max-width: 768px) */
+
+
+/* ─────────────────────────────────────────────────────────
+   MOBILE ACTION SHEET — bottom sheet по long-press
+   ───────────────────────────────────────────────────────── */
+
+.mobile-action-sheet-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.15s ease;
+}
+
+.mobile-action-sheet {
+    width: 100%;
+    background: var(--uplink-bg-secondary);
+    border-radius: var(--uplink-radius-lg) var(--uplink-radius-lg) 0 0;
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    animation: slideUp 0.2s ease;
+}
+
+.mobile-action-sheet button {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    background: none;
+    border: none;
+    color: var(--uplink-text-primary);
+    font-size: 16px;
+    font-family: var(--uplink-font);
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-action-sheet button:active {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.mobile-action-sheet__cancel {
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: var(--uplink-text-muted) !important;
+    text-align: center !important;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   13. COARSE POINTER — тач-устройства любого размера (планшеты)
+   ───────────────────────────────────────────────────────── */
+
+@media (pointer: coarse) {
+    /* Минимальный touch target — 44px (Apple HIG) */
+    .sidebar-room-item {
+        min-height: 44px;
+    }
+
+    .room-header__call-btn,
+    .room-header__btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .call-bar__btn {
+        min-height: 44px;
+    }
+
+    .incoming-call-overlay__btn {
+        width: 64px;
+        height: 64px;
+    }
+
+    /* Input font-size: 16px для iOS (на любом тач-устройстве) */
+    .message-input__textarea,
+    .thread-panel__textarea,
+    .chat-sidebar__search-input {
+        font-size: 16px;
+    }
+
+    /* Скрыть hover-only элементы */
+    .message-bubble__action-bar {
+        display: none;
+    }
+
+    /* Section add buttons — всегда видимы на тачах */
+    .chat-sidebar__section-add-btn,
+    .sidebar-space__add-btn {
+        opacity: 1;
+    }
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   14. LANDSCAPE НА ТЕЛЕФОНЕ — ещё компактнее
+   ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) and (orientation: landscape) {
+    .room-header {
+        min-height: 40px;
+        padding: 4px 12px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    }
+
+    .message-input {
+        padding-left: calc(10px + env(safe-area-inset-left, 0px));
+        padding-right: calc(10px + env(safe-area-inset-right, 0px));
+    }
+
+    .message-bubble {
+        padding-left: calc(52px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    }
+
+    /* Звонковый оверлей — горизонтально */
+    .incoming-call-overlay__card {
+        flex-direction: row;
+        max-width: 500px;
+    }
+
+    /* Video — горизонтальная сетка */
+    .video-grid {
+        flex-direction: row;
+        max-height: 50vh;
+    }
+
+    .video-tile {
+        width: auto;
+        height: 100%;
+        flex: 1;
+    }
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   15. PWA STANDALONE — убрать всё «браузерное»
+   
+   Когда приложение добавлено на домашний экран
+   (display: standalone в manifest.json),
+   эти стили делают его неотличимым от нативного.
+   ───────────────────────────────────────────────────────── */
+
+@media (display-mode: standalone) {
+    /* Запретить выделение текста на не-текстовых элементах */
+    .chat-sidebar,
+    .room-header,
+    .call-bar,
+    .message-input,
+    .thread-panel__header,
+    button {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Текст сообщений — можно выделять */
+    .message-bubble__body,
+    .code-snippet__body,
+    .thread-panel__message-body {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+
+    /* Ещё раз overscroll — в standalone особенно важно */
+    html {
+        overscroll-behavior: none;
+    }
+
+    /* Убрать focus ring на тач-устройствах в standalone */
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+        outline: none;
+    }
+}
+
+
+/* ─────────────────────────────────────────────────────────
+   16. МАЛЕНЬКИЕ ЭКРАНЫ (< 360px, iPhone SE, Galaxy A)
+   ───────────────────────────────────────────────────────── */
+
+@media (max-width: 360px) {
+    .message-bubble {
+        padding-left: 46px;
+    }
+
+    .message-bubble__avatar-col {
+        left: 8px;
+        width: 28px;
+    }
+
+    .message-bubble__avatar-col .avatar {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 11px !important;
+    }
+
+    .message-bubble__sender {
+        font-size: 14px;
+    }
+
+    .room-header__name {
+        font-size: 14px;
+    }
+
+    .chat-sidebar__title {
+        font-size: 15px;
+    }
+
+    .typing-indicator {
+        padding-left: 46px;
+    }
+}

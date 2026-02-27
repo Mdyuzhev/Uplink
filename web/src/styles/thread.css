@@ -238,26 +238,11 @@
     opacity: 1;
 }
 
-/* ═══════════════════════════════════
-   MOBILE — тред на весь экран
-   ═══════════════════════════════════ */
-@media (max-width: 768px) {
-    .thread-panel {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        min-width: 100%;
-        z-index: 20;
-        border-left: none;
-    }
-}
-
+/* Планшет — узкая панель треда */
 @media (max-width: 1024px) and (min-width: 769px) {
     .thread-panel {
         width: 320px;
         min-width: 320px;
     }
 }
+/* Мобильный fullscreen — в mobile.css */

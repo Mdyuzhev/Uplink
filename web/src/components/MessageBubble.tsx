@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { Avatar } from './Avatar';
 import { CodeSnippet } from './CodeSnippet';
@@ -6,6 +6,8 @@ import { renderMarkdown } from '../utils/markdown';
 import { formatTime, formatFileSize, getSenderColor, pluralReplies } from './message/formatters';
 export type { ReactionInfo, ThreadSummaryInfo } from './message/types';
 import type { ReactionInfo, ThreadSummaryInfo } from './message/types';
+
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '🎉', '👀', '🔥', '✅', '❌'];
 
@@ -28,6 +30,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     onReply, onReact, onRemoveReaction, onPin, onOpenThread, onScrollToMessage,
 }) => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showMobileActions, setShowMobileActions] = useState(false);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleTouchStart = useCallback(() => {
+        if (!isTouchDevice) return;
+        longPressTimer.current = setTimeout(() => {
+            setShowMobileActions(true);
+            navigator.vibrate?.(30);
+        }, 500);
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    }, []);
+
+    const handleTouchMove = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    }, []);
 
     const handleEmojiSelect = (emoji: string) => {
         setShowEmojiPicker(false);
@@ -46,6 +72,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div
             className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''}`}
             data-event-id={message.id}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
         >
             {/* Action-bar — появляется при hover */}
             <div className="message-bubble__action-bar">
@@ -188,6 +217,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Mobile action sheet (long-press на тач-устройствах) */}
+            {showMobileActions && isTouchDevice && (
+                <div className="mobile-action-sheet-overlay" onClick={() => setShowMobileActions(false)}>
+                    <div className="mobile-action-sheet" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => { onReply?.(message); setShowMobileActions(false); }}>↩ Ответить</button>
+                        <button onClick={() => { setShowMobileActions(false); setShowEmojiPicker(true); }}>😀 Реакция</button>
+                        <button onClick={() => { onOpenThread?.(message.id); setShowMobileActions(false); }}>💬 Тред</button>
+                        <button onClick={() => { onPin?.(message.id); setShowMobileActions(false); }}>
+                            📌 {isPinned ? 'Открепить' : 'Закрепить'}
+                        </button>
+                        <button className="mobile-action-sheet__cancel" onClick={() => setShowMobileActions(false)}>Отмена</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

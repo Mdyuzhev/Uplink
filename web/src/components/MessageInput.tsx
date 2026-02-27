@@ -270,6 +270,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                         onChange={handleChange}
                         onKeyDown={handleKeyDown}
                         onPaste={handlePaste}
+                        onFocus={() => {
+                            // iOS: задержка на анимацию клавиатуры, затем скролл к полю ввода
+                            setTimeout(() => {
+                                textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            }, 300);
+                        }}
                         placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
                         rows={1}
                     />

@@ -3,6 +3,7 @@ import { useChatState } from '../hooks/useChatState';
 import { useLiveKit } from '../hooks/useLiveKit';
 import { useCallSignaling } from '../hooks/useCallSignaling';
 import { useVSCodeBridge, base64ToFile } from '../hooks/useVSCodeBridge';
+import { useViewportResize } from '../hooks/useViewportResize';
 import { callSignalingService } from '../livekit/CallSignalingService';
 import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
@@ -31,6 +32,7 @@ import '../styles/profile.css';
 import '../styles/admin.css';
 import '../styles/thread.css';
 import '../styles/bots.css';
+import '../styles/mobile.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;
@@ -38,6 +40,7 @@ interface ChatLayoutProps {
 
 export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
     const chat = useChatState();
+    useViewportResize();
 
     const {
         callState, participants, duration, isMuted, isCameraOn,
