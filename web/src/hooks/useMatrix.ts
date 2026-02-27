@@ -11,6 +11,17 @@ export function useMatrix() {
         return matrixService.onConnectionChange((state) => {
             setConnectionState(state);
             if (state === 'connected') setError(null);
+
+            // VS Code: отправить статус подключения для status bar
+            if ((window as any).__VSCODE__) {
+                const mapped = state === 'connected' ? 'connected'
+                    : state === 'connecting' ? 'connecting'
+                    : 'disconnected';
+                (window as any).__VSCODE_API__?.postMessage({
+                    type: 'connection-state',
+                    state: mapped,
+                });
+            }
         });
     }, []);
 

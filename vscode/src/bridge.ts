@@ -1,7 +1,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { updateConnectionStatus } from './statusBar';
+import { updateConnectionStatus, setCallState } from './statusBar';
+import { handleNotification } from './notifications';
+
+/** Ссылка на WebviewView для обновления badge */
+let _webviewView: vscode.WebviewView | undefined;
+
+export function setWebviewViewRef(view: vscode.WebviewView): void {
+    _webviewView = view;
+}
 
 /**
  * Мост между Extension Host и WebView.
@@ -30,19 +38,22 @@ export function handleWebViewMessage(
             break;
         }
 
-        // --- Уведомления ---
+        // --- Уведомления (три уровня) ---
         case 'notification': {
-            const { title, body } = msg as { title: string; body: string };
-            vscode.window.showInformationMessage(`${title}: ${body}`);
+            handleNotification(
+                msg as any,
+                webview,
+            );
             break;
         }
 
-        // --- Unread badge ---
+        // --- Unread badge на Activity Bar ---
         case 'unread-count': {
-            // ViewBadge обновляется через webviewView, пока логируем
             const count = msg.count as number;
-            if (count > 0) {
-                vscode.window.setStatusBarMessage(`Uplink: ${count} непрочитанных`, 5000);
+            if (_webviewView) {
+                _webviewView.badge = count > 0
+                    ? { tooltip: `${count} непрочитанных`, value: count }
+                    : undefined;
             }
             break;
         }
@@ -50,6 +61,12 @@ export function handleWebViewMessage(
         // --- Статус подключения ---
         case 'connection-state': {
             updateConnectionStatus(msg.state as string);
+            break;
+        }
+
+        // --- Состояние звонка ---
+        case 'call-state': {
+            setCallState(msg.active as boolean);
             break;
         }
 

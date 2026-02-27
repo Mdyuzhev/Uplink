@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { UplinkPanel } from './UplinkPanel';
 import { setStatusBarItem } from './statusBar';
+import { registerCommands } from './commands';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Uplink активирован');
@@ -26,6 +27,9 @@ export function activate(context: vscode.ExtensionContext) {
             UplinkPanel.postToWebview({ type: 'command', command: 'logout' });
         }),
     );
+
+    // Команды: отправка кода, файлов, звонок
+    registerCommands(context);
 
     // Status Bar
     const statusBar = vscode.window.createStatusBarItem(

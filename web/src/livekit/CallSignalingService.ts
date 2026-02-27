@@ -316,6 +316,14 @@ class CallSignalingService {
         this._state = state;
         this._currentCall = info;
         this._listeners.forEach(fn => fn(state, info));
+
+        // VS Code: отправить состояние звонка для status bar
+        if ((window as any).__VSCODE__) {
+            (window as any).__VSCODE_API__?.postMessage({
+                type: 'call-state',
+                active: state === 'accepted',
+            });
+        }
     }
 
     private clearTimeout(): void {

@@ -18,8 +18,42 @@
                 "icon": "$(comment-discussion)"
             },
             {
+                "command": "uplink.sendSnippet",
+                "title": "Uplink: Отправить код в чат"
+            },
+            {
+                "command": "uplink.sendFile",
+                "title": "Uplink: Отправить файл в чат"
+            },
+            {
+                "command": "uplink.startCall",
+                "title": "Uplink: Начать звонок"
+            },
+            {
                 "command": "uplink.disconnect",
                 "title": "Uplink: Отключиться"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "command": "uplink.sendSnippet",
+                    "when": "editorHasSelection",
+                    "group": "uplink"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "command": "uplink.openChat",
+                "key": "ctrl+shift+u",
+                "mac": "cmd+shift+u"
+            },
+            {
+                "command": "uplink.sendSnippet",
+                "key": "ctrl+shift+l",
+                "mac": "cmd+shift+l",
+                "when": "editorTextFocus && editorHasSelection"
             }
         ],
         "viewsContainers": {

@@ -5,11 +5,22 @@ import { matrixService } from '../matrix/MatrixService';
 const isTauri = '__TAURI_INTERNALS__' in window;
 const isVSCode = !!(window as any).__VSCODE__;
 
+interface NotificationOptions {
+    level?: 'message' | 'call' | 'mention';
+    roomId?: string;
+    callId?: string;
+}
+
 /** Показать уведомление — VS Code / Tauri / браузерное */
-async function showNotification(title: string, body: string, onClick?: () => void) {
+async function showNotification(title: string, body: string, onClick?: () => void, options?: NotificationOptions) {
     if (isVSCode) {
         (window as any).__VSCODE_API__?.postMessage({
-            type: 'notification', title, body,
+            type: 'notification',
+            level: options?.level || 'message',
+            title,
+            body,
+            roomId: options?.roomId,
+            callId: options?.callId,
         });
         return;
     }
@@ -90,10 +101,21 @@ export function useNotifications(
                 notifBody = body.length > 100 ? body.substring(0, 100) + '...' : body;
             }
 
+            // Определяем уровень: mention если упоминают текущего пользователя
+            const myUserId = matrixService.getUserId();
+            const myDisplayName = matrixService.users.getMyDisplayName();
+            const bodyText = content.body || '';
+            const isMention = bodyText.includes(myUserId) ||
+                (myDisplayName && bodyText.toLowerCase().includes(myDisplayName.toLowerCase()));
+
             showNotification(
                 `Новое сообщение от ${senderName}`,
                 notifBody,
-                () => onNavigateRef.current(roomId)
+                () => onNavigateRef.current(roomId),
+                {
+                    level: isMention ? 'mention' : 'message',
+                    roomId,
+                },
             );
         });
         return unsub;

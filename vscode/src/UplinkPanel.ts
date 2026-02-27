@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { handleWebViewMessage } from './bridge';
+import { handleWebViewMessage, setWebviewViewRef } from './bridge';
 
 /**
  * Панель Uplink — WebView с загруженным React SPA.
@@ -21,6 +21,7 @@ export class UplinkPanel {
         return {
             resolveWebviewView(webviewView: vscode.WebviewView) {
                 webviewView.webview.options = UplinkPanel._getWebviewOptions(context.extensionUri);
+                setWebviewViewRef(webviewView);
                 const panel = new UplinkPanel(webviewView, context);
                 UplinkPanel.currentPanel = panel;
             },

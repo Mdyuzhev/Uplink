@@ -1,7 +1,8 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useChatState } from '../hooks/useChatState';
 import { useLiveKit } from '../hooks/useLiveKit';
 import { useCallSignaling } from '../hooks/useCallSignaling';
+import { useVSCodeBridge, base64ToFile } from '../hooks/useVSCodeBridge';
 import { callSignalingService } from '../livekit/CallSignalingService';
 import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
@@ -86,6 +87,22 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         await leaveCall();
         await callSignalingService.cancelOrHangup();
     }, [leaveCall]);
+
+    // VS Code bridge: snippet для вставки в MessageInput
+    const [pendingSnippet, setPendingSnippet] = useState<string | null>(null);
+
+    useVSCodeBridge({
+        onNavigateRoom: chat.handleSelectRoom,
+        onSnippet: (code, language, fileName, lineRange) => {
+            const codeBlock = `\`\`\`${language}\n// ${fileName}:${lineRange}\n${code}\n\`\`\``;
+            setPendingSnippet(codeBlock);
+        },
+        onFilePicked: (name, base64, mimeType) => {
+            const file = base64ToFile(base64, name, mimeType);
+            chat.sendFile(file);
+        },
+        onStartCall: handleJoinCall,
+    });
 
     const showOutgoing = signalState === 'ringing-out' || signalState === 'rejected' || signalState === 'no-answer';
 
@@ -183,6 +200,8 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             roomName={chat.activeRoom.name}
                             replyTo={chat.replyTo}
                             onCancelReply={() => chat.setReplyTo(null)}
+                            pendingText={pendingSnippet}
+                            onPendingTextConsumed={() => setPendingSnippet(null)}
                         />
                     </>
                 ) : (

@@ -87,6 +87,16 @@ export function useChatState() {
     // Push-уведомления
     useNotifications(activeRoomId, handleSelectRoom);
 
+    // VS Code: отправлять unread-count для Activity Bar badge
+    useEffect(() => {
+        if (!(window as any).__VSCODE__) return;
+        const totalUnread = allRooms.reduce((sum, r) => sum + (r.unreadCount || 0), 0);
+        (window as any).__VSCODE_API__?.postMessage({
+            type: 'unread-count',
+            count: totalUnread,
+        });
+    }, [allRooms]);
+
     return {
         // Данные
         spaces, channels, directs, users, usersLoading, isAdmin, refresh,

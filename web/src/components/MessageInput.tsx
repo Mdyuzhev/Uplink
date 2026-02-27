@@ -16,10 +16,14 @@ interface MessageInputProps {
     roomName?: string;
     replyTo?: ReplyToInfo | null;
     onCancelReply?: () => void;
+    /** Текст для вставки (например, код из VS Code) */
+    pendingText?: string | null;
+    onPendingTextConsumed?: () => void;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
     onSend, onSendReply, onSendFile, roomId, roomName, replyTo, onCancelReply,
+    pendingText, onPendingTextConsumed,
 }) => {
     const [text, setText] = useState('');
     const [isDragOver, setIsDragOver] = useState(false);
@@ -50,6 +54,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             textareaRef.current?.focus();
         }
     }, [replyTo]);
+
+    // VS Code: вставка текста (snippet) извне
+    useEffect(() => {
+        if (pendingText) {
+            setText(prev => prev ? prev + '\n' + pendingText : pendingText);
+            textareaRef.current?.focus();
+            onPendingTextConsumed?.();
+        }
+    }, [pendingText, onPendingTextConsumed]);
 
     // Сброс typing при unmount
     useEffect(() => {
