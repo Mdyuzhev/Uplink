@@ -4,6 +4,7 @@ import { useMessages } from './useMessages';
 import { useUsers } from './useUsers';
 import { useNotifications } from './useNotifications';
 import { matrixService } from '../matrix/MatrixService';
+import { storageGet } from '../utils/storage';
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { ReplyToInfo } from '../components/MessageInput';
 
@@ -75,7 +76,8 @@ export function useChatState() {
 
     const handleOpenDM = useCallback(async (userId: string) => {
         try {
-            const roomId = await matrixService.rooms.getOrCreateDM(userId);
+            const dmEncrypted = storageGet('uplink_dm_encrypted') === 'true';
+            const roomId = await matrixService.rooms.getOrCreateDM(userId, dmEncrypted);
             refresh();
             setActiveRoomId(roomId);
             setMobileView('chat');

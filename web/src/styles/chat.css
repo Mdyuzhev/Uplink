@@ -78,6 +78,82 @@
 }
 
 /* ═══════════════════════════════════
+   TOGGLE — модалки создания комнат
+   ═══════════════════════════════════ */
+.create-modal__toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.create-modal__toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--uplink-text-primary);
+    font-weight: 500;
+}
+
+.create-modal__toggle {
+    width: 44px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.create-modal__toggle--on {
+    background: var(--uplink-accent);
+}
+
+.create-modal__toggle-knob {
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.create-modal__toggle--on .create-modal__toggle-knob {
+    transform: translateX(20px);
+}
+
+.create-modal__toggle-warning {
+    font-size: 12px;
+    color: #f0a030;
+    margin-top: 6px;
+    line-height: 1.4;
+    padding: 6px 8px;
+    background: rgba(240, 160, 48, 0.08);
+    border-radius: var(--uplink-radius-sm);
+}
+
+.create-modal__toggle-hint {
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    margin-top: 4px;
+}
+
+.room-header__encryption-badge {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    opacity: 0.5;
+    cursor: default;
+    color: var(--uplink-text-secondary);
+}
+
+/* ═══════════════════════════════════
    TYPING INDICATOR
    ═══════════════════════════════════ */
 .typing-indicator {

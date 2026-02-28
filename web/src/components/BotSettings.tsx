@@ -24,6 +24,7 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
     const [bots, setBots] = useState<BotInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [warning, setWarning] = useState<string | null>(null);
 
     useEffect(() => {
         loadBots();
@@ -42,14 +43,19 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
     };
 
     const toggleBot = async (botId: string, enable: boolean) => {
+        setWarning(null);
         const baseUrl = getConfig().botApiUrl;
         const action = enable ? 'enable' : 'disable';
         try {
-            await fetch(`${baseUrl}/bots/${botId}/${action}`, {
+            const resp = await fetch(`${baseUrl}/bots/${botId}/${action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomId }),
             });
+            const data = await resp.json();
+            if (data.warning) {
+                setWarning(data.warning);
+            }
             loadBots();
         } catch (err) {
             console.error('Ошибка переключения бота:', err);
@@ -78,6 +84,12 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
                         Мои боты
                     </button>
                 </div>
+
+                {warning && (
+                    <div className="create-modal__toggle-warning" style={{ margin: '0 12px 8px' }}>
+                        {warning}
+                    </div>
+                )}
 
                 {tab === 'builtin' ? (
                     loading ? (

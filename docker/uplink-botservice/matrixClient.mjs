@@ -118,6 +118,23 @@ export async function inviteBotToRoom(botLocalpart, roomId) {
 }
 
 /**
+ * Проверить, зашифрована ли комната (есть ли m.room.encryption state event).
+ */
+export async function isRoomEncrypted(roomId) {
+    try {
+        const resp = await fetch(
+            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/m.room.encryption`,
+            {
+                headers: { 'Authorization': `Bearer ${AS_TOKEN}` },
+            }
+        );
+        return resp.ok;
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Отправить реакцию от имени бота.
  */
 export async function sendBotReaction(botLocalpart, roomId, eventId, emoji) {

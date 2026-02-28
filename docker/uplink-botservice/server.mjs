@@ -11,7 +11,7 @@
 import http from 'node:http';
 import express from 'express';
 import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands } from './registry.mjs';
-import { ensureBotUser, inviteBotToRoom } from './matrixClient.mjs';
+import { ensureBotUser, inviteBotToRoom, isRoomEncrypted } from './matrixClient.mjs';
 import { handleMatrixEvent } from './eventHandler.mjs';
 import {
     createCustomBot, getCustomBot, getCustomBotsByOwner, getAllCustomBots,
@@ -125,9 +125,17 @@ app.post('/api/bots/:botId/enable', async (req, res) => {
     if (!BOT_DEFINITIONS[botId]) return res.status(404).json({ error: 'Bot not found' });
 
     try {
+        const encrypted = await isRoomEncrypted(roomId);
+
         await inviteBotToRoom(BOT_DEFINITIONS[botId].localpart, roomId);
         enableBotInRoom(botId, roomId);
-        res.json({ ok: true });
+
+        res.json({
+            ok: true,
+            warning: encrypted
+                ? 'Комната зашифрована (E2E). Боты не могут читать зашифрованные сообщения. Создайте незашифрованный канал для работы с ботами.'
+                : null,
+        });
     } catch (err) {
         console.error(`Ошибка включения бота ${botId}:`, err);
         res.status(500).json({ error: err.message });

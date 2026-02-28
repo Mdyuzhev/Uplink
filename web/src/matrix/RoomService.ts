@@ -31,21 +31,32 @@ export class RoomService {
      * Создать канал (Matrix Space).
      * Space — комната с типом m.space, в которую вложены обычные комнаты.
      */
-    async createSpace(name: string, topic?: string): Promise<string> {
+    async createSpace(name: string, topic?: string, encrypted: boolean = false): Promise<string> {
         const client = this.getClient();
+
+        const initial_state: Array<{ type: string; state_key: string; content: Record<string, string> }> = [
+            {
+                type: 'm.room.join_rules',
+                state_key: '',
+                content: { join_rule: 'public' },
+            },
+        ];
+
+        if (encrypted) {
+            initial_state.push({
+                type: 'm.room.encryption',
+                state_key: '',
+                content: { algorithm: 'm.megolm.v1.aes-sha2' },
+            });
+        }
+
         const response = await client.createRoom({
             name,
             topic,
             visibility: sdk.Visibility.Private,
             preset: sdk.Preset.PublicChat,
             creation_content: { type: 'm.space' },
-            initial_state: [
-                {
-                    type: 'm.room.join_rules',
-                    state_key: '',
-                    content: { join_rule: 'public' },
-                },
-            ],
+            initial_state,
             power_level_content_override: {
                 events: { 'm.space.child': 100 },
             },
@@ -60,30 +71,36 @@ export class RoomService {
      * Создать комнату внутри канала (Space).
      * Привязывает к Space через m.space.child / m.space.parent, включает E2E.
      */
-    async createRoomInSpace(spaceId: string, name: string, topic?: string): Promise<string> {
+    async createRoomInSpace(spaceId: string, name: string, topic?: string, encrypted: boolean = false): Promise<string> {
         const client = this.getClient();
+
+        const initial_state: Array<{ type: string; state_key: string; content: Record<string, unknown> }> = [
+            {
+                type: 'm.room.join_rules',
+                state_key: '',
+                content: { join_rule: 'public' },
+            },
+            {
+                type: 'm.space.parent',
+                state_key: spaceId,
+                content: { via: [this.getServerDomain()], canonical: true },
+            },
+        ];
+
+        if (encrypted) {
+            initial_state.push({
+                type: 'm.room.encryption',
+                state_key: '',
+                content: { algorithm: 'm.megolm.v1.aes-sha2' },
+            });
+        }
+
         const response = await client.createRoom({
             name,
             topic,
             visibility: sdk.Visibility.Private,
             preset: sdk.Preset.PublicChat,
-            initial_state: [
-                {
-                    type: 'm.room.encryption',
-                    state_key: '',
-                    content: { algorithm: 'm.megolm.v1.aes-sha2' },
-                },
-                {
-                    type: 'm.room.join_rules',
-                    state_key: '',
-                    content: { join_rule: 'public' },
-                },
-                {
-                    type: 'm.space.parent',
-                    state_key: spaceId,
-                    content: { via: [this.getServerDomain()], canonical: true },
-                },
-            ],
+            initial_state,
         } as Parameters<sdk.MatrixClient['createRoom']>[0]);
 
         const roomId = response.room_id;
@@ -189,7 +206,7 @@ export class RoomService {
     /**
      * Создать DM-комнату с пользователем или вернуть существующую.
      */
-    async getOrCreateDM(userId: string): Promise<string> {
+    async getOrCreateDM(userId: string, encrypted: boolean = false): Promise<string> {
         const client = this.getClient();
 
         const existingRoomId = this.findExistingDM(userId);
@@ -204,22 +221,44 @@ export class RoomService {
             return invitedRoom.roomId;
         }
 
+        const initial_state: Array<{ type: string; state_key: string; content: Record<string, string> }> = [];
+        if (encrypted) {
+            initial_state.push({
+                type: 'm.room.encryption',
+                state_key: '',
+                content: { algorithm: 'm.megolm.v1.aes-sha2' },
+            });
+        }
+
         const response = await client.createRoom({
             is_direct: true,
             invite: [userId],
             preset: sdk.Preset.PrivateChat,
-            initial_state: [
-                {
-                    type: 'm.room.encryption',
-                    state_key: '',
-                    content: { algorithm: 'm.megolm.v1.aes-sha2' },
-                },
-            ],
+            initial_state,
         });
 
         const newRoomId = response.room_id;
         await this.updateDirectMap(userId, newRoomId);
         return newRoomId;
+    }
+
+    /**
+     * Включить E2E шифрование в существующей комнате.
+     * НЕОБРАТИМАЯ операция — после включения отключить нельзя.
+     */
+    async enableEncryption(roomId: string): Promise<void> {
+        const client = this.getClient();
+        await client.sendStateEvent(roomId, 'm.room.encryption' as never, {
+            algorithm: 'm.megolm.v1.aes-sha2',
+        }, '');
+    }
+
+    /** Проверить, зашифрована ли комната */
+    isRoomEncrypted(roomId: string): boolean {
+        const client = this.getClient();
+        const room = client.getRoom(roomId);
+        if (!room) return false;
+        return room.hasEncryptionStateEvent();
     }
 
     /** Найти комнату, в которую нас пригласил указанный пользователь */

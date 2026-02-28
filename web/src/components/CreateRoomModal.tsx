@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ShieldCheck, ShieldOff } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
 
 interface CreateRoomModalProps {
@@ -11,6 +12,7 @@ interface CreateRoomModalProps {
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ spaceId, spaceName, onClose, onCreated }) => {
     const [name, setName] = useState('');
     const [topic, setTopic] = useState('');
+    const [encrypted, setEncrypted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -19,7 +21,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ spaceId, space
         setLoading(true);
         setError('');
         try {
-            await matrixService.rooms.createRoomInSpace(spaceId, name.trim(), topic.trim() || undefined);
+            await matrixService.rooms.createRoomInSpace(spaceId, name.trim(), topic.trim() || undefined, encrypted);
             onCreated();
             onClose();
         } catch (err) {
@@ -55,6 +57,27 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ spaceId, space
                         onChange={e => setTopic(e.target.value)}
                         placeholder="О чём эта комната"
                     />
+                </div>
+                <div className="profile-modal__section">
+                    <label className="create-modal__toggle-row" onClick={() => setEncrypted(!encrypted)}>
+                        <span className="create-modal__toggle-label">
+                            {encrypted ? <ShieldCheck size={16} /> : <ShieldOff size={16} />}
+                            Сквозное шифрование (E2E)
+                        </span>
+                        <div className={`create-modal__toggle ${encrypted ? 'create-modal__toggle--on' : ''}`}>
+                            <div className="create-modal__toggle-knob" />
+                        </div>
+                    </label>
+                    {encrypted ? (
+                        <div className="create-modal__toggle-warning">
+                            В зашифрованных комнатах встроенные боты не работают.
+                            Шифрование нельзя отключить после создания комнаты.
+                        </div>
+                    ) : (
+                        <div className="create-modal__toggle-hint">
+                            Сообщения не шифруются. Боты и интеграции работают.
+                        </div>
+                    )}
                 </div>
                 {error && <div className="profile-modal__error">{error}</div>}
                 <button

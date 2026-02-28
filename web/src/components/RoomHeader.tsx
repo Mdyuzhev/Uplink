@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Pin, X, ArrowLeft, Phone, PhoneOff, Bot } from 'lucide-react';
+import { Pin, X, ArrowLeft, Phone, PhoneOff, Bot, Lock, Unlock } from 'lucide-react';
+import { matrixService } from '../matrix/MatrixService';
 import { RoomInfo } from '../matrix/RoomsManager';
 import { CallState } from '../livekit/LiveKitService';
 interface PinnedMessageInfo {
@@ -27,7 +28,14 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
     pinnedMessages, onScrollToMessage, onUnpin, showBotSettings, onToggleBotSettings,
 }) => {
     const [showPinned, setShowPinned] = useState(false);
+    const [showEncryptConfirm, setShowEncryptConfirm] = useState(false);
+    const [isEncrypted, setIsEncrypted] = useState(room.encrypted);
     const panelRef = useRef<HTMLDivElement>(null);
+
+    // Синхронизировать при смене комнаты
+    useEffect(() => {
+        setIsEncrypted(room.encrypted);
+    }, [room.id, room.encrypted]);
 
     // Закрыть панель при клике вне
     useEffect(() => {
@@ -45,6 +53,16 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
     const isOtherRoomInCall = activeCallRoomName !== null && !isThisRoomInCall;
     const pinCount = pinnedMessages?.length || 0;
 
+    const handleEnableEncryption = async () => {
+        try {
+            await matrixService.rooms.enableEncryption(room.id);
+            setIsEncrypted(true);
+        } catch (err) {
+            console.error('Ошибка включения шифрования:', err);
+        }
+        setShowEncryptConfirm(false);
+    };
+
     return (
         <div className="room-header">
             {onBack && (
@@ -55,12 +73,26 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
             <div className="room-header__info">
                 <div className="room-header__name">
                     {room.type === 'channel' ? '# ' : ''}{room.name}
-                    {room.encrypted && ' *'}
                 </div>
                 {room.topic && <div className="room-header__topic">{room.topic}</div>}
             </div>
 
             <div className="room-header__actions">
+                {/* Индикатор/кнопка шифрования */}
+                {isEncrypted ? (
+                    <span className="room-header__encryption-badge" title="Сквозное шифрование включено">
+                        <Lock size={14} />
+                    </span>
+                ) : (
+                    <button
+                        className="room-header__btn"
+                        onClick={() => setShowEncryptConfirm(true)}
+                        title="Включить сквозное шифрование"
+                    >
+                        <Unlock size={14} />
+                    </button>
+                )}
+
                 {/* Кнопка закреплённых сообщений */}
                 {pinCount > 0 && (
                     <div className="room-header__pin-wrapper" ref={panelRef}>
@@ -140,6 +172,41 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Модалка подтверждения включения шифрования */}
+            {showEncryptConfirm && (
+                <div className="profile-modal-overlay" onClick={() => setShowEncryptConfirm(false)}>
+                    <div className="profile-modal" onClick={e => e.stopPropagation()}>
+                        <div className="profile-modal__header">
+                            <span className="profile-modal__title">Включить шифрование?</span>
+                            <button className="profile-modal__close" onClick={() => setShowEncryptConfirm(false)}>
+                                &#x2715;
+                            </button>
+                        </div>
+                        <div className="profile-modal__section">
+                            <p style={{ color: 'var(--uplink-text-secondary)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>
+                                Сквозное шифрование (E2E) защитит все новые сообщения в этой комнате.
+                                Только участники смогут их прочитать.
+                            </p>
+                            <div className="create-modal__toggle-warning" style={{ marginTop: 8 }}>
+                                Это действие необратимо — шифрование нельзя отключить после активации.
+                                Встроенные боты перестанут работать в этой комнате.
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '0 20px 20px' }}>
+                            <button className="profile-modal__btn" onClick={() => setShowEncryptConfirm(false)}>
+                                Отмена
+                            </button>
+                            <button
+                                className="profile-modal__btn profile-modal__btn--primary"
+                                onClick={handleEnableEncryption}
+                            >
+                                Включить шифрование
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

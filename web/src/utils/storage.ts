@@ -61,6 +61,7 @@ export async function initStorage(): Promise<void> {
         'uplink_user_id',
         'uplink_access_token',
         'uplink_device_id',
+        'uplink_dm_encrypted',
     ];
 
     for (const key of keys) {

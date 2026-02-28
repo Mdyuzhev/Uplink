@@ -18,6 +18,12 @@ export async function handleMatrixEvent(event) {
     // Игнорировать события от наших ботов (избежать циклов)
     if (event.sender?.startsWith('@bot_')) return;
 
+    // Зашифрованные сообщения — боты не могут их прочитать
+    if (event.type === 'm.room.encrypted') {
+        console.warn(`[botservice] Зашифрованное сообщение в ${event.room_id} от ${event.sender} — боты не читают E2E`);
+        return;
+    }
+
     // Только m.room.message
     if (event.type !== 'm.room.message') return;
 
@@ -41,8 +47,6 @@ export async function handleMatrixEvent(event) {
 async function routeCommand(roomId, sender, body, eventId) {
     const parts = body.split(/\s+/);
     const commandRoot = parts[0].toLowerCase();
-    const subCommand = parts[1]?.toLowerCase();
-    const args = parts.slice(2);
 
     // 1. Сначала ищем среди встроенных ботов
     const botEntry = Object.entries(BOT_DEFINITIONS).find(([_id, bot]) =>
@@ -63,6 +67,23 @@ async function routeCommand(roomId, sender, body, eventId) {
                 );
                 return;
             }
+        }
+
+        // Определить: команда одно- или двухсловная
+        const matchingCmd = botDef.commands.find(cmd =>
+            cmd.command.split(' ')[0].toLowerCase() === commandRoot
+        );
+        const isMultiWord = matchingCmd && matchingCmd.command.trim().includes(' ');
+
+        let subCommand, args;
+        if (isMultiWord) {
+            // "/github subscribe owner/repo" → sub="subscribe", args=["owner/repo"]
+            subCommand = parts[1]?.toLowerCase();
+            args = parts.slice(2);
+        } else {
+            // "/remind 30m текст" → sub=undefined, args=["30m", "текст"]
+            subCommand = undefined;
+            args = parts.slice(1);
         }
 
         try {
