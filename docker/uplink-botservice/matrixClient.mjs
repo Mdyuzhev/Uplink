@@ -5,6 +5,7 @@
 
 const HOMESERVER_URL = process.env.HOMESERVER_URL || 'http://synapse:8008';
 const AS_TOKEN = process.env.AS_TOKEN;
+const ADMIN_TOKEN = process.env.SYNAPSE_ADMIN_TOKEN;
 const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
 
 /**
@@ -121,15 +122,15 @@ export async function joinBotToRoom(botLocalpart, roomId) {
         console.warn(`[joinBot] Direct join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
     }
 
-    // Стратегия 2: Synapse Admin API — force-join (работает для любых комнат)
-    {
+    // Стратегия 2: Synapse Admin API — force-join (работает для любых комнат, нужен admin-токен)
+    if (ADMIN_TOKEN) {
         const resp = await fetch(
             `${HOMESERVER_URL}/_synapse/admin/v1/join/${encodeURIComponent(roomId)}`,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AS_TOKEN}`,
+                    'Authorization': `Bearer ${ADMIN_TOKEN}`,
                 },
                 body: JSON.stringify({ user_id: userId }),
             }

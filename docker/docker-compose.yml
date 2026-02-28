@@ -107,6 +107,7 @@ services:
       AS_TOKEN: ${BOT_AS_TOKEN}
       HS_TOKEN: ${BOT_HS_TOKEN}
       SERVER_NAME: uplink.local
+      SYNAPSE_ADMIN_TOKEN: ${SYNAPSE_ADMIN_TOKEN:-}
       TENOR_API_KEY: ${TENOR_API_KEY:-}
     volumes:
       - uplink-botservice-data:/app/data
