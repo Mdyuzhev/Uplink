@@ -5,7 +5,7 @@
 
 import crypto from 'node:crypto';
 import { getStorage, setStorage } from './storage.mjs';
-import { ensureBotUser, inviteBotToRoom } from './matrixClient.mjs';
+import { ensureBotUser, joinBotToRoom } from './matrixClient.mjs';
 
 const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
 const CUSTOM_BOTS_KEY = 'custom_bots';
@@ -163,7 +163,7 @@ export async function addBotToRoom(botId, roomId) {
 
     if (!bots[botId].rooms.includes(roomId)) {
         // Пригласить Matrix-пользователя бота в комнату
-        await inviteBotToRoom(bots[botId].localpart, roomId);
+        await joinBotToRoom(bots[botId].localpart, roomId);
         bots[botId].rooms.push(roomId);
         saveCustomBots(bots);
     }
