@@ -1,5 +1,5 @@
 /**
- * Сервис поиска GIF через Tenor API (проксируется через бот-сервис).
+ * Сервис поиска GIF через GIPHY API (проксируется через бот-сервис).
  */
 
 import { config } from '../config';
@@ -20,9 +20,10 @@ class GifService {
     async search(query: string, limit = 20, pos?: string): Promise<{ results: GifResult[]; next: string }> {
         const params = new URLSearchParams({ q: query, limit: String(limit) });
         if (pos) params.set('pos', pos);
-        const resp = await fetch(`${this.baseUrl}/search?${params}`);
-        if (!resp.ok) return { results: [], next: '' };
+        const resp = await fetch(`${this.baseUrl}/search?${params}`, { cache: 'no-cache' });
+        if (!resp.ok) throw new Error(`GIF API: ${resp.status}`);
         const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || data.error);
         return {
             results: this.parseResults(data.results || []),
             next: data.next || '',
@@ -33,9 +34,10 @@ class GifService {
     async trending(limit = 20, pos?: string): Promise<{ results: GifResult[]; next: string }> {
         const params = new URLSearchParams({ limit: String(limit) });
         if (pos) params.set('pos', pos);
-        const resp = await fetch(`${this.baseUrl}/trending?${params}`);
-        if (!resp.ok) return { results: [], next: '' };
+        const resp = await fetch(`${this.baseUrl}/trending?${params}`, { cache: 'no-cache' });
+        if (!resp.ok) throw new Error(`GIF API: ${resp.status}`);
         const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || data.error);
         return {
             results: this.parseResults(data.results || []),
             next: data.next || '',

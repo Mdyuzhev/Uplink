@@ -102,8 +102,14 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
             if (data.results.length === 0) {
                 setGifError('GIF-сервис временно недоступен');
             }
-        } catch {
-            setGifError('Не удалось загрузить GIF');
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : '';
+            if (msg.includes('API key') || msg.includes('400') || msg.includes('403')) {
+                setGifError('Tenor API ключ невалиден. Обновите TENOR_API_KEY в docker/.env');
+            } else {
+                setGifError('Не удалось загрузить GIF');
+            }
+            console.error('GIF load error:', err);
         } finally {
             setGifLoading(false);
         }
@@ -323,7 +329,7 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
             {/* Tenor attribution */}
             {tab === 'gif' && (
                 <div className="sticker-gif-panel__tenor-attr">
-                    Powered by Tenor
+                    Powered by GIPHY
                 </div>
             )}
         </div>

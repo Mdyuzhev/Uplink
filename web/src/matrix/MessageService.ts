@@ -54,7 +54,7 @@ export class MessageService {
         }
     }
 
-    /** Отправить GIF-сообщение (Tenor CDN URL) */
+    /** Отправить GIF-сообщение (GIPHY CDN URL) */
     async sendGif(roomId: string, gif: GifResult): Promise<void> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await this.getClient().sendEvent(roomId, 'm.room.message' as any, {

@@ -45,19 +45,36 @@ class StickerService {
 
     /** Получить или создать комнату-каталог стикерпаков */
     async getCatalogRoomId(): Promise<string> {
-        if (this.catalogRoomId) return this.catalogRoomId;
+        if (this.catalogRoomId) {
+            // Проверяем что комната всё ещё доступна
+            const client = matrixService.getClient();
+            if (client.getRoom(this.catalogRoomId)) return this.catalogRoomId;
+            this.catalogRoomId = null;
+        }
         const client = matrixService.getClient();
 
+        // 1. Поиск по alias
         try {
             const resp = await client.getRoomIdForAlias(STICKER_ROOM_ALIAS);
             this.catalogRoomId = resp.room_id;
-            // Присоединиться к комнате если ещё нет
             try { await client.joinRoom(this.catalogRoomId); } catch { /* уже в комнате */ }
             return this.catalogRoomId;
-        } catch {
-            // Комнаты нет — создать
+        } catch { /* алиас не найден */ }
+
+        // 2. Поиск в joined rooms (alias мог быть удалён)
+        const rooms = client.getRooms();
+        const existing = rooms.find(r => {
+            const aliases = r.getAltAliases?.() || [];
+            const canon = r.getCanonicalAlias?.() || '';
+            return canon === STICKER_ROOM_ALIAS || aliases.includes(STICKER_ROOM_ALIAS)
+                || r.name === 'Стикерпаки';
+        });
+        if (existing) {
+            this.catalogRoomId = existing.roomId;
+            return this.catalogRoomId;
         }
 
+        // 3. Создать новую комнату
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const room = await client.createRoom({
             name: 'Стикерпаки',
