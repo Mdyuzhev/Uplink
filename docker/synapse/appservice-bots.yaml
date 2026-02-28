@@ -7,6 +7,8 @@ namespaces:
   users:
     - exclusive: true
       regex: "@bot_.*:uplink\\.local"
+    - exclusive: false
+      regex: "@.*:uplink\\.local"
   aliases: []
   rooms: []
 rate_limited: false
