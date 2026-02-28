@@ -18,6 +18,9 @@ export async function handleMatrixEvent(event) {
     // Игнорировать события от наших ботов (избежать циклов)
     if (event.sender?.startsWith('@bot_')) return;
 
+    // Логировать входящее событие
+    console.log(`[event] ${event.type} в ${event.room_id} от ${event.sender}: ${event.content?.body?.slice(0, 50) || ''}`);
+
     // Зашифрованные сообщения — боты не могут их прочитать
     if (event.type === 'm.room.encrypted') {
         console.warn(`[botservice] Зашифрованное сообщение в ${event.room_id} от ${event.sender} — боты не читают E2E`);

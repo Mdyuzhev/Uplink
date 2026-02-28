@@ -246,6 +246,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 </div>
             )}
             <div className="message-input__wrapper">
+                {showStickerPanel && roomId && (
+                    <StickerGifPanel
+                        roomId={roomId}
+                        onClose={() => setShowStickerPanel(false)}
+                        onSendGif={handleSendGif}
+                        onSendSticker={handleSendSticker}
+                        onOpenCreatePack={() => { setShowStickerPanel(false); setShowCreatePack(true); }}
+                    />
+                )}
                 {suggestions.length > 0 && (
                     <div className="command-suggestions">
                         {suggestions.map((cmd, i) => (
@@ -278,17 +287,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 {uploading && (
                     <div className="message-input__uploading">
                         Загрузка файла...
-                    </div>
-                )}
-                {showStickerPanel && roomId && (
-                    <div className="message-input__sticker-panel-container">
-                        <StickerGifPanel
-                            roomId={roomId}
-                            onClose={() => setShowStickerPanel(false)}
-                            onSendGif={handleSendGif}
-                            onSendSticker={handleSendSticker}
-                            onOpenCreatePack={() => { setShowStickerPanel(false); setShowCreatePack(true); }}
-                        />
                     </div>
                 )}
                 <div className="message-input__row">

@@ -10,8 +10,8 @@
 
 import http from 'node:http';
 import express from 'express';
-import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands } from './registry.mjs';
-import { ensureBotUser, inviteBotToRoom, isRoomEncrypted } from './matrixClient.mjs';
+import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands, getBotRoomBindings } from './registry.mjs';
+import { ensureBotUser, joinBotToRoom, isBotInRoom, isRoomEncrypted } from './matrixClient.mjs';
 import { handleMatrixEvent } from './eventHandler.mjs';
 import {
     createCustomBot, getCustomBot, getCustomBotsByOwner, getAllCustomBots,
@@ -127,7 +127,17 @@ app.post('/api/bots/:botId/enable', async (req, res) => {
     try {
         const encrypted = await isRoomEncrypted(roomId);
 
-        await inviteBotToRoom(BOT_DEFINITIONS[botId].localpart, roomId);
+        // Присоединить бота к комнате (множественные стратегии)
+        await joinBotToRoom(BOT_DEFINITIONS[botId].localpart, roomId);
+
+        // Проверить что бот действительно в комнате
+        const inRoom = await isBotInRoom(BOT_DEFINITIONS[botId].localpart, roomId);
+        if (!inRoom) {
+            return res.status(500).json({
+                error: 'Не удалось присоединить бота к комнате. Попробуйте пригласить бота вручную.'
+            });
+        }
+
         enableBotInRoom(botId, roomId);
 
         res.json({
@@ -274,6 +284,28 @@ app.get('/api/gif/trending', async (req, res) => {
     }
 });
 
+// Диагностический эндпоинт — статус ботов в комнате
+app.get('/api/debug/rooms/:roomId', async (req, res) => {
+    const { roomId } = req.params;
+    const bindings = getBotRoomBindings();
+    const roomBots = bindings[roomId] || [];
+
+    const status = {};
+    const allBotIds = new Set(['helper', ...roomBots]);
+    for (const botId of allBotIds) {
+        const bot = BOT_DEFINITIONS[botId];
+        if (!bot) continue;
+        status[botId] = {
+            enabled: botId === 'helper' || roomBots.includes(botId),
+            inRoom: await isBotInRoom(bot.localpart, roomId),
+            userId: bot.userId,
+        };
+    }
+
+    const encrypted = await isRoomEncrypted(roomId);
+    res.json({ roomId, encrypted, bots: status });
+});
+
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'uplink-botservice' });
@@ -304,6 +336,25 @@ async function init() {
         }
     }
     console.log('Боты зарегистрированы.');
+
+    // Присоединить ботов к комнатам, где они включены
+    const bindings = getBotRoomBindings();
+    for (const [roomId, botIds] of Object.entries(bindings)) {
+        for (const botId of botIds) {
+            const bot = BOT_DEFINITIONS[botId];
+            if (!bot) continue;
+            try {
+                const inRoom = await isBotInRoom(bot.localpart, roomId);
+                if (!inRoom) {
+                    console.log(`[init] Бот ${botId} не в комнате ${roomId}, присоединяю...`);
+                    await joinBotToRoom(bot.localpart, roomId);
+                }
+            } catch (err) {
+                console.warn(`[init] Не удалось присоединить ${botId} к ${roomId}:`, err.message);
+            }
+        }
+    }
+    console.log('Боты присоединены к комнатам.');
 
     // HTTP-сервер (Express) + WebSocket gateway на одном порту
     const server = http.createServer(app);

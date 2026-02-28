@@ -53,12 +53,14 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
                 body: JSON.stringify({ roomId }),
             });
             const data = await resp.json();
-            if (data.warning) {
+            if (!resp.ok) {
+                setWarning(`Ошибка: ${data.error || 'Не удалось переключить бота'}`);
+            } else if (data.warning) {
                 setWarning(data.warning);
             }
             loadBots();
-        } catch (err) {
-            console.error('Ошибка переключения бота:', err);
+        } catch {
+            setWarning('Ошибка подключения к бот-сервису');
         }
     };
 

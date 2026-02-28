@@ -32,7 +32,27 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
     const [activePack, setActivePack] = useState<string | null>(null); // null = Недавние
     const [recentStickers, setRecentStickers] = useState<Array<{ sticker: Sticker; pack: StickerPack }>>([]);
 
+    const [gifError, setGifError] = useState<string | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    // Закрытие при клике вне панели
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                // Не закрывать если кликнули по кнопке Smile (она сама toggle)
+                const smilebtn = (e.target as HTMLElement).closest('.message-input__action-btn');
+                if (!smilebtn) onClose();
+            }
+        };
+        const timer = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+        }, 100);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
 
     // Загрузка паков при открытии
     useEffect(() => {
@@ -74,10 +94,16 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
 
     const loadTrendingGifs = async () => {
         setGifLoading(true);
+        setGifError(null);
         try {
             const data = await gifService.trending(30);
             setGifs(data.results);
             setGifNextPos(data.next);
+            if (data.results.length === 0) {
+                setGifError('GIF-сервис временно недоступен');
+            }
+        } catch {
+            setGifError('Не удалось загрузить GIF');
         } finally {
             setGifLoading(false);
         }
@@ -85,10 +111,13 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
 
     const searchGifs = async (query: string) => {
         setGifLoading(true);
+        setGifError(null);
         try {
             const data = await gifService.search(query, 30);
             setGifs(data.results);
             setGifNextPos(data.next);
+        } catch {
+            setGifError('Ошибка поиска GIF');
         } finally {
             setGifLoading(false);
         }
@@ -143,7 +172,7 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
         : visibleStickers;
 
     return (
-        <div className="sticker-gif-panel">
+        <div className="sticker-gif-panel" ref={panelRef}>
             {/* Табы */}
             <div className="sticker-gif-panel__tabs">
                 <button
@@ -203,7 +232,10 @@ export const StickerGifPanel: React.FC<StickerGifPanelProps> = ({
                             </div>
                         ))}
                         {gifLoading && <div className="sticker-gif-panel__loading">Загрузка...</div>}
-                        {!gifLoading && gifs.length === 0 && (
+                        {gifError && (
+                            <div className="sticker-gif-panel__empty">{gifError}</div>
+                        )}
+                        {!gifLoading && !gifError && gifs.length === 0 && (
                             <div className="sticker-gif-panel__empty">
                                 {search ? 'Ничего не найдено' : 'Загрузка GIF...'}
                             </div>

@@ -84,37 +84,118 @@ export async function sendBotMessage(botLocalpart, roomId, body, formatted) {
 
     if (!resp.ok) {
         const err = await resp.text();
+        console.error(`[sendBotMessage] ОШИБКА от ${botLocalpart} в ${roomId}: ${resp.status} ${err}`);
         throw new Error(`Ошибка отправки (${resp.status}): ${err}`);
     }
 
-    return (await resp.json()).event_id;
+    const result = await resp.json();
+    console.log(`[sendBotMessage] ${botLocalpart} → ${roomId}: "${body.slice(0, 50)}..." (${result.event_id})`);
+    return result.event_id;
 }
 
 /**
- * Пригласить бота в комнату и автоматически принять инвайт.
+ * Присоединить бота к комнате.
+ * Пробуем несколько стратегий, т.к. разные типы комнат требуют разный подход.
  */
-export async function inviteBotToRoom(botLocalpart, roomId) {
+export async function joinBotToRoom(botLocalpart, roomId) {
     const userId = `@${botLocalpart}:${SERVER_NAME}`;
 
-    // Invite от имени botservice
-    await fetch(`${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AS_TOKEN}`,
-        },
-        body: JSON.stringify({ user_id: userId }),
-    });
+    // Стратегия 1: Прямой join от имени бота (работает для public rooms)
+    {
+        const resp = await fetch(
+            `${HOMESERVER_URL}/_matrix/client/v3/join/${encodeURIComponent(roomId)}?user_id=${encodeURIComponent(userId)}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AS_TOKEN}`,
+                },
+                body: JSON.stringify({}),
+            }
+        );
+        if (resp.ok) {
+            console.log(`[joinBot] ${userId} joined ${roomId} (direct join)`);
+            return;
+        }
+        const err = await resp.text();
+        console.warn(`[joinBot] Direct join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
+    }
 
-    // Auto-join от имени бота
-    await fetch(`${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/join?user_id=${encodeURIComponent(userId)}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AS_TOKEN}`,
-        },
-        body: JSON.stringify({}),
-    });
+    // Стратегия 2: Synapse Admin API — force-join (работает для любых комнат)
+    {
+        const resp = await fetch(
+            `${HOMESERVER_URL}/_synapse/admin/v1/join/${encodeURIComponent(roomId)}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AS_TOKEN}`,
+                },
+                body: JSON.stringify({ user_id: userId }),
+            }
+        );
+        if (resp.ok) {
+            console.log(`[joinBot] ${userId} joined ${roomId} (admin API)`);
+            return;
+        }
+        const err = await resp.text();
+        console.warn(`[joinBot] Admin join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
+    }
+
+    // Стратегия 3: Invite через AS sender, затем join (legacy)
+    {
+        const inviteResp = await fetch(
+            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AS_TOKEN}`,
+                },
+                body: JSON.stringify({ user_id: userId }),
+            }
+        );
+        if (inviteResp.ok) {
+            const joinResp = await fetch(
+                `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/join?user_id=${encodeURIComponent(userId)}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AS_TOKEN}`,
+                    },
+                    body: JSON.stringify({}),
+                }
+            );
+            if (joinResp.ok) {
+                console.log(`[joinBot] ${userId} joined ${roomId} (invite+join)`);
+                return;
+            }
+        }
+    }
+
+    console.error(`[joinBot] Все стратегии join провалились для ${userId} в ${roomId}`);
+    throw new Error(`Не удалось присоединить ${userId} к ${roomId}`);
+}
+
+/**
+ * Проверить, является ли бот участником комнаты.
+ */
+export async function isBotInRoom(botLocalpart, roomId) {
+    const userId = `@${botLocalpart}:${SERVER_NAME}`;
+    try {
+        const resp = await fetch(
+            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/m.room.member/${encodeURIComponent(userId)}`,
+            {
+                headers: { 'Authorization': `Bearer ${AS_TOKEN}` },
+            }
+        );
+        if (!resp.ok) return false;
+        const data = await resp.json();
+        return data.membership === 'join';
+    } catch {
+        return false;
+    }
 }
 
 /**
