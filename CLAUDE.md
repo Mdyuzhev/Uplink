@@ -3,9 +3,9 @@
 
 ЧТО ТАКОЕ UPLINK
 
-Uplink — self-hosted командный мессенджер на базе Matrix с голосовыми/видеозвонками через LiveKit Cloud и сквозным шифрованием (E2EE). Позиционируется как альтернатива Slack/Discord для команд, которые хотят контролировать свои данные. Проект реально используется командой, это не учебный пет-проект.
+Uplink — self-hosted командный мессенджер на базе Matrix с голосовыми/видеозвонками через LiveKit Cloud и сквозным шифрованием (E2EE). Альтернатива Slack/Discord для команд с контролем над данными.
 
-Платформы: веб-приложение (основная), десктоп (Tauri v2, Windows/macOS/Linux — в процессе). Изначально был VS Code extension (в корне репозитория), но он заброшен — вся активная разработка в web/.
+Платформы: веб-приложение (основная), десктоп (Tauri v2), VS Code extension (WebView SPA). Единый React SPA (web/) встраивается во все платформы.
 
 
 СТЕК ТЕХНОЛОГИЙ
@@ -15,103 +15,139 @@ Frontend (web/):
 - matrix-js-sdk v31 — Matrix клиент
 - matrix-sdk-crypto-wasm v17+ — E2EE (Megolm, Olm)
 - livekit-client v2 — голосовые и видеозвонки
-- CSS без фреймворков (variables.css, chat.css, login.css, global.css)
+- CSS без фреймворков — 15 модульных файлов в styles/
+- lottie-react — рендеринг Lottie-анимаций (стикеры)
 - Tauri v2 — десктопная обёртка (src-tauri/)
 
+VS Code Extension (vscode/):
+- Тонкая обёртка: загружает React SPA в WebView panel
+- Storage bridge (SecretStorage/globalState вместо localStorage)
+- Status bar, Activity Bar badge, postMessage мост
+- Нативная интеграция: уведомления (3 уровня), отправка кода/файлов из редактора, keybindings
+
 Backend (docker/):
-- Synapse (Matrix homeserver) — основной сервер сообщений
+- Synapse (Matrix homeserver) — server_name: "uplink.local"
 - PostgreSQL 15 — хранилище Synapse
 - Redis 7 — кеш Synapse
-- livekit-token (Node.js) — микросервис генерации LiveKit токенов
-- nginx (внутри контейнера uplink-web) — SPA + реверс-прокси к Synapse и token service
-- LiveKit Cloud (wss://uplink-3ism3la4.livekit.cloud) — медиасервер для звонков
+- livekit-token (Node.js) — микросервис генерации LiveKit JWT токенов
+- uplink-botservice (Node.js + Express) — Application Service для ботов, webhook receiver, slash-команды
+- deploy-webhook — автодеплой по GitHub push
+- nginx (внутри контейнера uplink-web) — SPA + реверс-прокси (/_matrix/ → synapse, /livekit-token/ → livekit-token, /bot-api/ → botservice, /hooks/ → botservice, /gif-api/ → botservice)
+- LiveKit Cloud (wss://uplink-3ism3la4.livekit.cloud) — медиасервер звонков
 
 Инфраструктура:
-- Сервер: homelab "flomasterserver" (Ubuntu, Docker)
-- Доступ: ssh flomaster@flomasterserver, пароль Misha2021@1@
-- Внешний доступ: Cloudflare Tunnel (динамический URL *.trycloudflare.com)
-- CI/CD: GitHub Actions (кросс-платформенная сборка десктопа)
+- Pre-prod: homelab "flomasterserver" (Ubuntu, Docker), server_name: uplink.local
+  - Доступ: ssh flomaster@flomasterserver, пароль Misha2021@1@
+  - Внешний доступ: Cloudflare Tunnel (динамический URL *.trycloudflare.com)
+  - Автодеплой: GitHub Webhook
+- Production: Yandex Cloud VM "uplink-prod", server_name: uplink.wh-lab.ru
+  - IP: 93.77.189.225, SSH: ubuntu@93.77.189.225 (ключ ed25519)
+  - 2 vCPU, 4 GB RAM, 51 GB SSD, Ubuntu 24.04
+  - Host nginx (TLS) → Docker контейнеры (127.0.0.1)
+  - Compose: docker/docker-compose.production.yml (standalone, не overlay)
+  - Конфиги Synapse: docker/synapse-data/ (на VM, не в git)
+  - Деплой: deploy-prod.sh или GitHub Actions (deploy-production.yml)
+  - Пользователи: admin/UplinkAdmin2026, flomaster/Flomaster2026, demo/Demo2026
+- CI/CD: GitHub Actions (кросс-платформенная сборка десктопа + production deploy)
 
 
 СТРУКТУРА РЕПОЗИТОРИЯ
 
-E:\Uplink\ — корень проекта (Windows, локальная разработка)
-  web/ — основное React-приложение
-    src/
-      components/ — React-компоненты UI
-        App.tsx — корневой, роутинг login/chat
-        LoginScreen.tsx — авторизация
-        ChatLayout.tsx — основной layout (sidebar + messages + header)
-        Sidebar.tsx — список комнат и DM
-        MessageList.tsx — лента сообщений
-        MessageBubble.tsx — один пузырь сообщения
-        MessageInput.tsx — поле ввода с отправкой файлов
-        RoomHeader.tsx — шапка комнаты
-        CallBar.tsx — панель активного звонка (аудио + видео кнопки)
-        VideoGrid.tsx — сетка видеопотоков (16:9, backdrop-blur)
-        IncomingCallOverlay.tsx — оверлей входящего звонка
-        OutgoingCallOverlay.tsx — оверлей исходящего звонка
-        ProfileModal.tsx — модалка профиля
-        Avatar.tsx — аватар пользователя
-        CodeSnippet.tsx — подсветка кода в сообщениях
-      hooks/ — React-хуки
-        useMatrix.ts — подключение к Matrix, логин/логаут
-        useRooms.ts — список комнат, unread counters
-        useMessages.ts — сообщения комнаты, отправка, markAsRead
-        useUsers.ts — справочник пользователей, поиск, DM
-        useLiveKit.ts — управление звонком (connect/disconnect/mute/camera)
-        useCallSignaling.ts — сигнализация звонков через Matrix events
-        useNotifications.ts — push-уведомления (нативные в Tauri, Web Notification в браузере)
-      matrix/ — сервисный слой Matrix
-        MatrixService.ts — singleton, подключение, E2EE, отправка, комнаты
-        RoomsManager.ts — CRUD комнат, DM-логика
-        MessageFormatter.ts — парсинг и форматирование сообщений
-      livekit/ — сервисный слой звонков
-        LiveKitService.ts — singleton, LiveKit Room, аудио/видео треки
-        CallSignalingService.ts — протокол звонков через Matrix custom events
-      styles/ — CSS
-        variables.css — CSS-переменные (цвета, размеры)
-        chat.css — стили чата
-        login.css — стили логина
-        global.css — общие стили
-      config.ts — URL-ы сервисов (Matrix, LiveKit, token service)
-      main.tsx — точка входа React
-    src-tauri/ — Tauri v2 десктопная обёртка
-      Cargo.toml — Rust-зависимости
-      tauri.conf.json — конфигурация окна, CSP, бандла
-      src/main.rs — системный трей, скрытие окна при закрытии
-      src/lib.rs — плагины (notification, autostart, window-state)
-      icons/ — иконки всех форматов
-    package.json — зависимости и скрипты
-    Dockerfile — multi-stage build (node -> nginx)
-    nginx.conf — SPA fallback + прокси к Synapse и token service
-    vite.config.ts — Vite конфигурация с WASM-плагинами
-  docker/ — серверная инфраструктура
-    docker-compose.yml — все сервисы (postgres, redis, synapse, admin, livekit-token, web)
-    .env — переменные окружения (пароли, LiveKit ключи)
-    synapse/homeserver.yaml — конфигурация Matrix сервера
-    livekit-token/server.mjs — микросервис токенов (Node.js, порт 7890)
-    livekit-token/Dockerfile — образ для token service
-  scripts/deploy.ps1 — деплой с Windows (git push + ssh deploy.sh)
-  deploy.sh — деплой на сервере (git pull + docker compose up --build)
-  .github/workflows/build-desktop.yml — CI сборка десктопа (Win/Mac/Linux)
-  Tasks/done/ — выполненные задачи (001-019)
-  src/ — заброшенный VS Code extension (НЕ ТРОГАТЬ)
+E:\Uplink\ — корень проекта
+│
+├── web/ — основное React-приложение
+│   ├── src/
+│   │   ├── components/ — React-компоненты
+│   │   │   ├── App.tsx — корневой, роутинг login/chat
+│   │   │   ├── LoginScreen.tsx — авторизация
+│   │   │   ├── ChatLayout.tsx — основной layout (sidebar + messages + thread panel)
+│   │   │   ├── Sidebar.tsx — список комнат, пространств, DM
+│   │   │   ├── MessageList.tsx — лента сообщений
+│   │   │   ├── MessageBubble.tsx — сообщение (текст, медиа, реакции, reply, тред, pin, бот-бейдж)
+│   │   │   ├── MessageInput.tsx — ввод, файлы, reply-превью, slash-автокомплит, typing
+│   │   │   ├── RoomHeader.tsx — шапка комнаты, кнопки звонка/ботов/pin
+│   │   │   ├── ThreadPanel.tsx — боковая панель треда
+│   │   │   ├── AdminPanel.tsx — администрирование
+│   │   │   ├── BotSettings.tsx, BotCreateModal.tsx, BotManagePanel.tsx — управление ботами
+│   │   │   ├── CallBar.tsx, VideoGrid.tsx, IncomingCallOverlay.tsx, OutgoingCallOverlay.tsx — звонки
+│   │   │   ├── StickerGifPanel.tsx, CreateStickerPackModal.tsx, StickerPackManager.tsx, LottieSticker.tsx
+│   │   │   ├── VoiceRecordBar.tsx, VoiceMessage.tsx, VideoNoteRecordOverlay.tsx, VideoNote.tsx
+│   │   │   ├── ProfileModal.tsx, Avatar.tsx, CodeSnippet.tsx
+│   │   │   ├── CreateRoomModal.tsx, CreateSpaceModal.tsx
+│   │   │   ├── message/ — подкомпоненты (formatters.ts, types.ts)
+│   │   │   ├── profile/ — (AvatarSection, NameSection, PasswordSection)
+│   │   │   └── sidebar/ — (RoomItem, SpaceItem, UserItem)
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── useMatrix.ts, useRooms.ts, useMessages.ts, useChatState.ts
+│   │   │   ├── useThread.ts, useUsers.ts, useLiveKit.ts, useCallSignaling.ts
+│   │   │   └── useNotifications.ts — уведомления (Web / Tauri / VS Code)
+│   │   │
+│   │   ├── matrix/ — сервисный слой (декомпозирован)
+│   │   │   ├── MatrixService.ts — singleton-фасад, делегирует в под-сервисы
+│   │   │   ├── MessageService.ts, RoomService.ts, RoomsManager.ts
+│   │   │   ├── MediaService.ts, ReactionService.ts, PinService.ts
+│   │   │   ├── ThreadService.ts, UserService.ts, AdminService.ts
+│   │   │   └── MessageFormatter.ts
+│   │   │
+│   │   ├── livekit/ — LiveKitService.ts, CallSignalingService.ts
+│   │   ├── services/ — GifService.ts, StickerService.ts, VoiceRecorder.ts, VideoNoteRecorder.ts
+│   │   ├── bots/ — CommandRegistry.ts (реестр slash-команд)
+│   │   ├── utils/ — markdown.ts, storage.ts
+│   │   ├── styles/ — 15 модульных CSS файлов (variables, global, chat, messages, message-input, sidebar, room-header, thread, call, profile, admin, bots, login, stickers, voice-video)
+│   │   ├── config.ts, main.tsx
+│   │
+│   ├── src-tauri/ — Tauri v2 (Cargo.toml, tauri.conf.json, src/)
+│   ├── package.json, Dockerfile, nginx.conf, vite.config.ts
+│
+├── vscode/ — VS Code extension
+│   ├── src/ — extension.ts, UplinkPanel.ts, bridge.ts, statusBar.ts, notifications.ts, commands.ts
+│   ├── package.json, esbuild.config.mjs, resources/
+│
+├── docker/ — серверная инфраструктура
+│   ├── docker-compose.yml, .env
+│   ├── synapse/ — homeserver.yaml, appservice-bots.yaml
+│   ├── livekit-token/ — server.mjs
+│   ├── uplink-botservice/ — server.mjs, registry.mjs, eventHandler.mjs, matrixClient.mjs, customBots.mjs, botGateway.mjs, webhookForwarder.mjs, rateLimiter.mjs, storage.mjs, handlers/
+│   ├── deploy-webhook/
+│
+├── packages/bot-sdk/ — NPM-пакет @uplink/bot-sdk
+├── scripts/ — deploy.ps1
+├── deploy.sh, .github/workflows/build-desktop.yml
+├── PROJECT_MAP.md — история разработки, хронология задач, эволюция архитектуры
+├── Tasks/ — done/ (001-034), backlog/ (035)
+└── src/ — заброшенный VS Code extension scaffold (задача 002, НЕ ТРОГАТЬ)
 
 
 КЛЮЧЕВЫЕ АРХИТЕКТУРНЫЕ РЕШЕНИЯ
 
-1. Matrix как транспорт. Все сообщения, комнаты, пользователи, шифрование — через Matrix протокол. Synapse — homeserver. Клиент подключается через matrix-js-sdk. server_name: "uplink.local".
+1. Matrix как транспорт. Synapse homeserver (server_name: "uplink.local"). matrix-js-sdk.
 
-2. E2EE через matrix-sdk-crypto-wasm. WASM-модуль загружается при initCrypto(). SharedArrayBuffer НЕ требуется начиная с v17. Все новые комнаты создаются с encryption_enabled_by_default_for_room_type: "all". При создании DM явно ставится m.room.encryption state event.
+2. E2EE через matrix-sdk-crypto-wasm. SharedArrayBuffer НЕ требуется с v17+. Все комнаты шифруются по умолчанию. DM создаются с m.room.encryption state event.
 
-3. LiveKit Cloud для звонков. URL: wss://uplink-3ism3la4.livekit.cloud. Раньше был self-hosted LiveKit + coturn — убрали из-за проблем с NAT. В облаке TURN встроен, звонки работают отовсюду. Token service на сервере генерирует JWT с правами на подключение.
+3. LiveKit Cloud для звонков. URL: wss://uplink-3ism3la4.livekit.cloud. TURN встроен.
 
-4. Сигнализация звонков через Matrix. Кастомные events: com.uplink.call.invite, com.uplink.call.answer, com.uplink.call.reject, com.uplink.call.hangup. Не MSC / не стандартный VoIP — свой протокол.
+4. Сигнализация звонков через Matrix custom events (com.uplink.call.*). Фильтрация по liveEvent === true.
 
-5. Единый nginx внутри контейнера web. Один порт 5174 наружу. SPA fallback, проксирование /_matrix/ к Synapse:8008, проксирование /livekit-token/ к token service:7890.
+5. Боты через Application Service API. uplink-botservice управляет @bot_*:uplink.local. AS-боты НЕ поддерживают E2E.
 
-6. Cloudflare Tunnel для внешнего доступа. Туннель маршрутит на localhost:5174. URL динамический (*.trycloudflare.com). Нет белого IP, нет проброса портов.
+6. Кастомные боты через Bot SDK. NPM-пакет (WebSocket) и webhook (HTTP POST). Токены, rate limiting.
+
+7. Единый SPA для всех платформ. Различия абстрагированы через utils/storage.ts и useNotifications.ts.
+
+8. Декомпозированный сервисный слой. MatrixService — фасад, 10 специализированных сервисов.
+
+9. Модульный CSS. 13 файлов, переменные в variables.css.
+
+10. Автодеплой. git push → GitHub webhook → deploy-webhook → docker compose up --build -d.
+
+11. Шифрование конфигурируемо, не принудительно. Тогл E2E в CreateRoomModal/CreateSpaceModal, кнопка 🔓/🔒 в RoomHeader (необратимо), настройка шифрования DM в ProfileModal (localStorage).
+
+12. Стикерпаки через Matrix state events. Комната-каталог #sticker-packs:uplink.local, паки как dev.uplink.sticker_pack state events, предпочтения в account data. Картинки через mxc:// (Matrix media API). Поддержка PNG, WebP, Lottie (application/json). Отправка как m.sticker.
+
+13. GIF через Tenor API. Прокси через botservice (ключ не светится на клиенте). Отправка как m.image с маркером dev.uplink.gif.
+
+14. Голосовые и видео-кружочки через браузерные API. MediaRecorder + Web Audio API (waveform) + getUserMedia (camera). Голосовые как m.audio с org.matrix.msc3245.voice и MSC1767 waveform. Кружочки как m.video с dev.uplink.video_note. Лимит 30 сек. Новых npm-зависимостей нет (кроме lottie-react для стикеров).
 
 
 УЧЁТНЫЕ ДАННЫЕ
@@ -126,6 +162,9 @@ Synapse:
   Macaroon secret: xFFHoHY6X48DpQtITMyfDnRTtrYU0T+cfETsqpaAsQE=
   DB: synapse / synapse / synapse_poc_pass (PostgreSQL)
 
+Tenor:
+  API Key: добавить в docker/.env как TENOR_API_KEY (получить через Google Cloud Console, бесплатно)
+
 Сервер:
   ssh flomaster@flomasterserver
   Пароль: Misha2021@1@
@@ -134,26 +173,30 @@ Synapse:
 
 WORKFLOW РАЗРАБОТКИ
 
-Локальная разработка:
-  cd E:\Uplink\web
-  npm run dev — Vite dev server на :5173
-  Браузер: http://localhost:5173 (проксирует к Synapse на :8008 и token на :7890)
+Локальная разработка (веб):
+  cd E:\Uplink\web && npm run dev — Vite на :5173
 
-Деплой (автоматический через GitHub Webhook — задача 021):
-  git push origin main — webhook автоматически пересоберёт контейнеры через 10-15 сек
-  Webhook: deploy-webhook сервис слушает POST от GitHub, делает git pull + docker compose up --build -d
-  Fallback (ручной): bash scripts/deploy-remote.sh или powershell scripts/deploy.ps1
+Локальная разработка (VS Code extension):
+  cd E:\Uplink\web && npm run dev
+  cd E:\Uplink\vscode && npm run watch
+  F5 → Extension Development Host (WebView загрузит SPA через iframe)
+
+Сборка VS Code extension:
+  cd E:\Uplink\web && npm run build:vscode
+  cd E:\Uplink\vscode && npm run build && npx vsce package
+
+Деплой:
+  git push origin main → автодеплой через 10-15 сек
+  Fallback: bash scripts/deploy-remote.sh или powershell scripts/deploy.ps1
 
 Десктоп (Tauri):
-  npm run tauri:dev — разработка с hot reload
-  npm run tauri:build — продакшен сборка (.exe/.dmg/.deb/.AppImage)
-  Блокер: нужен Windows 10/11 SDK для линковки (LNK1181: kernel32.lib)
+  npm run tauri:dev / npm run tauri:build
+  Блокер: нужен Windows 10/11 SDK
 
 
-SSH-ДОСТУП К СЕРВЕРУ (аварийные процедуры)
+SSH-ДОСТУП К СЕРВЕРУ
 
-Из Git Bash на Windows нельзя использовать `ssh` с паролем напрямую (sshpass недоступен,
-HOME с кириллицей ломает ~/.ssh). Для подключения использовать Python + paramiko:
+Из Git Bash — использовать Python + paramiko:
 
   python -c "
   import paramiko
@@ -166,75 +209,42 @@ HOME с кириллицей ломает ~/.ssh). Для подключения
   ssh.close()
   "
 
-Основные аварийные команды:
-  Статус контейнеров:     docker ps --filter name=uplink --format "table {{.Names}}\t{{.Status}}"
-  Логи контейнера:        docker logs uplink-web --tail 30 2>&1
-  Перезапуск контейнера:  docker restart uplink-web
-  Запуск упавшего:        cd ~/projects/uplink/docker && docker compose up -d <service> --no-deps
-  Пересборка одного:      cd ~/projects/uplink/docker && docker compose up -d --build <service> --no-deps
-  Полный редеплой:        cd ~/projects/uplink/docker && docker compose up -d --build
-  Sudo (если нужны права): echo "Misha2021@1@" | sudo -S <команда>
-
-ВАЖНО при аварии:
-  - Если nginx (uplink-web) не стартует — смотри логи, чаще всего "host not found in upstream".
-    После фикса nginx.conf (resolver + set $var) эта проблема не должна повторяться.
-    Nginx теперь резолвит upstream-хосты в runtime, а не при старте.
-  - Если контейнер не стартует из-за порта — проверить кто занял: docker ps --filter publish=ПОРТ.
-    Для postgres: POSTGRES_PORT=5433 в docker/.env (порт 5432 занят postgres-stage).
-  - Флаг --no-deps нужен чтобы не пересоздавать зависимости (postgres, redis) без причины.
-  - После запуска упавших сервисов перезапустить uplink-web: docker restart uplink-web
+Аварийные команды:
+  Статус:       docker ps --filter name=uplink --format "table {{.Names}}\t{{.Status}}"
+  Логи:         docker logs uplink-web --tail 30 2>&1
+  Перезапуск:   docker restart uplink-web
+  Пересборка:   cd ~/projects/uplink/docker && docker compose up -d --build <service> --no-deps
+  Полный:       cd ~/projects/uplink/docker && docker compose up -d --build
 
 
-ЗАВЕРШЁННЫЕ ЗАДАЧИ (для контекста, что уже сделано)
+ИЗВЕСТНЫЕ ГРАБЛИ
 
-001: Docker-инфраструктура (Synapse + Postgres + Redis)
-002: VS Code extension scaffold (заброшен)
-003: Matrix-клиент с авторизацией
-004: Чат UI в стиле Slack
-005: Аудиозвонки через LiveKit
-006: Тестовые пользователи и сообщения
-007: Веб-приложение (React, отдельно от VS Code)
-008: E2E шифрование (matrix-sdk-crypto-wasm, убран SharedArrayBuffer check)
-009: Настройка dev и prod режимов
-010: Деплой на homelab
-011: Cloudflare Tunnel для внешнего доступа
-012: Справочник пользователей и создание DM
-013: Звонки в DM
-014: Входящие звонки, сигнализация, TURN через туннель
-015: Профили пользователей
-016: Медиа-сообщения (картинки, файлы)
-017: Миграция на LiveKit Cloud + видеозвонки
-018: UI редизайн (стиль Slack/Discord, тёмная тема)
-019: Tauri десктоп-приложение (код готов, блокер — Windows SDK)
-
-Также реализовано (без отдельных задач):
-- Сброс счётчика непрочитанных при открытии чата
-- Push-уведомления (Web Notification + нативные Tauri)
-- Уведомления на русском: "Новое сообщение от: Имя"
+- matrix-sdk-crypto-wasm: .wasm копируется в public/ при Docker-сборке (Dockerfile: cp)
+- vite.config.ts: vite-plugin-wasm + vite-plugin-top-level-await
+- Synapse media_store: после docker compose up нужен chown 991:991 (в deploy.sh)
+- config.ts: dev/prod по порту (5173 = dev)
+- CSP в Tauri: null (для WebSocket). CSP в VS Code WebView: wasm-unsafe-eval + connect-src ws: wss: https:
+- Tauri: определение через '__TAURI_INTERNALS__'. VS Code: через window.__VSCODE__
+- Storage: utils/storage.ts — localStorage (браузер/Tauri) / globalState (VS Code)
+- Боты через AS не поддерживают E2E — создавать незашифрованные каналы
+- appservice-bots.yaml зарегистрирован в homeserver.yaml
+- Старый VS Code extension (E:\Uplink\src\) — НЕ ТРОГАТЬ
+- nginx: resolver + set $var для runtime upstream resolve
+- PostgreSQL порт 5433 на хосте (5432 занят), Synapse по Docker network
+- Регистрация отключена, пользователей через synapse-admin или shared_secret
+- Safari не поддерживает audio/ogg и video/webm для MediaRecorder — fallback на audio/mp4 и video/mp4
+- Lottie-стикеры: mimetype application/json, загрузка через mxc:// → fetch JSON → lottie-react
+- Tenor ToS: обязательна плашка "Powered by Tenor" в панели GIF
+- Видео-кружочки в Tauri: getUserMedia работает в WebView, но macOS требует permission в Info.plist
 
 
-ИЗВЕСТНЫЕ ОСОБЕННОСТИ И ГРАБЛИ
+ТЕКУЩИЙ СТАТУС
 
-- matrix-sdk-crypto-wasm WASM файл нужно копировать в public/ при сборке (делается в Dockerfile)
-- vite.config.ts использует vite-plugin-wasm и vite-plugin-top-level-await для WASM
-- SharedArrayBuffer НЕ нужен для crypto-wasm v17+ — старая проверка была удалена
-- Synapse media_store: после docker compose up нужно chown 991:991 (делается в deploy.sh)
-- nginx: все proxy_pass через переменные (set $var) + resolver 127.0.0.11 — чтобы nginx НЕ падал если upstream-контейнер ещё не запущен. Без этого nginx крашится при старте с "host not found in upstream"
-- config.ts определяет dev/prod по порту: 5173 = dev (прямые URL), иначе prod (через nginx прокси)
-- Регистрация на сервере отключена (enable_registration: false), пользователей создаём через synapse-admin или registration_shared_secret
-- CSP в Tauri отключён (csp: null) — нужен для WebSocket к LiveKit Cloud и Matrix
-- Tauri: определение среды через '__TAURI_INTERNALS__' in window
-- Порт PostgreSQL: на сервере порт 5432 занят postgres-stage, uplink-postgres маппит на 5433 (POSTGRES_PORT=5433 в docker/.env). Synapse ходит к postgres по Docker network, не по хост-порту
+Выполнено: 037 задач (001–037). Полная история — в PROJECT_MAP.md.
+В backlog: 035 (Голосовые сообщения и видео-кружочки).
 
-
-ЧТО ДЕЛАТЬ ДАЛЬШЕ (примерные направления)
-
-- Доработка UI (018 сделан, но можно полировать)
-- Собрать десктоп после установки Windows SDK
-- Потоки/треды в каналах
-- Реакции на сообщения
-- Поиск по сообщениям
-- Административная панель внутри Uplink
-- Онбординг новых пользователей
-- Push-уведомления через service worker (для PWA)
-- Мобильное приложение (Tauri Mobile или React Native)
+Последние выполненные задачи:
+- 033 — Управление шифрованием
+- 034 — Стикерпаки и GIF-поиск
+- 036 — Фиксы ботов и стикеров
+- 037 — Production в Yandex Cloud (VM настроена, все сервисы работают по HTTP, ждёт DNS + TLS)
