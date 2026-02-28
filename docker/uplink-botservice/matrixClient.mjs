@@ -122,56 +122,55 @@ export async function joinBotToRoom(botLocalpart, roomId) {
         console.warn(`[joinBot] Direct join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
     }
 
-    // Стратегия 2: Synapse Admin API — force-join (работает для любых комнат, нужен admin-токен)
+    // Стратегия 2: Invite от имени участника комнаты (через admin API + AS masquerading)
     if (ADMIN_TOKEN) {
-        const resp = await fetch(
-            `${HOMESERVER_URL}/_synapse/admin/v1/join/${encodeURIComponent(roomId)}`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${ADMIN_TOKEN}`,
-                },
-                body: JSON.stringify({ user_id: userId }),
-            }
-        );
-        if (resp.ok) {
-            console.log(`[joinBot] ${userId} joined ${roomId} (admin API)`);
-            return;
-        }
-        const err = await resp.text();
-        console.warn(`[joinBot] Admin join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
-    }
-
-    // Стратегия 3: Invite через AS sender, затем join (legacy)
-    {
-        const inviteResp = await fetch(
-            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${AS_TOKEN}`,
-                },
-                body: JSON.stringify({ user_id: userId }),
-            }
-        );
-        if (inviteResp.ok) {
-            const joinResp = await fetch(
-                `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/join?user_id=${encodeURIComponent(userId)}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${AS_TOKEN}`,
-                    },
-                    body: JSON.stringify({}),
-                }
+        try {
+            // Получить список участников через Admin API
+            const membersResp = await fetch(
+                `${HOMESERVER_URL}/_synapse/admin/v1/rooms/${encodeURIComponent(roomId)}/members`,
+                { headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` } }
             );
-            if (joinResp.ok) {
-                console.log(`[joinBot] ${userId} joined ${roomId} (invite+join)`);
-                return;
+            if (membersResp.ok) {
+                const { members } = await membersResp.json();
+                // Найти участника (не бота) для invite
+                const inviter = members?.find(m => !m.startsWith('@bot_'));
+                if (inviter) {
+                    // Invite от имени участника через AS masquerading
+                    const invResp = await fetch(
+                        `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/invite?user_id=${encodeURIComponent(inviter)}`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${AS_TOKEN}`,
+                            },
+                            body: JSON.stringify({ user_id: userId }),
+                        }
+                    );
+                    if (invResp.ok) {
+                        // Accept invite — join от имени бота
+                        const joinResp = await fetch(
+                            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/join?user_id=${encodeURIComponent(userId)}`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${AS_TOKEN}`,
+                                },
+                                body: JSON.stringify({}),
+                            }
+                        );
+                        if (joinResp.ok) {
+                            console.log(`[joinBot] ${userId} joined ${roomId} (invite from ${inviter})`);
+                            return;
+                        }
+                    }
+                    const invErr = await invResp.text().catch(() => '');
+                    console.warn(`[joinBot] Invite via member failed for ${userId} in ${roomId}: ${invErr}`);
+                }
             }
+        } catch (err) {
+            console.warn(`[joinBot] Strategy 2 error: ${err.message}`);
         }
     }
 
