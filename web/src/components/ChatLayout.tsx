@@ -33,6 +33,7 @@ import '../styles/admin.css';
 import '../styles/thread.css';
 import '../styles/bots.css';
 import '../styles/mobile.css';
+import '../styles/stickers.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;

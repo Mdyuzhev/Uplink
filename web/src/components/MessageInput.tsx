@@ -1,7 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Paperclip, Send } from 'lucide-react';
+import { X, Paperclip, Send, Smile } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
 import { commandRegistry, BotCommand } from '../bots/CommandRegistry';
+import { StickerGifPanel } from './StickerGifPanel';
+import { CreateStickerPackModal } from './CreateStickerPackModal';
+import type { GifResult } from '../services/GifService';
+import type { Sticker } from '../services/StickerService';
+import { stickerService } from '../services/StickerService';
 
 export interface ReplyToInfo {
     eventId: string;
@@ -31,6 +36,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const [uploading, setUploading] = useState(false);
     const [suggestions, setSuggestions] = useState<BotCommand[]>([]);
     const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+    const [showStickerPanel, setShowStickerPanel] = useState(false);
+    const [showCreatePack, setShowCreatePack] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -203,6 +210,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         if (file) handleFileSelect(file);
     };
 
+    const handleSendGif = useCallback(async (gif: GifResult) => {
+        if (!roomId) return;
+        await matrixService.messages.sendGif(roomId, gif);
+    }, [roomId]);
+
+    const handleSendSticker = useCallback(async (sticker: Sticker, _packId: string) => {
+        if (!roomId) return;
+        await stickerService.sendSticker(roomId, sticker);
+    }, [roomId]);
+
     const handlePaste = (e: React.ClipboardEvent) => {
         const items = e.clipboardData?.items;
         if (!items) return;
@@ -263,6 +280,17 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                         Загрузка файла...
                     </div>
                 )}
+                {showStickerPanel && roomId && (
+                    <div className="message-input__sticker-panel-container">
+                        <StickerGifPanel
+                            roomId={roomId}
+                            onClose={() => setShowStickerPanel(false)}
+                            onSendGif={handleSendGif}
+                            onSendSticker={handleSendSticker}
+                            onOpenCreatePack={() => { setShowStickerPanel(false); setShowCreatePack(true); }}
+                        />
+                    </div>
+                )}
                 <div className="message-input__row">
                     <textarea
                         ref={textareaRef}
@@ -289,6 +317,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                         />
                         <button
                             className="message-input__action-btn"
+                            onClick={() => setShowStickerPanel(!showStickerPanel)}
+                            title="Стикеры и GIF"
+                        >
+                            <Smile size={18} />
+                        </button>
+                        <button
+                            className="message-input__action-btn"
                             onClick={handleAttachClick}
                             disabled={uploading}
                             title="Прикрепить файл"
@@ -306,6 +341,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                     </div>
                 </div>
             </div>
+            {showCreatePack && (
+                <CreateStickerPackModal
+                    onClose={() => setShowCreatePack(false)}
+                    onCreated={() => setShowCreatePack(false)}
+                />
+            )}
         </div>
     );
 };

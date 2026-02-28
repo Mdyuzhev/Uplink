@@ -239,6 +239,41 @@ app.delete('/api/custom-bots/:botId/rooms', (req, res) => {
     res.json({ ok: true });
 });
 
+// ═══════════════════════════════════
+// Tenor GIF proxy (API ключ не утекает на клиент)
+// ═══════════════════════════════════
+
+const TENOR_KEY = process.env.TENOR_API_KEY;
+const TENOR_BASE = 'https://tenor.googleapis.com/v2';
+const TENOR_CLIENT_KEY = 'uplink_messenger';
+
+app.get('/api/gif/search', async (req, res) => {
+    if (!TENOR_KEY) return res.status(503).json({ error: 'Tenor API не настроен' });
+    const { q, limit = 20, pos } = req.query;
+    if (!q) return res.status(400).json({ error: 'q required' });
+    try {
+        const url = `${TENOR_BASE}/search?key=${TENOR_KEY}&client_key=${TENOR_CLIENT_KEY}&q=${encodeURIComponent(q)}&limit=${limit}&media_filter=gif,tinygif${pos ? `&pos=${pos}` : ''}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/gif/trending', async (req, res) => {
+    if (!TENOR_KEY) return res.status(503).json({ error: 'Tenor API не настроен' });
+    const { limit = 20, pos } = req.query;
+    try {
+        const url = `${TENOR_BASE}/featured?key=${TENOR_KEY}&client_key=${TENOR_CLIENT_KEY}&limit=${limit}&media_filter=gif,tinygif${pos ? `&pos=${pos}` : ''}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'uplink-botservice' });

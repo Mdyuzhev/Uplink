@@ -1,4 +1,5 @@
 import * as sdk from 'matrix-js-sdk';
+import type { GifResult } from '../services/GifService';
 
 /**
  * Сервис сообщений — отправка, ответы, загрузка истории, прочитанные, timeline.
@@ -53,13 +54,30 @@ export class MessageService {
         }
     }
 
+    /** Отправить GIF-сообщение (Tenor CDN URL) */
+    async sendGif(roomId: string, gif: GifResult): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await this.getClient().sendEvent(roomId, 'm.room.message' as any, {
+            msgtype: 'm.image',
+            body: gif.title || 'GIF',
+            url: gif.gifUrl,
+            info: {
+                mimetype: 'image/gif',
+                w: gif.width,
+                h: gif.height,
+            },
+            'dev.uplink.gif': true,
+        });
+    }
+
     getRoomTimeline(roomId: string): sdk.MatrixEvent[] {
         const client = this.getClient();
         const room = client.getRoom(roomId);
         if (!room) return [];
-        return room.getLiveTimeline().getEvents().filter(e =>
-            e.getType() === 'm.room.message' || e.getType() === 'm.room.encrypted'
-        );
+        return room.getLiveTimeline().getEvents().filter(e => {
+            const t = e.getType();
+            return t === 'm.room.message' || t === 'm.room.encrypted' || t === 'm.sticker';
+        });
     }
 
     /** Найти событие по ID в timeline комнаты */

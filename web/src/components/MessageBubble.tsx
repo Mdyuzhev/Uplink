@@ -3,6 +3,7 @@ import { SmilePlus, Reply, MessageSquare, Pin, ChevronRight, FileText, Download 
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { Avatar } from './Avatar';
 import { CodeSnippet } from './CodeSnippet';
+import { LottieSticker } from './LottieSticker';
 import { renderMarkdown } from '../utils/markdown';
 import { formatTime, formatFileSize, getSenderColor, pluralReplies } from './message/formatters';
 export type { ReactionInfo, ThreadSummaryInfo } from './message/types';
@@ -71,7 +72,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
         <div
-            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''}`}
+            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''}`}
             data-event-id={message.id}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -139,7 +140,40 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         {isPinned && <span className="message-bubble__pin-badge" title="Закреплено"><Pin size={12} /></span>}
                     </div>
                 )}
-                {message.type === 'code' ? (
+                {message.type === 'sticker' ? (
+                    <div className="message-bubble__sticker-content">
+                        {message.mimetype === 'application/json' && message.imageUrl ? (
+                            <LottieSticker
+                                url={message.imageUrl}
+                                width={Math.min(message.imageWidth || 200, 200)}
+                                height={Math.min(message.imageHeight || 200, 200)}
+                            />
+                        ) : message.imageUrl ? (
+                            <img
+                                src={message.imageUrl}
+                                alt={message.body}
+                                className="sticker-image"
+                                style={{
+                                    maxWidth: Math.min(message.imageWidth || 200, 200),
+                                    maxHeight: 200,
+                                }}
+                            />
+                        ) : (
+                            <span>{message.body}</span>
+                        )}
+                    </div>
+                ) : message.type === 'gif' ? (
+                    <div className="message-bubble__gif">
+                        <img
+                            src={message.imageUrl || ''}
+                            alt={message.body}
+                            loading="lazy"
+                            style={{
+                                maxWidth: Math.min(message.imageWidth || 350, 350),
+                            }}
+                        />
+                    </div>
+                ) : message.type === 'code' ? (
                     <CodeSnippet body={message.body} codeContext={message.codeContext} />
                 ) : message.type === 'encrypted' ? (
                     <div className="message-bubble__encrypted">{message.body}</div>

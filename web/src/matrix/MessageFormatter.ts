@@ -6,7 +6,7 @@ export interface ParsedMessage {
     senderDisplayName: string;
     senderAvatarUrl?: string | null;
     timestamp: number;
-    type: 'text' | 'code' | 'image' | 'file' | 'encrypted';
+    type: 'text' | 'code' | 'image' | 'file' | 'encrypted' | 'sticker' | 'gif';
     body: string;
     formattedBody?: string;
     codeContext?: {
@@ -38,7 +38,7 @@ export function parseEvent(
     mxcToHttpDownload?: (mxcUrl: string) => string | null,
 ): ParsedMessage | null {
     const type = event.getType();
-    if (type !== 'm.room.message' && type !== 'm.room.encrypted') return null;
+    if (type !== 'm.room.message' && type !== 'm.room.encrypted' && type !== 'm.sticker') return null;
 
     const sender = event.getSender()!;
     const senderDisplayName = getDisplayName(sender);
@@ -90,6 +90,37 @@ export function parseEvent(
         if (emptyLineIdx !== -1) {
             body = body.substring(emptyLineIdx + 2);
         }
+    }
+
+    // Стикер (m.sticker event)
+    if (type === 'm.sticker') {
+        const stickerUrl = mxcUrl && mxcToHttpDownload ? mxcToHttpDownload(mxcUrl) : null;
+        return {
+            id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
+            timestamp: event.getTs(), type: 'sticker' as const,
+            body: content.body || 'Стикер',
+            imageUrl: stickerUrl,
+            mimetype: info.mimetype,
+            imageWidth: info.w || 200,
+            imageHeight: info.h || 200,
+        };
+    }
+
+    // GIF (m.image с маркером dev.uplink.gif)
+    if (content['dev.uplink.gif']) {
+        const isExternal = mxcUrl && !mxcUrl.startsWith('mxc://');
+        const gifImageUrl = isExternal ? mxcUrl : (mxcUrl && mxcToHttpDownload ? mxcToHttpDownload(mxcUrl) : mxcUrl);
+        return {
+            id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
+            timestamp: event.getTs(), type: 'gif' as const,
+            body: content.body || 'GIF',
+            imageUrl: gifImageUrl,
+            imageWidth: info.w || 300,
+            imageHeight: info.h || 200,
+            replyToEventId,
+            replyToSender,
+            replyToBody,
+        };
     }
 
     if (content['dev.uplink.code_context']) {

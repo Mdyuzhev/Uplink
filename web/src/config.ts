@@ -36,6 +36,11 @@ export const config = {
     botWsUrl: isDev
         ? `ws://${host}:7891/bot-ws`
         : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/bot-ws`,
+
+    /** Tenor GIF proxy */
+    gifApiUrl: isDev
+        ? `http://${host}:7891/api/gif`
+        : `${window.location.origin}/gif-api`,
 };
 
 export function getConfig() {
