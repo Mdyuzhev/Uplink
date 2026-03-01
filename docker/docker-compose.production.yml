@@ -1,3 +1,12 @@
+# docker-compose.production.yml
+# Standalone production compose для Yandex Cloud (uplink.wh-lab.ru)
+#
+# Использование:
+#   cd docker && docker compose -f docker-compose.production.yml up -d --build
+#
+# Все порты слушают только 127.0.0.1 — наружу торчит host nginx (80/443)
+# Конфиги Synapse лежат в docker/synapse-data/ (не в git, создаются на VM)
+
 name: uplink
 
 services:
@@ -6,7 +15,7 @@ services:
     container_name: uplink-postgres
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -19,13 +28,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   redis:
     image: redis:7
     container_name: uplink-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - uplink-redis-data:/data
     healthcheck:
@@ -33,17 +50,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   synapse:
     image: matrixdotorg/synapse:latest
     container_name: uplink-synapse
     restart: unless-stopped
     ports:
-      - "8008:8008"
+      - "127.0.0.1:8008:8008"
     environment:
       SYNAPSE_CONFIG_DIR: /data
     volumes:
-      - ./synapse:/data
+      - ./synapse-data:/data
       - uplink-synapse-media:/data/media_store
     depends_on:
       postgres:
@@ -56,16 +83,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   synapse-admin:
     image: awesometechnologies/synapse-admin:latest
     container_name: uplink-synapse-admin
     restart: unless-stopped
     ports:
-      - "${ADMIN_PORT:-8080}:80"
+      - "127.0.0.1:8080:80"
     depends_on:
       synapse:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   livekit-token:
     build:
@@ -74,7 +121,7 @@ services:
     container_name: uplink-livekit-token
     restart: unless-stopped
     ports:
-      - "7890:7890"
+      - "127.0.0.1:7890:7890"
     environment:
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
@@ -83,6 +130,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   uplink:
     build:
@@ -91,10 +148,23 @@ services:
     container_name: uplink-web
     restart: unless-stopped
     ports:
-      - "5174:80"
+      - "127.0.0.1:5174:80"
     depends_on:
       synapse:
         condition: service_healthy
+    networks:
+      - default
+      - exposed
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   uplink-botservice:
     build:
@@ -102,6 +172,8 @@ services:
       dockerfile: Dockerfile
     container_name: uplink-botservice
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:7891:7891"
     environment:
       HOMESERVER_URL: http://synapse:8008
       AS_TOKEN: ${BOT_AS_TOKEN}
@@ -119,6 +191,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   deploy-webhook:
     build:
@@ -129,18 +211,32 @@ services:
     environment:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
     volumes:
-      # Docker socket — для выполнения docker compose
       - /var/run/docker.sock:/var/run/docker.sock
-      # Репозиторий — для git pull
-      - /home/flomaster/projects/uplink:/repo
+      - /home/ubuntu/projects/uplink:/repo
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 volumes:
   uplink-postgres-data:
   uplink-redis-data:
   uplink-synapse-media:
   uplink-botservice-data:
+
+networks:
+  default:
+    name: uplink-internal
+  exposed:
+    name: uplink-exposed

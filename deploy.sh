@@ -33,17 +33,5 @@ curl -sf http://localhost:5174/_matrix/client/versions > /dev/null && echo "   P
 curl -sf http://localhost:8008/health > /dev/null && echo "   Synapse: OK" || echo "   Synapse: FAIL"
 
 echo ""
-echo "=== Cloudflare Tunnel ==="
-if systemctl is-active --quiet cloudflared 2>/dev/null; then
-    echo "   Tunnel: active"
-elif systemctl is-active --quiet cloudflared-uplink 2>/dev/null; then
-    URL=$(journalctl -u cloudflared-uplink --no-pager -n 50 | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | tail -1)
-    echo "   Tunnel: active"
-    echo "   URL: $URL"
-else
-    echo "   Tunnel: not running"
-fi
-
-echo ""
 IP=$(hostname -I | awk '{print $1}')
 echo "=== Ready: http://${IP}:5174 ==="

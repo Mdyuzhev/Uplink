@@ -249,7 +249,7 @@ export class MatrixService {
      *
      * matrix-sdk-crypto-wasm v7+ НЕ требует SharedArrayBuffer —
      * проверка удалена (она ложно блокировала E2E на мобильных
-     * браузерах и при доступе через Cloudflare Tunnel без COOP/COEP).
+     * браузерах и без COOP/COEP).
      *
      * При ошибке — логируем, но не ломаем приложение.
      * Нешифрованные комнаты продолжат работать.

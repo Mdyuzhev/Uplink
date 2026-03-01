@@ -1,14 +1,14 @@
 id: uplink-bots
 url: "http://uplink-botservice:7891"
-as_token: "e2045234fb0455c629524ee4d014d169e7ba3e0980ba21405a5251ca8a7ab47d"
-hs_token: "92b719f6ea1a3f5c23509983e832a828d9b74eef8216f6977e42be155af73937"
+as_token: "157e2974361695922c937f0f2f328e73229a2984741fe962ec30dcf8dfec68b6"
+hs_token: "dd77805f1f2d8ac2ffe4438e337d02af1237ee40595c9b9f7410e5d546a7551a"
 sender_localpart: "botservice"
 namespaces:
   users:
     - exclusive: true
-      regex: "@bot_.*:uplink\\.local"
+      regex: '@bot_.*:uplink\.wh-lab\.ru'
     - exclusive: false
-      regex: "@.*:uplink\\.local"
+      regex: '@.*:uplink\.wh-lab\.ru'
   aliases: []
   rooms: []
 rate_limited: false

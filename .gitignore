@@ -3,7 +3,13 @@ out/
 dist/
 *.vsix
 *.log
+
+# Секреты
 .env
+docker/.env
+
+# Synapse runtime data (создаётся на сервере, не в git)
+docker/synapse-data/
 docker/synapse/*.signing.key
 docker/synapse/*.log.config
 docker/synapse/media_store/
@@ -11,14 +17,6 @@ docker/synapse/media_store/
 # Claude
 .claude/
 Tasks/
-
-# Инфраструктура (homelab)
-docker/
-scripts/
-deploy.sh
-web/Dockerfile
-web/.dockerignore
-web/nginx.conf
 
 # Tauri
 web/src-tauri/target/
