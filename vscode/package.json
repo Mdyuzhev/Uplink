@@ -79,8 +79,8 @@
             "properties": {
                 "uplink.serverUrl": {
                     "type": "string",
-                    "default": "",
-                    "description": "URL Matrix-сервера (например, https://uplink.example.com)"
+                    "default": "https://uplink.wh-lab.ru",
+                    "description": "URL Uplink-сервера (Matrix homeserver). Используется при первом подключении."
                 }
             }
         }

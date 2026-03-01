@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { config } from '../config';
+import { config, isEmbedded } from '../config';
 import '../styles/login.css';
 
 interface LoginScreenProps {
@@ -43,8 +43,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
                         type="text"
                         value={homeserver}
                         onChange={e => setHomeserver(e.target.value)}
-                        placeholder="http://localhost:8008"
+                        placeholder="https://uplink.wh-lab.ru"
                     />
+                    {isEmbedded && (
+                        <span className="login-card__hint">
+                            Введите URL вашего Uplink-сервера
+                        </span>
+                    )}
                 </div>
 
                 <div className="login-card__field">

@@ -159,11 +159,15 @@ export class UplinkPanel {
         // Nonce для скриптов
         html = html.replace(/<script /g, `<script nonce="${nonce}" `);
 
+        // URL сервера из настроек VSCode
+        const serverUrl = vscode.workspace.getConfiguration('uplink').get<string>('serverUrl') || '';
+
         // Мост VS Code API
         html = html.replace(
             '</body>',
             `<script nonce="${nonce}">
     window.__VSCODE__ = true;
+    window.__UPLINK_SERVER_URL__ = ${JSON.stringify(serverUrl)};
     window.__VSCODE_API__ = acquireVsCodeApi();
     window.__UPLINK_STORAGE_BRIDGE__ = {
         getItem: (key) => {

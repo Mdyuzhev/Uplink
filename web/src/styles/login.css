@@ -116,6 +116,13 @@
     opacity: 0.8;
 }
 
+.login-card__hint {
+    display: block;
+    font-size: 11px;
+    color: var(--uplink-text-faint);
+    margin-top: 4px;
+}
+
 @media (max-width: 480px) {
     .login-card {
         padding: 24px 20px;
