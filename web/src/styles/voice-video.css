@@ -1,0 +1,465 @@
+/* ═══════════════════════════════════
+   VOICE RECORD BAR (в MessageInput)
+   ═══════════════════════════════════ */
+.voice-record-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--uplink-input-bg);
+    border-radius: var(--uplink-radius-md);
+    width: 100%;
+}
+
+.voice-record-bar__cancel {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.voice-record-bar__cancel:hover {
+    color: var(--uplink-danger);
+}
+
+.voice-record-bar__waveform {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    position: relative;
+}
+
+.voice-record-bar__pulse {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--uplink-danger);
+    transition: transform 0.1s;
+}
+
+.voice-record-bar__recording-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--uplink-danger);
+    position: absolute;
+    left: 8px;
+    animation: voice-blink 1s infinite;
+}
+
+@keyframes voice-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.voice-record-bar__time {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--uplink-text-primary);
+    min-width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.voice-record-bar__progress {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.voice-record-bar__progress-fill {
+    height: 100%;
+    background: var(--uplink-danger);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
+.voice-record-bar__stop,
+.voice-record-bar__send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.voice-record-bar__stop {
+    background: var(--uplink-danger);
+    color: #fff;
+}
+
+.voice-record-bar__send {
+    background: var(--uplink-accent);
+    color: #fff;
+}
+
+/* ═══════════════════════════════════
+   WAVEFORM PREVIEW (после записи)
+   ═══════════════════════════════════ */
+.waveform-preview {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 32px;
+    width: 100%;
+}
+
+.waveform-preview__bar {
+    flex: 1;
+    min-width: 2px;
+    max-width: 4px;
+    background: var(--uplink-accent);
+    border-radius: 1px;
+    opacity: 0.7;
+}
+
+/* ═══════════════════════════════════
+   VOICE MESSAGE (в timeline)
+   ═══════════════════════════════════ */
+.voice-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 220px;
+    max-width: 360px;
+}
+
+.voice-message__play {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--uplink-accent);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.voice-message__play:hover {
+    background: var(--uplink-accent-hover);
+}
+
+.voice-message__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.voice-message__waveform {
+    display: flex;
+    align-items: center;
+    gap: 1.5px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.voice-message__bar {
+    flex: 1;
+    min-width: 2px;
+    max-width: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1px;
+    transition: background 0.1s;
+}
+
+.voice-message__bar--played {
+    background: var(--uplink-accent);
+}
+
+.voice-message__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.voice-message__time {
+    font-size: 11px;
+    color: var(--uplink-text-faint);
+    font-variant-numeric: tabular-nums;
+}
+
+.voice-message__speed {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: var(--uplink-text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.voice-message__speed:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--uplink-text-primary);
+}
+
+.voice-message__error {
+    font-size: 13px;
+    color: var(--uplink-text-faint);
+    font-style: italic;
+}
+
+/* Кнопка микрофона в MessageInput */
+.message-input__mic-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: var(--uplink-text-faint);
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.message-input__mic-btn:hover {
+    color: var(--uplink-accent);
+}
+
+/* ═══════════════════════════════════
+   VIDEO NOTE RECORD OVERLAY
+   ═══════════════════════════════════ */
+.video-note-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-note-overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.video-note-overlay__container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.video-note-overlay__circle {
+    width: 248px;
+    height: 248px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+}
+
+.video-note-overlay__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-note-overlay__progress-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.video-note-overlay__timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+}
+
+.video-note-overlay__rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--uplink-danger);
+    animation: voice-blink 1s infinite;
+}
+
+.video-note-overlay__controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.video-note-overlay__btn {
+    padding: 10px 24px;
+    border-radius: 24px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.video-note-overlay__btn--cancel,
+.video-note-overlay__btn--retake {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.video-note-overlay__btn--cancel:hover,
+.video-note-overlay__btn--retake:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.video-note-overlay__btn--record {
+    background: var(--uplink-danger);
+    color: #fff;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 20px;
+    padding: 0;
+    justify-content: center;
+}
+
+.video-note-overlay__btn--stop {
+    background: var(--uplink-danger);
+    color: #fff;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    font-size: 20px;
+    padding: 0;
+    justify-content: center;
+}
+
+.video-note-overlay__btn--send {
+    background: var(--uplink-accent);
+    color: #fff;
+}
+
+.video-note-overlay__btn--send:hover {
+    background: var(--uplink-accent-hover);
+}
+
+/* ═══════════════════════════════════
+   VIDEO NOTE (кружочек в timeline)
+   ═══════════════════════════════════ */
+.video-note {
+    position: relative;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.video-note__ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.video-note__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.video-note__mute-indicator {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    color: #fff;
+}
+
+.video-note__duration {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 6px;
+    border-radius: 8px;
+    z-index: 3;
+}
+
+/* Video note без пузыря */
+.message-bubble--video-note {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Кнопка видеосообщения */
+.message-input__video-note-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: var(--uplink-text-faint);
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+}
+
+.message-input__video-note-btn:hover {
+    color: var(--uplink-accent);
+}
+
+/* ═══════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════ */
+@media (max-width: 768px) {
+    .voice-message {
+        max-width: 280px;
+    }
+
+    .video-note-overlay__circle {
+        width: 200px;
+        height: 200px;
+    }
+
+    .video-note {
+        width: 200px !important;
+        height: 200px !important;
+    }
+}

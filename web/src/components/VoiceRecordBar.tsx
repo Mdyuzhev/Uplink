@@ -1,0 +1,116 @@
+import React, { useState, useEffect } from 'react';
+import { X, Square, Send } from 'lucide-react';
+import { voiceRecorder, VoiceRecording } from '../services/VoiceRecorder';
+
+interface VoiceRecordBarProps {
+    onSend: (recording: VoiceRecording) => void;
+    onCancel: () => void;
+}
+
+export const VoiceRecordBar: React.FC<VoiceRecordBarProps> = ({ onSend, onCancel }) => {
+    const [elapsed, setElapsed] = useState(0);
+    const [amplitude, setAmplitude] = useState(0);
+    const [stopped, setStopped] = useState(false);
+    const [recording, setRecording] = useState<VoiceRecording | null>(null);
+    const MAX_DURATION = 30;
+
+    useEffect(() => {
+        voiceRecorder.onTimeUpdate = (sec) => setElapsed(sec);
+        voiceRecorder.onAmplitude = (amp) => setAmplitude(amp);
+        voiceRecorder.onAutoStop = async () => {
+            const rec = await voiceRecorder.stop();
+            if (rec) {
+                setRecording(rec);
+                setStopped(true);
+            }
+        };
+
+        voiceRecorder.start().catch(() => onCancel());
+
+        return () => {
+            voiceRecorder.onTimeUpdate = undefined;
+            voiceRecorder.onAmplitude = undefined;
+            voiceRecorder.onAutoStop = undefined;
+        };
+    }, []);
+
+    const handleStop = async () => {
+        const rec = await voiceRecorder.stop();
+        if (rec && rec.duration > 0.5) {
+            setRecording(rec);
+            setStopped(true);
+        } else {
+            onCancel();
+        }
+    };
+
+    const handleCancel = () => {
+        voiceRecorder.cancel();
+        onCancel();
+    };
+
+    const handleSend = () => {
+        if (recording) onSend(recording);
+    };
+
+    const formatTime = (sec: number) => {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className="voice-record-bar">
+            <button className="voice-record-bar__cancel" onClick={handleCancel} title="Отмена">
+                <X size={18} />
+            </button>
+
+            <div className="voice-record-bar__waveform">
+                {!stopped ? (
+                    <>
+                        <div className="voice-record-bar__pulse"
+                             style={{ transform: `scale(${1 + amplitude * 0.5})` }} />
+                        <span className="voice-record-bar__recording-dot" />
+                    </>
+                ) : (
+                    <WaveformPreview waveform={recording?.waveform || []} />
+                )}
+            </div>
+
+            <span className="voice-record-bar__time">
+                {formatTime(stopped ? (recording?.duration || 0) : elapsed)}
+            </span>
+
+            {!stopped && (
+                <div className="voice-record-bar__progress">
+                    <div
+                        className="voice-record-bar__progress-fill"
+                        style={{ width: `${(elapsed / MAX_DURATION) * 100}%` }}
+                    />
+                </div>
+            )}
+
+            {!stopped ? (
+                <button className="voice-record-bar__stop" onClick={handleStop} title="Остановить">
+                    <Square size={14} />
+                </button>
+            ) : (
+                <button className="voice-record-bar__send" onClick={handleSend} title="Отправить">
+                    <Send size={14} />
+                </button>
+            )}
+        </div>
+    );
+};
+
+const WaveformPreview: React.FC<{ waveform: number[] }> = ({ waveform }) => (
+    <div className="waveform-preview">
+        {waveform.map((v, i) => (
+            <div
+                key={i}
+                className="waveform-preview__bar"
+                style={{ height: `${Math.max(v * 100, 8)}%` }}
+            />
+        ))}
+    </div>
+);

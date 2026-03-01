@@ -34,6 +34,7 @@ import '../styles/thread.css';
 import '../styles/bots.css';
 import '../styles/mobile.css';
 import '../styles/stickers.css';
+import '../styles/voice-video.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;

@@ -6,7 +6,7 @@ export interface ParsedMessage {
     senderDisplayName: string;
     senderAvatarUrl?: string | null;
     timestamp: number;
-    type: 'text' | 'code' | 'image' | 'file' | 'encrypted' | 'sticker' | 'gif';
+    type: 'text' | 'code' | 'image' | 'file' | 'encrypted' | 'sticker' | 'gif' | 'voice' | 'video_note';
     body: string;
     formattedBody?: string;
     codeContext?: {
@@ -24,6 +24,11 @@ export interface ParsedMessage {
     mimetype?: string;
     imageWidth?: number;
     imageHeight?: number;
+    // Voice
+    duration?: number;
+    waveform?: number[];
+    // Video note
+    isVideoNote?: boolean;
     // Reply
     replyToEventId?: string;
     replyToSender?: string;
@@ -120,6 +125,61 @@ export function parseEvent(
             replyToEventId,
             replyToSender,
             replyToBody,
+        };
+    }
+
+    // Голосовое сообщение (m.audio с маркером voice)
+    if (content.msgtype === 'm.audio') {
+        const isVoice = content['org.matrix.msc3245.voice'] !== undefined
+            || content['dev.uplink.voice'] === true;
+        const audioInfo = content['org.matrix.msc1767.audio'] || {};
+        const audioUrl = mxcUrl && mxcToHttpDownload ? mxcToHttpDownload(mxcUrl) : null;
+
+        return {
+            id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
+            timestamp: event.getTs(),
+            type: isVoice ? 'voice' as const : 'file' as const,
+            body: body || (isVoice ? 'Голосовое сообщение' : 'Аудио'),
+            fileUrl: audioUrl,
+            fileSize: info.size,
+            mimetype: info.mimetype,
+            duration: audioInfo.duration || info.duration,
+            waveform: audioInfo.waveform,
+            replyToEventId, replyToSender, replyToBody,
+        };
+    }
+
+    // Видео-кружочек (m.video с маркером video_note) или обычное видео
+    if (content.msgtype === 'm.video') {
+        const isVideoNote = content['dev.uplink.video_note'] === true;
+        const videoUrl = mxcUrl && mxcToHttpDownload ? mxcToHttpDownload(mxcUrl) : null;
+        const thumbUrl = info.thumbnail_url && mxcToHttp ? mxcToHttp(info.thumbnail_url, 480) : null;
+
+        if (isVideoNote) {
+            return {
+                id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
+                timestamp: event.getTs(),
+                type: 'video_note' as const,
+                body: body || 'Видеосообщение',
+                fileUrl: videoUrl,
+                thumbnailUrl: thumbUrl,
+                fileSize: info.size,
+                mimetype: info.mimetype,
+                duration: info.duration,
+                imageWidth: info.w || 240,
+                imageHeight: info.h || 240,
+                isVideoNote: true,
+                replyToEventId, replyToSender, replyToBody,
+            };
+        }
+
+        // Обычное видео — как file
+        return {
+            id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
+            timestamp: event.getTs(), type: 'file' as const,
+            body, fileUrl: videoUrl, fileSize: info.size, mimetype: info.mimetype,
+            thumbnailUrl: thumbUrl, imageWidth: info.w, imageHeight: info.h,
+            replyToEventId, replyToSender, replyToBody,
         };
     }
 

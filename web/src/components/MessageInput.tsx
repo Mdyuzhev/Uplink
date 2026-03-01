@@ -1,9 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Paperclip, Send, Smile } from 'lucide-react';
+import { X, Paperclip, Send, Smile, Mic, Video } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
 import { commandRegistry, BotCommand } from '../bots/CommandRegistry';
 import { StickerGifPanel } from './StickerGifPanel';
 import { CreateStickerPackModal } from './CreateStickerPackModal';
+import { VoiceRecordBar } from './VoiceRecordBar';
+import { VideoNoteRecordOverlay } from './VideoNoteRecordOverlay';
+import type { VoiceRecording } from '../services/VoiceRecorder';
+import type { VideoNoteRecording } from '../services/VideoNoteRecorder';
 import type { GifResult } from '../services/GifService';
 import type { Sticker } from '../services/StickerService';
 import { stickerService } from '../services/StickerService';
@@ -38,6 +42,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const [selectedSuggestion, setSelectedSuggestion] = useState(0);
     const [showStickerPanel, setShowStickerPanel] = useState(false);
     const [showCreatePack, setShowCreatePack] = useState(false);
+    const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+    const [showVideoNoteRecorder, setShowVideoNoteRecorder] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -220,6 +226,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         await stickerService.sendSticker(roomId, sticker);
     }, [roomId]);
 
+    const handleVoiceSend = async (recording: VoiceRecording) => {
+        setIsRecordingVoice(false);
+        if (roomId) await matrixService.media.sendVoiceMessage(roomId, recording);
+    };
+
+    const handleVideoNoteSend = async (recording: VideoNoteRecording) => {
+        setShowVideoNoteRecorder(false);
+        if (roomId) await matrixService.media.sendVideoNote(roomId, recording);
+    };
+
     const handlePaste = (e: React.ClipboardEvent) => {
         const items = e.clipboardData?.items;
         if (!items) return;
@@ -290,59 +306,92 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                     </div>
                 )}
                 <div className="message-input__row">
-                    <textarea
-                        ref={textareaRef}
-                        className="message-input__textarea"
-                        value={text}
-                        onChange={handleChange}
-                        onKeyDown={handleKeyDown}
-                        onPaste={handlePaste}
-                        onFocus={() => {
-                            // iOS: задержка на анимацию клавиатуры, затем скролл к полю ввода
-                            setTimeout(() => {
-                                textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                            }, 300);
-                        }}
-                        placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
-                        rows={1}
-                    />
-                    <div className="message-input__actions">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            style={{ display: 'none' }}
-                            onChange={handleFileInputChange}
+                    {isRecordingVoice ? (
+                        <VoiceRecordBar
+                            onSend={handleVoiceSend}
+                            onCancel={() => setIsRecordingVoice(false)}
                         />
-                        <button
-                            className="message-input__action-btn"
-                            onClick={() => setShowStickerPanel(!showStickerPanel)}
-                            title="Стикеры и GIF"
-                        >
-                            <Smile size={18} />
-                        </button>
-                        <button
-                            className="message-input__action-btn"
-                            onClick={handleAttachClick}
-                            disabled={uploading}
-                            title="Прикрепить файл"
-                        >
-                            <Paperclip size={18} />
-                        </button>
-                        <button
-                            className="message-input__send-btn"
-                            onClick={handleSend}
-                            disabled={!text.trim() || uploading}
-                            title="Отправить"
-                        >
-                            <Send size={16} />
-                        </button>
-                    </div>
+                    ) : (
+                        <>
+                            <textarea
+                                ref={textareaRef}
+                                className="message-input__textarea"
+                                value={text}
+                                onChange={handleChange}
+                                onKeyDown={handleKeyDown}
+                                onPaste={handlePaste}
+                                onFocus={() => {
+                                    setTimeout(() => {
+                                        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                    }, 300);
+                                }}
+                                placeholder={roomName ? `Написать в ${roomName}...` : 'Написать сообщение...'}
+                                rows={1}
+                            />
+                            <div className="message-input__actions">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    style={{ display: 'none' }}
+                                    onChange={handleFileInputChange}
+                                />
+                                <button
+                                    className="message-input__action-btn"
+                                    onClick={() => setShowStickerPanel(!showStickerPanel)}
+                                    title="Стикеры и GIF"
+                                >
+                                    <Smile size={18} />
+                                </button>
+                                <button
+                                    className="message-input__action-btn"
+                                    onClick={handleAttachClick}
+                                    disabled={uploading}
+                                    title="Прикрепить файл"
+                                >
+                                    <Paperclip size={18} />
+                                </button>
+                                {text.trim() ? (
+                                    <button
+                                        className="message-input__send-btn"
+                                        onClick={handleSend}
+                                        disabled={uploading}
+                                        title="Отправить"
+                                    >
+                                        <Send size={16} />
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            className="message-input__mic-btn"
+                                            onClick={() => setIsRecordingVoice(true)}
+                                            title="Голосовое сообщение"
+                                        >
+                                            <Mic size={18} />
+                                        </button>
+                                        <button
+                                            className="message-input__video-note-btn"
+                                            onClick={() => setShowVideoNoteRecorder(true)}
+                                            title="Видеосообщение"
+                                        >
+                                            <Video size={18} />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             {showCreatePack && (
                 <CreateStickerPackModal
                     onClose={() => setShowCreatePack(false)}
                     onCreated={() => setShowCreatePack(false)}
+                />
+            )}
+            {showVideoNoteRecorder && (
+                <VideoNoteRecordOverlay
+                    onSend={handleVideoNoteSend}
+                    onCancel={() => setShowVideoNoteRecorder(false)}
                 />
             )}
         </div>

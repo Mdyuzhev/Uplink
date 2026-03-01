@@ -4,6 +4,8 @@ import { ParsedMessage } from '../matrix/MessageFormatter';
 import { Avatar } from './Avatar';
 import { CodeSnippet } from './CodeSnippet';
 import { LottieSticker } from './LottieSticker';
+import { VoiceMessage } from './VoiceMessage';
+import { VideoNote } from './VideoNote';
 import { renderMarkdown } from '../utils/markdown';
 import { formatTime, formatFileSize, getSenderColor, pluralReplies } from './message/formatters';
 export type { ReactionInfo, ThreadSummaryInfo } from './message/types';
@@ -72,7 +74,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
         <div
-            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''}`}
+            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''} ${message.type === 'video_note' ? 'message-bubble--video-note' : ''}`}
             data-event-id={message.id}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
@@ -192,6 +194,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             />
                         </a>
                     </div>
+                ) : message.type === 'voice' ? (
+                    <VoiceMessage
+                        fileUrl={message.fileUrl || null}
+                        duration={message.duration || 0}
+                        waveform={message.waveform}
+                    />
+                ) : message.type === 'video_note' ? (
+                    <VideoNote
+                        fileUrl={message.fileUrl || null}
+                        thumbnailUrl={message.thumbnailUrl}
+                        duration={message.duration || 0}
+                    />
                 ) : message.type === 'file' ? (
                     <div className="message-bubble__file">
                         <span className="message-bubble__file-icon"><FileText size={24} /></span>
