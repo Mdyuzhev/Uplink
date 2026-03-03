@@ -1,0 +1,44 @@
+name: Post-Deploy Setup (one-time)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Migrate storage JSON → PostgreSQL + setup cron
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ubuntu
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/projects/uplink/docker
+
+            echo "=== Запуск миграции JSON → PostgreSQL ==="
+            docker compose -f docker-compose.production.yml exec -T uplink-botservice \
+              node scripts/migrate-json-to-pg.mjs || echo "Миграция завершена (или данных не было)"
+
+            echo "=== Проверка таблицы bots.kv_store ==="
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U synapse -c "SELECT key, updated_at FROM bots.kv_store ORDER BY updated_at DESC LIMIT 10;"
+
+            echo "=== Настройка cron ==="
+            (crontab -l 2>/dev/null | grep -v backup-db.sh | grep -v backup-media.sh; \
+             echo "0 3 * * * /home/ubuntu/projects/uplink/scripts/backup-db.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
+             echo "0 4 * * * /home/ubuntu/projects/uplink/scripts/backup-media.sh >> /home/ubuntu/backups/backup.log 2>&1") | crontab -
+
+            echo "=== Текущий crontab ==="
+            crontab -l
+
+            echo "=== Права на скрипты ==="
+            chmod +x /home/ubuntu/projects/uplink/scripts/backup-db.sh
+            chmod +x /home/ubuntu/projects/uplink/scripts/backup-media.sh
+
+            echo "=== Создание директорий для бэкапов ==="
+            mkdir -p /home/ubuntu/backups/postgres
+            mkdir -p /home/ubuntu/backups/media
+
+            echo "=== Готово ==="
