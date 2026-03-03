@@ -26,7 +26,7 @@ export class UserService {
     getPresence(userId: string): string {
         const client = this.getClient();
         const user = client.getUser(userId);
-        return (user as any)?.presence || 'offline';
+        return (user as unknown as { presence?: string })?.presence || 'offline';
     }
 
     /**
