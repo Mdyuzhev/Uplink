@@ -18,6 +18,9 @@ docker/synapse/media_store/
 .claude/
 Tasks/
 
+releases/
+test/
+
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/
