@@ -18,6 +18,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | # | Фаза | Статус |
 |---|-------|--------|
 | 0 | Чистый старт инфраструктуры (federation-ready) | ✅ |
+| 0.5 | Деплой на сервер + CI | ✅ |
 | 1 | Безопасность | ⬜ Следующая |
 | 2 | Мониторинг и observability | ⬜ |
 | 3 | Рефакторинг кода | ⬜ |
@@ -204,3 +205,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-01 | — | Создан план production_readiness.md (8 фаз) |
 | 2026-03-01 | — | Создана задача prod_001_clean_infrastructure.md |
 | 2026-03-01 | prod_001 | Чистый старт: server_name→uplink.wh-lab.ru, новые секреты, rate limits, federation well-known, resource limits, logging, network isolation, clean-start.sh, setup-tls.sh, deploy-prod.sh hardening, Cloudflare убран, .env из git убран |
+| 2026-03-03 | prod_002 | Деплой на Yandex Cloud: clean-start.sh, TLS (certbot, cert до 2026-05-29), HTTPS ✓, well-known ✓, CI настроен (PROD_HOST + PROD_SSH_KEY), deploy-prod.sh: git fetch+reset вместо pull |
