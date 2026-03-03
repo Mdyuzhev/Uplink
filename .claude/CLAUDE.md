@@ -23,7 +23,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | 2 | Мониторинг и observability | ✅ |
 | 3 | Рефакторинг кода | ✅ |
 | 4 | Масштабирование (worker-архитектура) | ✅ |
-| 5 | Качество кода (тесты, strict TS, lint) | ⬜ |
+| 5 | Качество кода (тесты, strict TS, lint) | ✅ |
 | 6 | Федерация | ⬜ |
 | 7 | Продуктизация (параметризация, setup wizard, docs) | ⬜ |
 
@@ -156,6 +156,11 @@ E:\Uplink\
 - **State** — нет Redux/Zustand. React хуки + сервисы + React Context (ChatContext, CallContext)
 - **Стили** — CSS custom properties в variables.css. Без CSS-in-JS, Tailwind, UI-библиотек. Новые компоненты — CSS Modules (`*.module.css`). Стратегия: `web/src/styles/README.md`
 - **Типизация** — строгий TypeScript. Интерфейсы для данных, union types для состояний
+- **Тесты** — Vitest v2. `npm test` (27 тестов: renderMarkdown 16 + parseEvent 11)
+- **Lint** — ESLint (web/.eslintrc.json): react-hooks/rules-of-hooks, exhaustive-deps, no-explicit-any. `npm run lint` (max-warnings 100)
+- **Format** — Prettier (web/.prettierrc): singleQuote, tabWidth 4, printWidth 120. `npm run format`
+- **CI гейт** — deploy-production.yml: job `check` (tsc + lint + test + build) → job `deploy`
+- **Botservice типы** — JSDoc в types.mjs, jsconfig.json с checkJs:true
 
 ### Коммиты
 Префиксы: `[prod]` production readiness, `[chat]` UI, `[matrix]` Matrix, `[livekit]` звонки, `[infra]` Docker/серверы, `[fix]` баг, `[refactor]` рефакторинг, `[style]` стили, `[docs]` документация, `[test]` тесты
@@ -173,6 +178,8 @@ E:\Uplink\
 
 ### 3. Протестировать
 - TypeScript: `cd web && npx tsc --noEmit`
+- Тесты: `cd web && npm test`
+- Lint: `cd web && npm run lint`
 - Build: `cd web && npm run build`
 - Docker (если менялась инфра): `cd docker && docker compose up -d && docker compose ps`
 
@@ -210,6 +217,8 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 - **server_name:** НЕИЗМЕНЯЕМ после первого запуска Synapse
 - **postgresql.conf custom:** ОБЯЗАТЕЛЬНО добавлять `listen_addresses = '*'` — иначе postgres не слушает Docker-сеть и botservice не может подключиться (ECONNREFUSED)
 - **Botservice retry:** postgresStorage.mjs делает 10 попыток подключения с интервалом 3s — нормально если postgres стартует медленнее
+- **ESLint web/**: `.gitignore` корня содержит `test/` — директории `src/test/` в git не попадают. Setup-файл vitest → `src/vitest.setup.ts`
+- **npm workspaces**: есть root `package.json` с workspaces. При npm install в web/ возможны конфликты. Использовать `--legacy-peer-deps`
 
 
 ## Журнал изменений
@@ -226,3 +235,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_005 | Рефакторинг: React Context (ChatContext, CallContext), MessageInput декомпозиция (useSlashCommands, useTypingIndicator, useFileUpload), botservice routes/ (6 файлов, server.mjs ~100 строк), CSS Modules стратегия + VoiceRecordBar.module.css |
 | 2026-03-03 | prod_006 | Масштабирование: botservice storage JSON→PostgreSQL (schema bots.kv_store), весь API async/await, migrate-json-to-pg.mjs, postgresql.conf тюнинг, backup-db.sh + backup-media.sh, disaster-recovery.md |
 | 2026-03-03 | prod_006 post | Фикс postgresql.conf listen_addresses='*', retry в postgresStorage (10 попыток), cron бэкапы настроен на prod (03:00 db, 04:00 media) |
+| 2026-03-03 | prod_007 | Качество кода: Vitest (27 тестов), ESLint react-hooks, Prettier, CI check job, botservice JSDoc+jsconfig |
