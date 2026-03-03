@@ -1,4 +1,4 @@
-name: Build Desktop App
+name: Build & Release
 
 on:
   push:
@@ -7,33 +7,62 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  # ─── Шаг 1: Собрать web/dist (один раз, переиспользовать) ───
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install & build web
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload web dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist/
+
+  # ─── Шаг 2: Desktop (Tauri) ───
+  build-desktop:
+    needs: build-web
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            artifact-name: Uplink-Windows-x64
           - platform: macos-latest
             target: aarch64-apple-darwin
+            artifact-name: Uplink-macOS-ARM64
+          - platform: macos-13
+            target: x86_64-apple-darwin
+            artifact-name: Uplink-macOS-Intel
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            artifact-name: Uplink-Linux-x64
 
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
@@ -50,7 +79,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: web
-        run: npm install
+        run: npm ci
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -64,7 +93,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: uplink-${{ matrix.target }}
+          name: ${{ matrix.artifact-name }}
           path: |
             web/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
             web/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
@@ -72,22 +101,117 @@ jobs:
             web/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
             web/src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
 
-  release:
-    needs: build
+  # ─── Шаг 3: VS Code Extension ───
+  build-vscode:
+    needs: build-web
     runs-on: ubuntu-latest
-    if: always() && startsWith(github.ref, 'refs/tags/') && !cancelled()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Download web dist
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist/
+
+      - name: Install extension dependencies
+        working-directory: vscode
+        run: npm ci
+
+      - name: Copy SPA into extension
+        run: |
+          mkdir -p vscode/webview-dist
+          cp -r web/dist/* vscode/webview-dist/
+
+      - name: Build & package extension
+        working-directory: vscode
+        run: |
+          npm run build
+          npx vsce package
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uplink-VSCode-Extension
+          path: vscode/*.vsix
+
+  # ─── Шаг 4: Создать релиз ───
+  release:
+    needs: [build-desktop, build-vscode]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Create Release
+      - name: Flatten and rename artifacts
+        run: |
+          mkdir -p release-assets
+
+          # Windows
+          find artifacts/Uplink-Windows-x64 -name "*.exe" -exec cp {} release-assets/ \;
+          find artifacts/Uplink-Windows-x64 -name "*.msi" -exec cp {} release-assets/ \;
+
+          # macOS ARM64
+          find artifacts/Uplink-macOS-ARM64 -name "*.dmg" -exec sh -c \
+            'cp "$1" "release-assets/Uplink-macOS-ARM64.dmg"' _ {} \;
+
+          # macOS Intel
+          find artifacts/Uplink-macOS-Intel -name "*.dmg" -exec sh -c \
+            'cp "$1" "release-assets/Uplink-macOS-Intel.dmg"' _ {} \;
+
+          # Linux
+          find artifacts/Uplink-Linux-x64 -name "*.deb" -exec cp {} release-assets/ \;
+          find artifacts/Uplink-Linux-x64 -name "*.AppImage" -exec cp {} release-assets/ \;
+
+          # VS Code
+          find artifacts/Uplink-VSCode-Extension -name "*.vsix" -exec cp {} release-assets/ \;
+
+          echo "=== Release assets ==="
+          ls -la release-assets/
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
-          draft: true
-          generate_release_notes: true
+          files: release-assets/*
+          draft: false
+          name: "Uplink ${{ github.ref_name }}"
+          body: |
+            ## Uplink ${{ github.ref_name }}
+
+            Self-hosted корпоративный мессенджер на базе Matrix Protocol.
+            E2E-шифрование, аудио/видеозвонки, боты, федерация.
+
+            ### Скачать
+
+            | Платформа | Файл |
+            |-----------|------|
+            | **Windows** (установщик) | `.exe` / `.msi` |
+            | **macOS** Apple Silicon | `Uplink-macOS-ARM64.dmg` |
+            | **macOS** Intel | `Uplink-macOS-Intel.dmg` |
+            | **Linux** Debian/Ubuntu | `.deb` |
+            | **Linux** Universal | `.AppImage` |
+            | **VS Code Extension** | `.vsix` |
+            | **Браузер / Мобильный** | https://uplink.wh-lab.ru |
+
+            ### Установка VS Code Extension
+
+            1. Скачать `.vsix` файл
+            2. VS Code → Extensions → `...` → "Install from VSIX..."
+            3. Настройки → `uplink.serverUrl` → URL вашего сервера
+
+            ### Что нового
+
+            Production-ready релиз: безопасность, мониторинг, бэкапы, федерация.

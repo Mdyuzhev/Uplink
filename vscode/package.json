@@ -2,7 +2,7 @@
     "name": "uplink",
     "displayName": "Uplink",
     "description": "Командный мессенджер со звонками, встроенный в VS Code",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "publisher": "uplink-team",
     "engines": {
         "vscode": "^1.85.0"
@@ -86,10 +86,12 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run build",
+        "build:webview": "node -e \"const fs=require('fs');const p=require('path');function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync(s)){const sp=p.join(s,f),dp=p.join(d,f);fs.statSync(sp).isDirectory()?cp(sp,dp):fs.copyFileSync(sp,dp)}}; cp('../web/dist','./webview-dist')\"",
+        "prebuild": "cd ../web && npm run build",
+        "vscode:prepublish": "npm run build:webview && npm run build",
         "build": "node esbuild.config.mjs --production",
         "watch": "node esbuild.config.mjs --watch",
-        "package": "vsce package"
+        "package": "npm run build:webview && npm run build && npx vsce package"
     },
     "devDependencies": {
         "@types/vscode": "^1.85.0",

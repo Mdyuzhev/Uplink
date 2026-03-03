@@ -95,7 +95,7 @@ export class UplinkPanel {
      * - media-src — аватары и медиа
      */
     private _getHtmlForWebview(webview: vscode.Webview): string {
-        const distPath = path.join(this._context.extensionUri.fsPath, '..', 'web', 'dist');
+        const distPath = path.join(this._context.extensionUri.fsPath, 'webview-dist');
         const isDev = !fs.existsSync(distPath) || !fs.existsSync(path.join(distPath, 'index.html'));
 
         if (isDev) {
@@ -197,7 +197,7 @@ export class UplinkPanel {
     }
 
     static _getWebviewOptions(extensionUri: vscode.Uri): vscode.WebviewOptions {
-        const distPath = vscode.Uri.joinPath(extensionUri, '..', 'web', 'dist');
+        const distPath = vscode.Uri.joinPath(extensionUri, 'webview-dist');
         return {
             enableScripts: true,
             localResourceRoots: [distPath],

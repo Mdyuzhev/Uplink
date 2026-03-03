@@ -24,6 +24,7 @@ test/
 # VS Code extension builds
 vscode/*.vsix
 vscode/out/
+vscode/webview-dist/
 
 # Tauri
 web/src-tauri/target/
