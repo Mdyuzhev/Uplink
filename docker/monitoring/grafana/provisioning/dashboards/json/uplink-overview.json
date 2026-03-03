@@ -157,52 +157,6 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
     },
     {
-      "id": 13,
-      "type": "stat",
-      "title": "Botservice",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 10 },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "up{job=\"botservice\"}",
-          "legendFormat": "Botservice",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
-          ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
-        }
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
-    },
-    {
-      "id": 14,
-      "type": "stat",
-      "title": "LiveKit Token",
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 10 },
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "up{job=\"livekit-token\"}",
-          "legendFormat": "LiveKit Token",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
-          ],
-          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
-        }
-      },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
-    },
-    {
       "id": 20,
       "type": "row",
       "title": "Synapse Metrics",
