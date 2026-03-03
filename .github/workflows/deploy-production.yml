@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
+        id: deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PROD_HOST }}
@@ -17,3 +18,29 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
             cd ~/projects/uplink && ./deploy-prod.sh
+
+      - name: Notify CI channel — success
+        if: success()
+        run: |
+          curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
+            -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"msgtype\": \"m.text\",
+              \"body\": \"[+] Deploy #${{ github.run_number }} OK — ${{ github.event.head_commit.message }}\",
+              \"format\": \"org.matrix.custom.html\",
+              \"formatted_body\": \"<b>[+] Deploy #${{ github.run_number }}</b><br/>${{ github.event.head_commit.message }}<br/><code>${{ github.sha }}</code>\"
+            }"
+
+      - name: Notify CI channel — failure
+        if: failure()
+        run: |
+          curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
+            -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"msgtype\": \"m.text\",
+              \"body\": \"[-] Deploy FAILED #${{ github.run_number }} — ${{ github.event.head_commit.message }}\",
+              \"format\": \"org.matrix.custom.html\",
+              \"formatted_body\": \"<b>[-] Deploy FAILED #${{ github.run_number }}</b><br/>${{ github.event.head_commit.message }}<br/><a href=\\\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\\\">Логи</a>\"
+            }"
