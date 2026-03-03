@@ -9,6 +9,7 @@ import { useCallSignaling } from '../hooks/useCallSignaling';
 import { callSignalingService } from '../livekit/CallSignalingService';
 import { CallState, CallParticipant } from '../livekit/LiveKitService';
 import { CallSignalState, CallInfo } from '../livekit/CallSignalingService';
+import { startDialingTone, startRingtone, stopAllSounds } from '../utils/callSounds';
 
 interface CallContextValue {
     // LiveKit state
@@ -51,12 +52,70 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }
     }, [sig.signalState, sig.callInfo, lk.joinCall]);
 
+    // Когда собеседник повесил трубку — отключить LiveKit
+    useEffect(() => {
+        if (sig.signalState === 'ended' && lk.callState !== 'idle') {
+            lk.leaveCall();
+        }
+    }, [sig.signalState, lk.callState, lk.leaveCall]);
+
     // При завершении LiveKit-звонка → сбросить сигнализацию
     useEffect(() => {
         if (lk.callState === 'idle' && sig.signalState === 'accepted') {
             sig.resetSignaling();
         }
     }, [lk.callState, sig.signalState, sig.resetSignaling]);
+
+    // Звуки при изменении состояния сигнализации
+    useEffect(() => {
+        if (sig.signalState === 'ringing-out') {
+            startDialingTone();
+        } else if (sig.signalState === 'ringing-in') {
+            startRingtone();
+        } else {
+            stopAllSounds();
+        }
+        return () => stopAllSounds();
+    }, [sig.signalState]);
+
+    // Push-уведомление о входящем звонке
+    useEffect(() => {
+        if (sig.signalState !== 'ringing-in' || !sig.callInfo) return;
+
+        const callerName = sig.callInfo.callerName;
+
+        // Tauri — нативное уведомление ОС
+        if ('__TAURI_INTERNALS__' in window) {
+            import('@tauri-apps/plugin-notification').then(({ sendNotification, isPermissionGranted }) => {
+                isPermissionGranted().then(ok => {
+                    if (ok) sendNotification({ title: 'Входящий звонок', body: `${callerName} звонит вам` });
+                });
+            }).catch(() => { /* notification plugin не установлен */ });
+        }
+        // Браузер — Web Notification (если вкладка не в фокусе)
+        else if (!document.hasFocus() && 'Notification' in window && Notification.permission === 'granted') {
+            const n = new Notification('Входящий звонок', {
+                body: `${callerName} звонит вам`,
+                icon: '/uplink-icon.png',
+                requireInteraction: true,
+            });
+            n.onclick = () => { window.focus(); n.close(); };
+            const unsub = callSignalingService.onStateChange((state) => {
+                if (state !== 'ringing-in') { n.close(); unsub(); }
+            });
+        }
+        // VS Code
+        else if ((window as unknown as Record<string, unknown>).__VSCODE__) {
+            const vscodeApi = (window as unknown as Record<string, { postMessage?: (msg: unknown) => void }>).__VSCODE_API__;
+            vscodeApi?.postMessage?.({
+                type: 'notification',
+                level: 'call',
+                title: 'Входящий звонок',
+                body: `${callerName} звонит вам`,
+                callId: sig.callInfo.callId,
+            });
+        }
+    }, [sig.signalState, sig.callInfo]);
 
     const handleJoinCall = useCallback((roomId: string, roomName?: string, type?: string) => {
         if (type === 'direct') {

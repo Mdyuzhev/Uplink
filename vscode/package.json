@@ -87,11 +87,10 @@
     },
     "scripts": {
         "build:webview": "node -e \"const fs=require('fs');const p=require('path');function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync(s)){const sp=p.join(s,f),dp=p.join(d,f);fs.statSync(sp).isDirectory()?cp(sp,dp):fs.copyFileSync(sp,dp)}}; cp('../web/dist','./webview-dist')\"",
-        "prebuild": "cd ../web && npm run build",
         "vscode:prepublish": "npm run build:webview && npm run build",
         "build": "node esbuild.config.mjs --production",
         "watch": "node esbuild.config.mjs --watch",
-        "package": "npm run build:webview && npm run build && npx vsce package"
+        "package": "cd ../web && npm run build && cd ../vscode && npm run build:webview && npm run build && npx vsce package"
     },
     "devDependencies": {
         "@types/vscode": "^1.85.0",

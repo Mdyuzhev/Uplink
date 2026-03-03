@@ -1,6 +1,7 @@
 import React from 'react';
 import { Phone, PhoneOff } from 'lucide-react';
 import { CallInfo } from '../livekit/CallSignalingService';
+import { Avatar } from './Avatar';
 
 interface IncomingCallOverlayProps {
     callInfo: CallInfo;
@@ -8,32 +9,38 @@ interface IncomingCallOverlayProps {
     onReject: () => void;
 }
 
-/**
- * Оверлей входящего звонка.
- * Показывается поверх UI когда кто-то звонит.
- */
 export const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
     callInfo, onAccept, onReject,
 }) => {
     return (
-        <div className="incoming-call-overlay">
-            <div className="incoming-call-overlay__card">
-                <div className="incoming-call-overlay__title">Входящий звонок</div>
-                <div className="incoming-call-overlay__caller">{callInfo.callerName}</div>
-                <div className="incoming-call-overlay__actions">
+        <div className="call-toast">
+            <div className="call-toast__card">
+                <div className="call-toast__pulse" />
+                <div className="call-toast__content">
+                    <Avatar
+                        userId={callInfo.callerId}
+                        name={callInfo.callerName}
+                        size={48}
+                    />
+                    <div className="call-toast__info">
+                        <div className="call-toast__label">Входящий звонок</div>
+                        <div className="call-toast__caller">{callInfo.callerName}</div>
+                    </div>
+                </div>
+                <div className="call-toast__actions">
                     <button
-                        className="incoming-call-overlay__btn incoming-call-overlay__btn--reject"
+                        className="call-toast__btn call-toast__btn--reject"
                         onClick={onReject}
                         title="Отклонить"
                     >
-                        <PhoneOff size={24} />
+                        <PhoneOff size={20} />
                     </button>
                     <button
-                        className="incoming-call-overlay__btn incoming-call-overlay__btn--accept"
+                        className="call-toast__btn call-toast__btn--accept"
                         onClick={onAccept}
                         title="Принять"
                     >
-                        <Phone size={24} />
+                        <Phone size={20} />
                     </button>
                 </div>
             </div>
