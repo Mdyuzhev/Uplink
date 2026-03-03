@@ -29,31 +29,36 @@ export function initBotGateway(server) {
     wss = new WebSocketServer({ noServer: true });
 
     // Обработка upgrade запросов (вызывается из server.mjs)
-    server.on('upgrade', (req, socket, head) => {
-        const url = new URL(req.url, `http://${req.headers.host}`);
-        const match = url.pathname.match(/^\/bot-ws\/(.+)$/);
-        if (!match) {
-            socket.destroy();
-            return;
-        }
+    server.on('upgrade', async (req, socket, head) => {
+        try {
+            const url = new URL(req.url, `http://${req.headers.host}`);
+            const match = url.pathname.match(/^\/bot-ws\/(.+)$/);
+            if (!match) {
+                socket.destroy();
+                return;
+            }
 
-        const token = match[1];
-        const bot = getCustomBotByToken(token);
-        if (!bot) {
-            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-            socket.destroy();
-            return;
-        }
+            const token = match[1];
+            const bot = await getCustomBotByToken(token);
+            if (!bot) {
+                socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                socket.destroy();
+                return;
+            }
 
-        if (bot.mode !== 'sdk') {
-            socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-            socket.destroy();
-            return;
-        }
+            if (bot.mode !== 'sdk') {
+                socket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+                socket.destroy();
+                return;
+            }
 
-        wss.handleUpgrade(req, socket, head, (ws) => {
-            wss.emit('connection', ws, req, bot);
-        });
+            wss.handleUpgrade(req, socket, head, (ws) => {
+                wss.emit('connection', ws, req, bot);
+            });
+        } catch (err) {
+            logger.error({ err }, 'Ошибка WebSocket upgrade');
+            socket.destroy();
+        }
     });
 
     wss.on('connection', (ws, _req, bot) => {
@@ -64,7 +69,7 @@ export function initBotGateway(server) {
             connections.set(bot.id, new Set());
         }
         connections.get(bot.id).add(ws);
-        setBotStatus(bot.id, 'online');
+        setBotStatus(bot.id, 'online').catch(() => {});
 
         // Отправить пропущенные события
         const missed = missedEvents.get(bot.id) || [];
@@ -96,7 +101,7 @@ export function initBotGateway(server) {
             connections.get(bot.id)?.delete(ws);
             if (!connections.get(bot.id)?.size) {
                 connections.delete(bot.id);
-                setBotStatus(bot.id, 'offline');
+                setBotStatus(bot.id, 'offline').catch(() => {});
             }
             logger.info({ botId: bot.id }, 'SDK-бот отключён');
         });
@@ -144,7 +149,7 @@ async function handleBotAction(bot, msg, ws) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'room_id и body обязательны' });
                 return;
             }
-            if (!botHasAccessToRoom(bot.id, roomId)) {
+            if (!(await botHasAccessToRoom(bot.id, roomId))) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'Нет доступа к комнате' });
                 return;
             }
@@ -158,7 +163,7 @@ async function handleBotAction(bot, msg, ws) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'room_id, event_id и emoji обязательны' });
                 return;
             }
-            if (!botHasAccessToRoom(bot.id, roomId)) {
+            if (!(await botHasAccessToRoom(bot.id, roomId))) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'Нет доступа к комнате' });
                 return;
             }
@@ -174,12 +179,12 @@ async function handleBotAction(bot, msg, ws) {
 /**
  * Отправить событие SDK-ботам, подключённым и привязанным к комнате.
  */
-export function pushEventToSdkBots(event) {
+export async function pushEventToSdkBots(event) {
     const allBots = [...connections.entries()];
 
     for (const [botId, wsSet] of allBots) {
         // Проверить привязку к комнате
-        if (!botHasAccessToRoom(botId, event.room_id)) continue;
+        if (!(await botHasAccessToRoom(botId, event.room_id))) continue;
 
         const payload = { type: 'event', event };
 
@@ -202,9 +207,9 @@ export function pushEventToSdkBots(event) {
 /**
  * Проверить, есть ли подключённые SDK-боты для указанной комнаты.
  */
-export function hasConnectedSdkBots(roomId) {
+export async function hasConnectedSdkBots(roomId) {
     for (const [botId, wsSet] of connections) {
-        if (wsSet.size > 0 && botHasAccessToRoom(botId, roomId)) {
+        if (wsSet.size > 0 && (await botHasAccessToRoom(botId, roomId))) {
             return true;
         }
     }

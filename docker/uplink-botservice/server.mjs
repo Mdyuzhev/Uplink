@@ -11,6 +11,7 @@
 import http from 'node:http';
 import express from 'express';
 import logger from './logger.mjs';
+import { initStorage, checkHealth as checkStorageHealth, closeStorage } from './postgresStorage.mjs';
 import { BOT_DEFINITIONS, getBotRoomBindings } from './registry.mjs';
 import { ensureBotUser, joinBotToRoom, isBotInRoom } from './matrixClient.mjs';
 import { initBotGateway } from './botGateway.mjs';
@@ -43,13 +44,7 @@ app.use('/api/debug', debugRoutes);
 app.get('/health', async (_req, res) => {
     const checks = {};
 
-    try {
-        const { getStorage } = await import('./storage.mjs');
-        getStorage('_healthcheck');
-        checks.storage = 'ok';
-    } catch {
-        checks.storage = 'error';
-    }
+    checks.storage = (await checkStorageHealth()) ? 'ok' : 'error';
 
     try {
         const resp = await fetch(`${process.env.HOMESERVER_URL || 'http://synapse:8008'}/_matrix/client/versions`, {
@@ -74,6 +69,9 @@ app.get('/health', async (_req, res) => {
 // ═══════════════════════════════════
 
 async function init() {
+    // Инициализировать PostgreSQL storage
+    await initStorage();
+
     logger.info('Регистрация бот-пользователей...');
     for (const [id, bot] of Object.entries(BOT_DEFINITIONS)) {
         try {
@@ -84,7 +82,7 @@ async function init() {
     }
     logger.info('Боты зарегистрированы.');
 
-    const bindings = getBotRoomBindings();
+    const bindings = await getBotRoomBindings();
     for (const [roomId, botIds] of Object.entries(bindings)) {
         for (const botId of botIds) {
             const bot = BOT_DEFINITIONS[botId];
@@ -110,6 +108,18 @@ async function init() {
         logger.info({ port: PORT }, 'Bot Service запущен');
     });
 }
+
+process.on('SIGTERM', async () => {
+    logger.info('SIGTERM получен, завершаю...');
+    await closeStorage();
+    process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+    logger.info('SIGINT получен, завершаю...');
+    await closeStorage();
+    process.exit(0);
+});
 
 init().catch(err => {
     logger.error({ err }, 'Ошибка запуска bot service');

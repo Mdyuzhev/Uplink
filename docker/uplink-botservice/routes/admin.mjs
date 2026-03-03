@@ -11,10 +11,10 @@ import { getCustomBotCommands } from '../customBots.mjs';
 
 const router = Router();
 
-router.get('/bots', requireAuth, (req, res) => {
+router.get('/bots', requireAuth, async (req, res) => {
     const roomId = req.query.roomId;
     if (roomId) {
-        res.json(getBotsForRoom(roomId));
+        res.json(await getBotsForRoom(roomId));
     } else {
         res.json(Object.entries(BOT_DEFINITIONS).map(([id, bot]) => ({
             id,
@@ -25,9 +25,9 @@ router.get('/bots', requireAuth, (req, res) => {
     }
 });
 
-router.get('/commands', requireAuth, (_req, res) => {
+router.get('/commands', requireAuth, async (_req, res) => {
     const builtin = getAllBotCommands();
-    const custom = getCustomBotCommands();
+    const custom = await getCustomBotCommands();
     res.json([...builtin, ...custom]);
 });
 
@@ -46,7 +46,7 @@ router.post('/bots/:botId/enable', requireAuth, async (req, res) => {
                 error: 'Не удалось присоединить бота к комнате. Попробуйте пригласить бота вручную.'
             });
         }
-        enableBotInRoom(botId, roomId);
+        await enableBotInRoom(botId, roomId);
         res.json({
             ok: true,
             warning: encrypted
@@ -59,11 +59,11 @@ router.post('/bots/:botId/enable', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/bots/:botId/disable', requireAuth, (req, res) => {
+router.post('/bots/:botId/disable', requireAuth, async (req, res) => {
     const { botId } = req.params;
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
-    disableBotInRoom(botId, roomId);
+    await disableBotInRoom(botId, roomId);
     res.json({ ok: true });
 });
 

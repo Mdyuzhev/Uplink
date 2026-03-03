@@ -2,7 +2,7 @@
  * Реестр ботов. Определения и привязки к комнатам.
  */
 
-import { getStorage, setStorage } from './storage.mjs';
+import { getStorage, setStorage } from './postgresStorage.mjs';
 
 const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
 
@@ -57,42 +57,42 @@ const BINDINGS_KEY = 'bot_room_bindings';
  * Получить привязки ботов к комнатам.
  * Формат: { "!roomId:server": ["github", "ci"] }
  */
-export function getBotRoomBindings() {
-    return getStorage(BINDINGS_KEY) || {};
+export async function getBotRoomBindings() {
+    return (await getStorage(BINDINGS_KEY)) || {};
 }
 
-export function setBotRoomBindings(bindings) {
-    setStorage(BINDINGS_KEY, bindings);
+export async function setBotRoomBindings(bindings) {
+    await setStorage(BINDINGS_KEY, bindings);
 }
 
 /**
  * Включить бота в комнате.
  */
-export function enableBotInRoom(botId, roomId) {
-    const bindings = getBotRoomBindings();
+export async function enableBotInRoom(botId, roomId) {
+    const bindings = await getBotRoomBindings();
     if (!bindings[roomId]) bindings[roomId] = [];
     if (!bindings[roomId].includes(botId)) {
         bindings[roomId].push(botId);
     }
-    setBotRoomBindings(bindings);
+    await setBotRoomBindings(bindings);
 }
 
 /**
  * Отключить бота из комнаты.
  */
-export function disableBotInRoom(botId, roomId) {
-    const bindings = getBotRoomBindings();
+export async function disableBotInRoom(botId, roomId) {
+    const bindings = await getBotRoomBindings();
     if (!bindings[roomId]) return;
     bindings[roomId] = bindings[roomId].filter(id => id !== botId);
     if (bindings[roomId].length === 0) delete bindings[roomId];
-    setBotRoomBindings(bindings);
+    await setBotRoomBindings(bindings);
 }
 
 /**
  * Список ботов для API — с информацией о привязке к комнате.
  */
-export function getBotsForRoom(roomId) {
-    const bindings = getBotRoomBindings();
+export async function getBotsForRoom(roomId) {
+    const bindings = await getBotRoomBindings();
     const roomBots = bindings[roomId] || [];
     return Object.entries(BOT_DEFINITIONS).map(([id, bot]) => ({
         id,

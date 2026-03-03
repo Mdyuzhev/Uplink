@@ -3,7 +3,7 @@
  */
 
 import { sendBotMessage } from '../matrixClient.mjs';
-import { getStorage, setStorage, getAllStorageKeys } from '../storage.mjs';
+import { getStorage, setStorage, getAllStorageKeys } from '../postgresStorage.mjs';
 
 const BOT = 'bot_github';
 
@@ -34,13 +34,13 @@ async function handleSubscribe(roomId, sender, args) {
         return;
     }
 
-    const subs = getStorage(`github:${roomId}`) || [];
+    const subs = (await getStorage(`github:${roomId}`)) || [];
     if (subs.includes(repo)) {
         await sendBotMessage(BOT, roomId, `Канал уже подписан на **${repo}**.`);
         return;
     }
     subs.push(repo);
-    setStorage(`github:${roomId}`, subs);
+    await setStorage(`github:${roomId}`, subs);
 
     await sendBotMessage(BOT, roomId,
         `Подписка на **${repo}** оформлена.\n` +
@@ -55,14 +55,14 @@ async function handleUnsubscribe(roomId, args) {
         await sendBotMessage(BOT, roomId, 'Укажите репозиторий: `/github unsubscribe owner/repo`');
         return;
     }
-    const subs = getStorage(`github:${roomId}`) || [];
+    const subs = (await getStorage(`github:${roomId}`)) || [];
     const filtered = subs.filter(r => r !== repo);
-    setStorage(`github:${roomId}`, filtered);
+    await setStorage(`github:${roomId}`, filtered);
     await sendBotMessage(BOT, roomId, `Отписка от **${repo}** выполнена.`);
 }
 
 async function handleList(roomId) {
-    const subs = getStorage(`github:${roomId}`) || [];
+    const subs = (await getStorage(`github:${roomId}`)) || [];
     if (subs.length === 0) {
         await sendBotMessage(BOT, roomId, 'В этом канале нет подписок на репозитории.');
         return;
@@ -81,10 +81,10 @@ export async function handleWebhook(headers, body) {
     if (!repo) return;
 
     // Найти комнаты, подписанные на этот репозиторий
-    const allKeys = getAllStorageKeys().filter(k => k.startsWith('github:'));
+    const allKeys = (await getAllStorageKeys()).filter(k => k.startsWith('github:'));
     for (const key of allKeys) {
         const roomId = key.replace('github:', '');
-        const subs = getStorage(key) || [];
+        const subs = (await getStorage(key)) || [];
         if (!subs.includes(repo)) continue;
 
         const message = formatGitHubEvent(event, body);

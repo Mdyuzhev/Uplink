@@ -3,7 +3,7 @@
  */
 
 import { sendBotMessage } from '../matrixClient.mjs';
-import { getStorage, setStorage } from '../storage.mjs';
+import { getStorage, setStorage } from '../postgresStorage.mjs';
 
 const BOT = 'bot_alerts';
 
@@ -40,21 +40,21 @@ async function handleMute(roomId, args) {
     const ms = unit === 'm' ? amount * 60000 : unit === 'h' ? amount * 3600000 : amount * 86400000;
     const until = Date.now() + ms;
 
-    setStorage(`alerts:mute:${roomId}`, until);
+    await setStorage(`alerts:mute:${roomId}`, until);
     await sendBotMessage(BOT, roomId, `Алерты заглушены на ${timeStr}.`);
 
     // Авто-размьют
-    setTimeout(() => {
-        const stored = getStorage(`alerts:mute:${roomId}`);
+    setTimeout(async () => {
+        const stored = await getStorage(`alerts:mute:${roomId}`);
         if (stored === until) {
-            setStorage(`alerts:mute:${roomId}`, null);
+            await setStorage(`alerts:mute:${roomId}`, null);
             sendBotMessage(BOT, roomId, 'Алерты снова активны.').catch(() => {});
         }
     }, ms);
 }
 
 async function handleStatus(roomId) {
-    const active = getStorage(`alerts:active:${roomId}`) || [];
+    const active = (await getStorage(`alerts:active:${roomId}`)) || [];
     if (active.length === 0) {
         await sendBotMessage(BOT, roomId, 'Нет активных алертов.');
         return;
@@ -71,7 +71,7 @@ async function handleStatus(roomId) {
  */
 export async function handleWebhook(headers, body) {
     const { getBotRoomBindings } = await import('../registry.mjs');
-    const bindings = getBotRoomBindings();
+    const bindings = await getBotRoomBindings();
 
     const messages = [];
 
@@ -104,7 +104,7 @@ export async function handleWebhook(headers, body) {
         if (!bots.includes('alerts')) continue;
 
         // Проверить мьют
-        const muteUntil = getStorage(`alerts:mute:${roomId}`);
+        const muteUntil = await getStorage(`alerts:mute:${roomId}`);
         if (muteUntil && Date.now() < muteUntil) continue;
 
         for (const msg of messages) {
@@ -112,7 +112,7 @@ export async function handleWebhook(headers, body) {
         }
 
         // Обновить список активных
-        const active = getStorage(`alerts:active:${roomId}`) || [];
+        const active = (await getStorage(`alerts:active:${roomId}`)) || [];
         for (const msg of messages) {
             const existing = active.findIndex(a => a.name === msg.alert.name);
             if (msg.alert.status === 'resolved' || msg.alert.status === 'UP') {
@@ -122,6 +122,6 @@ export async function handleWebhook(headers, body) {
                 else active.push(msg.alert);
             }
         }
-        setStorage(`alerts:active:${roomId}`, active);
+        await setStorage(`alerts:active:${roomId}`, active);
     }
 }

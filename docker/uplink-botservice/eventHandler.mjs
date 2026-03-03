@@ -72,7 +72,7 @@ async function routeCommand(roomId, sender, body, eventId) {
         const [botId, botDef] = botEntry;
 
         if (botId !== 'helper') {
-            const bindings = getBotRoomBindings();
+            const bindings = await getBotRoomBindings();
             const roomBots = bindings[roomId] || [];
             if (!roomBots.includes(botId)) {
                 await sendBotMessage('bot_helper', roomId,
@@ -110,9 +110,9 @@ async function routeCommand(roomId, sender, body, eventId) {
     }
 
     // 2. Ищем среди кастомных ботов
-    const customBot = findCustomBotByCommand(commandRoot);
+    const customBot = await findCustomBotByCommand(commandRoot);
     if (customBot) {
-        if (!botHasAccessToRoom(customBot.id, roomId)) {
+        if (!(await botHasAccessToRoom(customBot.id, roomId))) {
             await sendBotMessage('bot_helper', roomId,
                 `Бот **${customBot.name}** не привязан к этому каналу.`
             );
@@ -154,10 +154,10 @@ async function forwardToCustomBots(roomId, event) {
     pushEventToSdkBots(eventPayload);
 
     // Webhook-боты — HTTP POST
-    const allCustom = getAllCustomBots();
+    const allCustom = await getAllCustomBots();
     for (const bot of allCustom) {
         if (bot.mode !== 'webhook') continue;
-        if (!botHasAccessToRoom(bot.id, roomId)) continue;
+        if (!(await botHasAccessToRoom(bot.id, roomId))) continue;
 
         // Для команд — пересылать только если бот обрабатывает эту команду
         if (isCommand && bot.commands.length > 0) {

@@ -39,32 +39,32 @@ router.post('/custom-bots', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/custom-bots', requireAuth, (req, res) => {
+router.get('/custom-bots', requireAuth, async (req, res) => {
     const owner = req.query.owner;
-    const bots = owner ? getCustomBotsByOwner(owner) : getAllCustomBots();
+    const bots = owner ? await getCustomBotsByOwner(owner) : await getAllCustomBots();
     res.json(bots.map(sanitizeBot));
 });
 
-router.get('/custom-bots/:botId', requireAuth, (req, res) => {
-    const bot = getCustomBot(req.params.botId);
+router.get('/custom-bots/:botId', requireAuth, async (req, res) => {
+    const bot = await getCustomBot(req.params.botId);
     if (!bot) return res.status(404).json({ error: 'Bot not found' });
     res.json(sanitizeBot(bot));
 });
 
-router.patch('/custom-bots/:botId', requireAuth, (req, res) => {
-    const bot = updateCustomBot(req.params.botId, req.body);
+router.patch('/custom-bots/:botId', requireAuth, async (req, res) => {
+    const bot = await updateCustomBot(req.params.botId, req.body);
     if (!bot) return res.status(404).json({ error: 'Bot not found' });
     res.json(sanitizeBot(bot));
 });
 
-router.delete('/custom-bots/:botId', requireAuth, (req, res) => {
-    const ok = deleteCustomBot(req.params.botId);
+router.delete('/custom-bots/:botId', requireAuth, async (req, res) => {
+    const ok = await deleteCustomBot(req.params.botId);
     if (!ok) return res.status(404).json({ error: 'Bot not found' });
     res.json({ ok: true });
 });
 
-router.post('/custom-bots/:botId/regenerate-token', requireAuth, (req, res) => {
-    const token = regenerateToken(req.params.botId);
+router.post('/custom-bots/:botId/regenerate-token', requireAuth, async (req, res) => {
+    const token = await regenerateToken(req.params.botId);
     if (!token) return res.status(404).json({ error: 'Bot not found' });
     res.json({ token });
 });
@@ -80,10 +80,10 @@ router.post('/custom-bots/:botId/rooms', requireAuth, async (req, res) => {
     }
 });
 
-router.delete('/custom-bots/:botId/rooms', requireAuth, (req, res) => {
+router.delete('/custom-bots/:botId/rooms', requireAuth, async (req, res) => {
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
-    removeBotFromRoom(req.params.botId, roomId);
+    await removeBotFromRoom(req.params.botId, roomId);
     res.json({ ok: true });
 });
 

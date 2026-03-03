@@ -30,7 +30,7 @@ export async function handleCommand({ roomId, sender, subCommand, args, body }) 
 
 async function handleHelp(roomId, args) {
     const commands = getAllBotCommands();
-    const bindings = getBotRoomBindings();
+    const bindings = await getBotRoomBindings();
     const roomBots = bindings[roomId] || [];
 
     let text = '**Доступные команды:**\n\n';

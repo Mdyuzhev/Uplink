@@ -11,7 +11,7 @@ const router = Router();
 
 router.get('/rooms/:roomId', requireAuth, async (req, res) => {
     const { roomId } = req.params;
-    const bindings = getBotRoomBindings();
+    const bindings = await getBotRoomBindings();
     const roomBots = bindings[roomId] || [];
 
     const status = {};

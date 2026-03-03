@@ -4,7 +4,7 @@
  */
 
 import { sendBotMessage } from '../matrixClient.mjs';
-import { getStorage, setStorage, getAllStorageKeys } from '../storage.mjs';
+import { getStorage, setStorage } from '../postgresStorage.mjs';
 
 const BOT = 'bot_ci';
 
@@ -27,7 +27,7 @@ export async function handleCommand({ roomId, sender, subCommand, args }) {
 }
 
 async function handleStatus(roomId) {
-    const history = getStorage(`ci:history:${roomId}`) || [];
+    const history = (await getStorage(`ci:history:${roomId}`)) || [];
     if (history.length === 0) {
         await sendBotMessage(BOT, roomId, 'Нет данных о сборках. Webhook-события ещё не поступали.');
         return;
@@ -124,16 +124,16 @@ async function handleDeployEvent(data) {
 async function sendToSubscribedRooms(text, historyEntry) {
     // CI-бот отправляет во все комнаты, где он активирован
     const { getBotRoomBindings } = await import('../registry.mjs');
-    const bindings = getBotRoomBindings();
+    const bindings = await getBotRoomBindings();
 
     for (const [roomId, bots] of Object.entries(bindings)) {
         if (!bots.includes('ci')) continue;
 
         // Сохранить в историю
-        const history = getStorage(`ci:history:${roomId}`) || [];
+        const history = (await getStorage(`ci:history:${roomId}`)) || [];
         history.push(historyEntry);
         if (history.length > 20) history.splice(0, history.length - 20);
-        setStorage(`ci:history:${roomId}`, history);
+        await setStorage(`ci:history:${roomId}`, history);
 
         await sendBotMessage(BOT, roomId, text);
     }

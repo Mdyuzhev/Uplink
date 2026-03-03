@@ -4,7 +4,7 @@
  */
 
 import crypto from 'node:crypto';
-import { getStorage, setStorage } from './storage.mjs';
+import { getStorage, setStorage } from './postgresStorage.mjs';
 import { ensureBotUser, joinBotToRoom } from './matrixClient.mjs';
 
 const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
@@ -13,12 +13,12 @@ const CUSTOM_BOTS_KEY = 'custom_bots';
 /**
  * Все кастомные боты. Формат: { [botId]: CustomBotDef }
  */
-function getCustomBots() {
-    return getStorage(CUSTOM_BOTS_KEY) || {};
+async function getCustomBots() {
+    return (await getStorage(CUSTOM_BOTS_KEY)) || {};
 }
 
-function saveCustomBots(bots) {
-    setStorage(CUSTOM_BOTS_KEY, bots);
+async function saveCustomBots(bots) {
+    await setStorage(CUSTOM_BOTS_KEY, bots);
 }
 
 /**
@@ -67,9 +67,9 @@ export async function createCustomBot({ name, description, mode, webhookUrl, com
         lastSeen: null,
     };
 
-    const bots = getCustomBots();
+    const bots = await getCustomBots();
     bots[botId] = bot;
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
 
     return { bot, token };
 }
@@ -77,40 +77,40 @@ export async function createCustomBot({ name, description, mode, webhookUrl, com
 /**
  * Получить бота по ID.
  */
-export function getCustomBot(botId) {
-    const bots = getCustomBots();
+export async function getCustomBot(botId) {
+    const bots = await getCustomBots();
     return bots[botId] || null;
 }
 
 /**
  * Получить бота по токену (через hash).
  */
-export function getCustomBotByToken(token) {
+export async function getCustomBotByToken(token) {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const bots = getCustomBots();
+    const bots = await getCustomBots();
     return Object.values(bots).find(b => b.tokenHash === tokenHash) || null;
 }
 
 /**
  * Список ботов пользователя.
  */
-export function getCustomBotsByOwner(owner) {
-    const bots = getCustomBots();
+export async function getCustomBotsByOwner(owner) {
+    const bots = await getCustomBots();
     return Object.values(bots).filter(b => b.owner === owner);
 }
 
 /**
  * Список всех кастомных ботов.
  */
-export function getAllCustomBots() {
-    return Object.values(getCustomBots());
+export async function getAllCustomBots() {
+    return Object.values(await getCustomBots());
 }
 
 /**
  * Обновить бота.
  */
-export function updateCustomBot(botId, updates) {
-    const bots = getCustomBots();
+export async function updateCustomBot(botId, updates) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return null;
 
     const allowed = ['name', 'description', 'webhookUrl', 'commands'];
@@ -125,18 +125,18 @@ export function updateCustomBot(botId, updates) {
         ensureBotUser(bots[botId].localpart, updates.name).catch(() => {});
     }
 
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
     return bots[botId];
 }
 
 /**
  * Удалить бота.
  */
-export function deleteCustomBot(botId) {
-    const bots = getCustomBots();
+export async function deleteCustomBot(botId) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return false;
     delete bots[botId];
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
     return true;
 }
 
@@ -144,13 +144,13 @@ export function deleteCustomBot(botId) {
  * Перевыпустить токен.
  * @returns {string} новый токен (показать один раз)
  */
-export function regenerateToken(botId) {
-    const bots = getCustomBots();
+export async function regenerateToken(botId) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return null;
 
     const token = generateToken();
     bots[botId].tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
     return token;
 }
 
@@ -158,43 +158,43 @@ export function regenerateToken(botId) {
  * Привязать бота к комнате.
  */
 export async function addBotToRoom(botId, roomId) {
-    const bots = getCustomBots();
+    const bots = await getCustomBots();
     if (!bots[botId]) throw new Error('Bot not found');
 
     if (!bots[botId].rooms.includes(roomId)) {
         // Пригласить Matrix-пользователя бота в комнату
         await joinBotToRoom(bots[botId].localpart, roomId);
         bots[botId].rooms.push(roomId);
-        saveCustomBots(bots);
+        await saveCustomBots(bots);
     }
 }
 
 /**
  * Отвязать бота от комнаты.
  */
-export function removeBotFromRoom(botId, roomId) {
-    const bots = getCustomBots();
+export async function removeBotFromRoom(botId, roomId) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return;
     bots[botId].rooms = bots[botId].rooms.filter(r => r !== roomId);
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
 }
 
 /**
  * Обновить статус бота (online/offline).
  */
-export function setBotStatus(botId, status) {
-    const bots = getCustomBots();
+export async function setBotStatus(botId, status) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return;
     bots[botId].status = status;
     if (status === 'online') bots[botId].lastSeen = Date.now();
-    saveCustomBots(bots);
+    await saveCustomBots(bots);
 }
 
 /**
  * Проверить, что бот имеет доступ к комнате.
  */
-export function botHasAccessToRoom(botId, roomId) {
-    const bots = getCustomBots();
+export async function botHasAccessToRoom(botId, roomId) {
+    const bots = await getCustomBots();
     if (!bots[botId]) return false;
     return bots[botId].rooms.includes(roomId);
 }
@@ -202,8 +202,8 @@ export function botHasAccessToRoom(botId, roomId) {
 /**
  * Все команды кастомных ботов (для event router).
  */
-export function getCustomBotCommands() {
-    const bots = getCustomBots();
+export async function getCustomBotCommands() {
+    const bots = await getCustomBots();
     const result = [];
     for (const bot of Object.values(bots)) {
         for (const cmd of bot.commands) {
@@ -222,8 +222,8 @@ export function getCustomBotCommands() {
 /**
  * Найти кастомного бота по команде.
  */
-export function findCustomBotByCommand(commandRoot) {
-    const bots = getCustomBots();
+export async function findCustomBotByCommand(commandRoot) {
+    const bots = await getCustomBots();
     for (const bot of Object.values(bots)) {
         const match = bot.commands.some(cmd =>
             cmd.command.toLowerCase() === commandRoot.toLowerCase()

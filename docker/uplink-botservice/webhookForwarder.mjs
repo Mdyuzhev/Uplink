@@ -80,7 +80,7 @@ export async function forwardToWebhook(bot, event) {
             const actions = data.actions || [];
 
             // Бот ответил — онлайн
-            setBotStatus(bot.id, 'online');
+            setBotStatus(bot.id, 'online').catch(() => {});
 
             // Выполнить действия из ответа
             await executeActions(bot, actions);
@@ -93,7 +93,7 @@ export async function forwardToWebhook(bot, event) {
 
     // Все попытки провалились
     logger.error({ botId: bot.id, url: bot.webhookUrl, err: lastError }, 'Webhook-бот недоступен');
-    setBotStatus(bot.id, 'offline');
+    setBotStatus(bot.id, 'offline').catch(() => {});
     return [];
 }
 
@@ -115,7 +115,7 @@ async function executeActions(bot, actions) {
                 case 'message': {
                     const roomId = action.room_id || action.roomId;
                     if (!roomId) break;
-                    if (!botHasAccessToRoom(bot.id, roomId)) {
+                    if (!(await botHasAccessToRoom(bot.id, roomId))) {
                         logger.warn({ botId: bot.id, roomId }, 'Бот нет доступа к комнате');
                         break;
                     }
@@ -129,7 +129,7 @@ async function executeActions(bot, actions) {
                 case 'react': {
                     const roomId = action.room_id || action.roomId;
                     if (!roomId || !action.event_id || !action.emoji) break;
-                    if (!botHasAccessToRoom(bot.id, roomId)) break;
+                    if (!(await botHasAccessToRoom(bot.id, roomId))) break;
                     await sendBotReaction(bot.localpart, roomId, action.event_id, action.emoji);
                     break;
                 }
