@@ -13,9 +13,10 @@ if [ ! -f "docker/synapse-data/homeserver.yaml" ]; then
     exit 1
 fi
 
-# Забрать последние изменения
-echo "-> Git pull..."
-git pull origin main
+# Забрать последние изменения (reset вместо pull — обходит локальные конфликты)
+echo "-> Git fetch & reset..."
+git fetch origin main
+git reset --hard origin/main
 
 # Пересобрать и перезапустить
 echo "-> Docker compose build & up..."
