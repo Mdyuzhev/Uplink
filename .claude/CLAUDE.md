@@ -24,7 +24,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | 3 | Рефакторинг кода | ✅ |
 | 4 | Масштабирование (worker-архитектура) | ✅ |
 | 5 | Качество кода (тесты, strict TS, lint) | ✅ |
-| 6 | Федерация | ⬜ |
+| 6 | Федерация | ✅ |
 | 7 | Продуктизация (параметризация, setup wizard, docs) | ⬜ |
 
 
@@ -236,3 +236,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_006 | Масштабирование: botservice storage JSON→PostgreSQL (schema bots.kv_store), весь API async/await, migrate-json-to-pg.mjs, postgresql.conf тюнинг, backup-db.sh + backup-media.sh, disaster-recovery.md |
 | 2026-03-03 | prod_006 post | Фикс postgresql.conf listen_addresses='*', retry в postgresStorage (10 попыток), cron бэкапы настроен на prod (03:00 db, 04:00 media) |
 | 2026-03-03 | prod_007 | Качество кода: Vitest (27 тестов), ESLint react-hooks, Prettier, CI check job, botservice JSDoc+jsconfig |
+| 2026-03-03 | prod_008 | Федерация: whitelist matrix.org+mozilla.org, eventHandler фильтр по SERVER_NAME, docs/federation.md, disaster-recovery signing key |
