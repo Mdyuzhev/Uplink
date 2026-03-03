@@ -20,8 +20,8 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | 0 | Чистый старт инфраструктуры (federation-ready) | ✅ |
 | 0.5 | Деплой на сервер + CI | ✅ |
 | 1 | Безопасность | ✅ |
-| 2 | Мониторинг и observability | ⬜ Следующая |
-| 3 | Рефакторинг кода | ⬜ |
+| 2 | Мониторинг и observability | ✅ |
+| 3 | Рефакторинг кода | ⬜ Следующая |
 | 4 | Масштабирование (worker-архитектура) | ⬜ |
 | 5 | Качество кода (тесты, strict TS, lint) | ⬜ |
 | 6 | Федерация | ⬜ |
@@ -42,11 +42,16 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 - **Synapse** — Matrix homeserver. server_name: `uplink.wh-lab.ru` (демо) / клиентский домен (продакшен)
 - **PostgreSQL 15** — хранилище Synapse
 - **Redis 7** — кеш Synapse, в будущем backbone для worker'ов (Redis Streams)
-- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy. Bot API `/api/*` требует Matrix access token (Bearer)
+- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy. Bot API `/api/*` требует Matrix access token (Bearer). Логирование: pino (JSON)
 - **livekit-token** (Node.js) — генерация LiveKit JWT
 - **deploy-webhook** — автодеплой по GitHub push
-- **nginx** (внутри web-контейнера) — SPA + reverse proxy ко всем backend-сервисам
+- **nginx** (внутри web-контейнера) — SPA + reverse proxy ко всем backend-сервисам. `/grafana/` → Grafana, `/api/status` → health
 - **LiveKit Cloud** (wss://uplink-3ism3la4.livekit.cloud) — медиасервер звонков
+- **Prometheus** — метрики (Synapse, node, PostgreSQL, botservice, livekit-token). Порт 9090
+- **Grafana** — дашборды. Доступ: https://uplink.wh-lab.ru/grafana/
+- **Alertmanager** — алерты → webhook → botservice → #ops
+- **node-exporter** — системные метрики CPU/RAM/disk
+- **postgres-exporter** — метрики PostgreSQL
 
 ### Инфраструктура
 - **Production:** Yandex Cloud VM (ubuntu@93.77.189.225, 2 vCPU, 4 GB RAM, Ubuntu 24.04)
@@ -136,6 +141,10 @@ E:\Uplink\
 ### Production users
 - admin / UplinkAdmin2026! (создаётся clean-start.sh)
 
+### Grafana
+- URL: https://uplink.wh-lab.ru/grafana/
+- admin / UplinkGrafana2026
+
 
 ## Паттерны кода
 
@@ -208,3 +217,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_002 | Деплой на Yandex Cloud: clean-start.sh, TLS (certbot, cert до 2026-05-29), HTTPS ✓, well-known ✓, CI настроен (PROD_HOST + PROD_SSH_KEY), deploy-prod.sh: git fetch+reset вместо pull |
 | 2026-03-03 | prod_002.1 | Фавикон (SVG/PNG, новый дизайн indigo+white), CI-канал #ci в пространстве Разработка, нотификации успех/фейл в deploy workflow |
 | 2026-03-03 | prod_003 | Безопасность: auth middleware (Matrix token), webhook signature verification, nginx rate limiting, input validation, fetchWithAuth на фронтенде |
+| 2026-03-03 | prod_004 | Мониторинг: pino logging в botservice, requestId middleware, deep health endpoints, Synapse metrics, Prometheus+Grafana+Alertmanager+node-exporter+postgres-exporter, nginx /grafana/ + /api/status, alert-rules, dashboard |
