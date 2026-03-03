@@ -17,9 +17,11 @@ import { checkRateLimit } from './rateLimiter.mjs';
  * @param {import('./types.mjs').MatrixEvent} event
  * @returns {Promise<void>}
  */
+const SERVER_NAME = process.env.SERVER_NAME || 'uplink.wh-lab.ru';
+
 export async function handleMatrixEvent(event) {
-    // Игнорировать события от наших ботов (избежать циклов)
-    if (event.sender?.startsWith('@bot_')) return;
+    // Игнорировать только НАШИХ ботов (избежать циклов; remote @bot_*:other.org — не игнорировать)
+    if (event.sender?.startsWith('@bot_') && event.sender?.endsWith(`:${SERVER_NAME}`)) return;
 
     // Логировать входящее событие
     logger.debug({ type: event.type, roomId: event.room_id, sender: event.sender }, 'Matrix event');

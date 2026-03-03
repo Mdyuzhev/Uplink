@@ -99,9 +99,11 @@ user_directory:
 app_service_config_files:
   - /data/appservice-bots.yaml
 
-# Федерация: инфраструктура готова, но пока выключена.
-# Для включения — убрать federation_domain_whitelist или добавить конкретные домены.
-federation_domain_whitelist: []
+# Федерация: whitelist-режим.
+# Только проверенные серверы. Для полной федерации — удалить параметр целиком.
+federation_domain_whitelist:
+  - matrix.org
+  - mozilla.org
 
 # Подготовка к worker-архитектуре (пока закомментировано)
 # instance_map:

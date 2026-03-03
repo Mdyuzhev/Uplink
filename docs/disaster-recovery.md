@@ -50,7 +50,16 @@ sudo rsync -a /home/ubuntu/backups/media/current/ "$MOUNT/"
 sudo chown -R 991:991 "$MOUNT/"
 ```
 
-## Восстановление signing key
+## Восстановление signing key (КРИТИЧНО для федерации)
+
+Signing key — cryptographic identity сервера в Matrix federation.
+**Потеря ключа без бэкапа означает:**
+- Все федеративные серверы перестанут доверять `uplink.wh-lab.ru`
+- Нельзя восстановить identity — потребуется менять `server_name` (невозможно без полного пересоздания)
+
+Бэкап: `/home/ubuntu/backups/postgres/signing.key.backup`
+Оригинал: `docker/synapse-data/uplink.wh-lab.ru.signing.key`
+Формат: `ed25519 a_XXXX <base64_key>`
 
 ```bash
 cp /home/ubuntu/backups/postgres/signing.key.backup \
@@ -60,6 +69,12 @@ sudo chown 991:991 /home/ubuntu/projects/uplink/docker/synapse-data/uplink.wh-la
 
 # Перезапустить Synapse
 docker compose -f docker-compose.production.yml restart synapse
+```
+
+**Дополнительный бэкап** (рекомендуется хранить отдельно от сервера):
+```bash
+scp ubuntu@93.77.189.225:~/projects/uplink/docker/synapse-data/uplink.wh-lab.ru.signing.key ./
+# Сохранить в password manager / encrypted storage
 ```
 
 ## Восстановление botservice data (PostgreSQL)
