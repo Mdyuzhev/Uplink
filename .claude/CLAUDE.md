@@ -21,7 +21,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | 0.5 | Деплой на сервер + CI | ✅ |
 | 1 | Безопасность | ✅ |
 | 2 | Мониторинг и observability | ✅ |
-| 3 | Рефакторинг кода | ⬜ Следующая |
+| 3 | Рефакторинг кода | ✅ |
 | 4 | Масштабирование (worker-архитектура) | ⬜ |
 | 5 | Качество кода (тесты, strict TS, lint) | ⬜ |
 | 6 | Федерация | ⬜ |
@@ -71,12 +71,13 @@ E:\Uplink\
 ├── web/                    — React SPA (фронтенд)
 │   ├── src/
 │   │   ├── components/     — React-компоненты (31 файл)
-│   │   ├── hooks/          — хуки-обёртки над сервисами (11 файлов)
+│   │   ├── contexts/       — React Contexts (ChatContext, CallContext)
+│   │   ├── hooks/          — хуки-обёртки над сервисами (14 файлов)
 │   │   ├── matrix/         — Matrix сервисный слой (11 файлов, декомпозирован)
 │   │   ├── livekit/        — LiveKitService, CallSignalingService
 │   │   ├── services/       — GIF, стикеры, voice/video recorder
 │   │   ├── bots/           — CommandRegistry (slash-команды)
-│   │   ├── styles/         — 15 CSS-файлов
+│   │   ├── styles/         — 15 CSS-файлов + README.md (стратегия)
 │   │   └── config.ts       — URL-ы сервисов (dev/prod auto)
 │   ├── src-tauri/          — Tauri v2 конфиг
 │   ├── nginx.conf          — reverse proxy внутри контейнера
@@ -86,7 +87,7 @@ E:\Uplink\
 │   ├── docker-compose.production.yml   — production
 │   ├── .env                            — секреты (НЕ в git)
 │   ├── synapse/            — homeserver.yaml, appservice-bots.yaml
-│   ├── uplink-botservice/  — Express app, handlers, storage
+│   ├── uplink-botservice/  — Express app, handlers, storage, routes/
 │   ├── livekit-token/      — JWT-генератор
 │   └── deploy-webhook/     — автодеплой
 ├── scripts/                — clean-start.sh, setup-tls.sh, deploy
@@ -150,8 +151,8 @@ E:\Uplink\
 
 - **Сервисы** — синглтоны с событийной моделью (Set<Listener>, subscribe/unsubscribe)
 - **Хуки** — обёртки над сервисами, useEffect для подписки, cleanup для отписки
-- **State** — нет Redux/Zustand. React хуки + сервисы. Планируется React Context (Фаза 3)
-- **Стили** — CSS custom properties в variables.css. Без CSS-in-JS, Tailwind, UI-библиотек
+- **State** — нет Redux/Zustand. React хуки + сервисы + React Context (ChatContext, CallContext)
+- **Стили** — CSS custom properties в variables.css. Без CSS-in-JS, Tailwind, UI-библиотек. Новые компоненты — CSS Modules (`*.module.css`). Стратегия: `web/src/styles/README.md`
 - **Типизация** — строгий TypeScript. Интерфейсы для данных, union types для состояний
 
 ### Коммиты
@@ -218,3 +219,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_002.1 | Фавикон (SVG/PNG, новый дизайн indigo+white), CI-канал #ci в пространстве Разработка, нотификации успех/фейл в deploy workflow |
 | 2026-03-03 | prod_003 | Безопасность: auth middleware (Matrix token), webhook signature verification, nginx rate limiting, input validation, fetchWithAuth на фронтенде |
 | 2026-03-03 | prod_004 | Мониторинг: pino logging в botservice, requestId middleware, deep health endpoints, Synapse metrics, Prometheus+Grafana+Alertmanager+node-exporter+postgres-exporter, nginx /grafana/ + /api/status, alert-rules, dashboard |
+| 2026-03-03 | prod_005 | Рефакторинг: React Context (ChatContext, CallContext), MessageInput декомпозиция (useSlashCommands, useTypingIndicator, useFileUpload), botservice routes/ (6 файлов, server.mjs ~100 строк), CSS Modules стратегия + VoiceRecordBar.module.css |
