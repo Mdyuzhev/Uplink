@@ -22,7 +22,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 | 1 | Безопасность | ✅ |
 | 2 | Мониторинг и observability | ✅ |
 | 3 | Рефакторинг кода | ✅ |
-| 4 | Масштабирование (worker-архитектура) | ⬜ |
+| 4 | Масштабирование (worker-архитектура) | ✅ |
 | 5 | Качество кода (тесты, strict TS, lint) | ⬜ |
 | 6 | Федерация | ⬜ |
 | 7 | Продуктизация (параметризация, setup wizard, docs) | ⬜ |
@@ -42,7 +42,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 - **Synapse** — Matrix homeserver. server_name: `uplink.wh-lab.ru` (демо) / клиентский домен (продакшен)
 - **PostgreSQL 15** — хранилище Synapse
 - **Redis 7** — кеш Synapse, в будущем backbone для worker'ов (Redis Streams)
-- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy. Bot API `/api/*` требует Matrix access token (Bearer). Логирование: pino (JSON)
+- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy. Bot API `/api/*` требует Matrix access token (Bearer). Логирование: pino (JSON). Storage: PostgreSQL (schema `bots.kv_store`, JSONB)
 - **livekit-token** (Node.js) — генерация LiveKit JWT
 - **deploy-webhook** — автодеплой по GitHub push
 - **nginx** (внутри web-контейнера) — SPA + reverse proxy ко всем backend-сервисам. `/grafana/` → Grafana, `/api/status` → health
@@ -87,10 +87,12 @@ E:\Uplink\
 │   ├── docker-compose.production.yml   — production
 │   ├── .env                            — секреты (НЕ в git)
 │   ├── synapse/            — homeserver.yaml, appservice-bots.yaml
-│   ├── uplink-botservice/  — Express app, handlers, storage, routes/
+│   ├── uplink-botservice/  — Express app, handlers, postgresStorage, routes/
+│   ├── postgres/           — postgresql.conf (тюнинг)
 │   ├── livekit-token/      — JWT-генератор
 │   └── deploy-webhook/     — автодеплой
-├── scripts/                — clean-start.sh, setup-tls.sh, deploy
+├── scripts/                — clean-start.sh, setup-tls.sh, deploy, backup-db.sh, backup-media.sh
+├── docs/                   — disaster-recovery.md
 ├── Tasks/
 │   ├── backlog/            — текущие задачи (prod_NNN_*.md)
 │   └── done/               — завершённые (001-037 MVP + prod_*)
@@ -220,3 +222,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_003 | Безопасность: auth middleware (Matrix token), webhook signature verification, nginx rate limiting, input validation, fetchWithAuth на фронтенде |
 | 2026-03-03 | prod_004 | Мониторинг: pino logging в botservice, requestId middleware, deep health endpoints, Synapse metrics, Prometheus+Grafana+Alertmanager+node-exporter+postgres-exporter, nginx /grafana/ + /api/status, alert-rules, dashboard |
 | 2026-03-03 | prod_005 | Рефакторинг: React Context (ChatContext, CallContext), MessageInput декомпозиция (useSlashCommands, useTypingIndicator, useFileUpload), botservice routes/ (6 файлов, server.mjs ~100 строк), CSS Modules стратегия + VoiceRecordBar.module.css |
+| 2026-03-03 | prod_006 | Масштабирование: botservice storage JSON→PostgreSQL (schema bots.kv_store), весь API async/await, migrate-json-to-pg.mjs, postgresql.conf тюнинг, backup-db.sh + backup-media.sh, disaster-recovery.md |
