@@ -33,6 +33,11 @@ export async function handleMatrixEvent(event) {
     const body = event.content?.body;
     if (!body || typeof body !== 'string') return;
 
+    if (body.length > 10000) {
+        console.warn(`[event] Слишком длинное сообщение (${body.length} chars) от ${event.sender}`);
+        return;
+    }
+
     const roomId = event.room_id;
 
     // Slash-команда → роутинг к конкретному боту
@@ -49,6 +54,10 @@ export async function handleMatrixEvent(event) {
  */
 async function routeCommand(roomId, sender, body, eventId) {
     const parts = body.split(/\s+/);
+    if (parts.length > 50) {
+        console.warn(`[command] Слишком много аргументов (${parts.length}) от ${sender}`);
+        return;
+    }
     const commandRoot = parts[0].toLowerCase();
 
     // 1. Сначала ищем среди встроенных ботов

@@ -20,6 +20,8 @@ import {
 } from './customBots.mjs';
 import { initBotGateway } from './botGateway.mjs';
 import { checkRateLimit } from './rateLimiter.mjs';
+import { requireAuth } from './middleware/auth.mjs';
+import { verifyWebhook } from './middleware/webhookAuth.mjs';
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -79,7 +81,7 @@ app.get('/rooms/:roomAlias', (_req, res) => {
 // Webhook endpoints (внешние сервисы)
 // ═══════════════════════════════════
 
-app.post('/hooks/:integrationId', async (req, res) => {
+app.post('/hooks/:integrationId', verifyWebhook, async (req, res) => {
     const integrationId = req.params.integrationId;
     try {
         const handler = await import(`./handlers/${integrationId}.mjs`);
@@ -97,7 +99,7 @@ app.post('/hooks/:integrationId', async (req, res) => {
 // Admin API — встроенные боты
 // ═══════════════════════════════════
 
-app.get('/api/bots', (req, res) => {
+app.get('/api/bots', requireAuth, (req, res) => {
     const roomId = req.query.roomId;
     if (roomId) {
         res.json(getBotsForRoom(roomId));
@@ -111,14 +113,14 @@ app.get('/api/bots', (req, res) => {
     }
 });
 
-app.get('/api/commands', (_req, res) => {
+app.get('/api/commands', requireAuth, (_req, res) => {
     // Встроенные + кастомные команды
     const builtin = getAllBotCommands();
     const custom = getCustomBotCommands();
     res.json([...builtin, ...custom]);
 });
 
-app.post('/api/bots/:botId/enable', async (req, res) => {
+app.post('/api/bots/:botId/enable', requireAuth, async (req, res) => {
     const { botId } = req.params;
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
@@ -152,7 +154,7 @@ app.post('/api/bots/:botId/enable', async (req, res) => {
     }
 });
 
-app.post('/api/bots/:botId/disable', (req, res) => {
+app.post('/api/bots/:botId/disable', requireAuth, (req, res) => {
     const { botId } = req.params;
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
@@ -166,7 +168,7 @@ app.post('/api/bots/:botId/disable', (req, res) => {
 // ═══════════════════════════════════
 
 // Создать бота
-app.post('/api/custom-bots', async (req, res) => {
+app.post('/api/custom-bots', requireAuth, async (req, res) => {
     const { name, description, mode, webhookUrl, commands, owner } = req.body;
     if (!name || !mode || !owner) {
         return res.status(400).json({ error: 'name, mode и owner обязательны' });
@@ -193,42 +195,42 @@ app.post('/api/custom-bots', async (req, res) => {
 });
 
 // Список кастомных ботов
-app.get('/api/custom-bots', (req, res) => {
+app.get('/api/custom-bots', requireAuth, (req, res) => {
     const owner = req.query.owner;
     const bots = owner ? getCustomBotsByOwner(owner) : getAllCustomBots();
     res.json(bots.map(sanitizeBot));
 });
 
 // Получить одного бота
-app.get('/api/custom-bots/:botId', (req, res) => {
+app.get('/api/custom-bots/:botId', requireAuth, (req, res) => {
     const bot = getCustomBot(req.params.botId);
     if (!bot) return res.status(404).json({ error: 'Bot not found' });
     res.json(sanitizeBot(bot));
 });
 
 // Обновить бота
-app.patch('/api/custom-bots/:botId', (req, res) => {
+app.patch('/api/custom-bots/:botId', requireAuth, (req, res) => {
     const bot = updateCustomBot(req.params.botId, req.body);
     if (!bot) return res.status(404).json({ error: 'Bot not found' });
     res.json(sanitizeBot(bot));
 });
 
 // Удалить бота
-app.delete('/api/custom-bots/:botId', (req, res) => {
+app.delete('/api/custom-bots/:botId', requireAuth, (req, res) => {
     const ok = deleteCustomBot(req.params.botId);
     if (!ok) return res.status(404).json({ error: 'Bot not found' });
     res.json({ ok: true });
 });
 
 // Перевыпустить токен
-app.post('/api/custom-bots/:botId/regenerate-token', (req, res) => {
+app.post('/api/custom-bots/:botId/regenerate-token', requireAuth, (req, res) => {
     const token = regenerateToken(req.params.botId);
     if (!token) return res.status(404).json({ error: 'Bot not found' });
     res.json({ token });
 });
 
 // Привязать бота к комнате
-app.post('/api/custom-bots/:botId/rooms', async (req, res) => {
+app.post('/api/custom-bots/:botId/rooms', requireAuth, async (req, res) => {
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
 
@@ -241,7 +243,7 @@ app.post('/api/custom-bots/:botId/rooms', async (req, res) => {
 });
 
 // Отвязать бота от комнаты
-app.delete('/api/custom-bots/:botId/rooms', (req, res) => {
+app.delete('/api/custom-bots/:botId/rooms', requireAuth, (req, res) => {
     const { roomId } = req.body;
     if (!roomId) return res.status(400).json({ error: 'roomId required' });
 
@@ -318,7 +320,7 @@ app.get('/api/gif/trending', async (req, res) => {
 });
 
 // Диагностический эндпоинт — статус ботов в комнате
-app.get('/api/debug/rooms/:roomId', async (req, res) => {
+app.get('/api/debug/rooms/:roomId', requireAuth, async (req, res) => {
     const { roomId } = req.params;
     const bindings = getBotRoomBindings();
     const roomBots = bindings[roomId] || [];

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getConfig } from '../config';
+import { fetchWithAuth } from '../utils/api';
 
 interface BotCommand {
     command: string;
@@ -61,9 +62,8 @@ export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, o
                 description: c.description,
             }));
 
-            const resp = await fetch(`${baseUrl}/custom-bots`, {
+            const resp = await fetchWithAuth(`${baseUrl}/custom-bots`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: name.trim(),
                     description: description.trim(),

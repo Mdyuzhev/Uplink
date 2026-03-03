@@ -327,6 +327,10 @@ export class MatrixService {
         return this.client;
     }
 
+    getAccessToken(): string | null {
+        return this.client?.getAccessToken() ?? null;
+    }
+
     getUserId(): string {
         return this.client?.getUserId() || '';
     }

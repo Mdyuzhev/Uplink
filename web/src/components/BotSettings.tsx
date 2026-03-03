@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getConfig } from '../config';
+import { fetchWithAuth } from '../utils/api';
 import { BotManagePanel } from './BotManagePanel';
 import { BotCreateModal } from './BotCreateModal';
 
@@ -33,7 +34,7 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
     const loadBots = async () => {
         try {
             const baseUrl = getConfig().botApiUrl;
-            const resp = await fetch(`${baseUrl}/bots?roomId=${encodeURIComponent(roomId)}`);
+            const resp = await fetchWithAuth(`${baseUrl}/bots?roomId=${encodeURIComponent(roomId)}`);
             if (resp.ok) setBots(await resp.json());
         } catch (err) {
             console.error('Ошибка загрузки ботов:', err);
@@ -47,9 +48,8 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
         const baseUrl = getConfig().botApiUrl;
         const action = enable ? 'enable' : 'disable';
         try {
-            const resp = await fetch(`${baseUrl}/bots/${botId}/${action}`, {
+            const resp = await fetchWithAuth(`${baseUrl}/bots/${botId}/${action}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomId }),
             });
             const data = await resp.json();

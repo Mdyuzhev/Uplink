@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getConfig } from '../config';
+import { fetchWithAuth } from '../utils/api';
 
 interface CustomBot {
     id: string;
@@ -31,7 +32,7 @@ export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, o
     const loadBots = async () => {
         try {
             const baseUrl = getConfig().botApiUrl;
-            const resp = await fetch(`${baseUrl}/custom-bots?owner=${encodeURIComponent(currentUserId)}`);
+            const resp = await fetchWithAuth(`${baseUrl}/custom-bots?owner=${encodeURIComponent(currentUserId)}`);
             if (resp.ok) setBots(await resp.json());
         } catch (err) {
             console.error('Ошибка загрузки кастомных ботов:', err);
@@ -43,7 +44,7 @@ export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, o
     const handleDelete = async (botId: string) => {
         try {
             const baseUrl = getConfig().botApiUrl;
-            await fetch(`${baseUrl}/custom-bots/${botId}`, { method: 'DELETE' });
+            await fetchWithAuth(`${baseUrl}/custom-bots/${botId}`, { method: 'DELETE' });
             loadBots();
         } catch (err) {
             console.error('Ошибка удаления бота:', err);
@@ -53,7 +54,7 @@ export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, o
     const handleRegenerateToken = async (botId: string) => {
         try {
             const baseUrl = getConfig().botApiUrl;
-            const resp = await fetch(`${baseUrl}/custom-bots/${botId}/regenerate-token`, {
+            const resp = await fetchWithAuth(`${baseUrl}/custom-bots/${botId}/regenerate-token`, {
                 method: 'POST',
             });
             if (resp.ok) {

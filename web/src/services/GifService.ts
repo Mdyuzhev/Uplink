@@ -3,6 +3,7 @@
  */
 
 import { config } from '../config';
+import { fetchWithAuth } from '../utils/api';
 
 export interface GifResult {
     id: string;
@@ -20,7 +21,7 @@ class GifService {
     async search(query: string, limit = 20, pos?: string): Promise<{ results: GifResult[]; next: string }> {
         const params = new URLSearchParams({ q: query, limit: String(limit) });
         if (pos) params.set('pos', pos);
-        const resp = await fetch(`${this.baseUrl}/search?${params}`, { cache: 'no-cache' });
+        const resp = await fetchWithAuth(`${this.baseUrl}/search?${params}`, { cache: 'no-cache' });
         if (!resp.ok) throw new Error(`GIF API: ${resp.status}`);
         const data = await resp.json();
         if (data.error) throw new Error(data.error.message || data.error);
@@ -34,7 +35,7 @@ class GifService {
     async trending(limit = 20, pos?: string): Promise<{ results: GifResult[]; next: string }> {
         const params = new URLSearchParams({ limit: String(limit) });
         if (pos) params.set('pos', pos);
-        const resp = await fetch(`${this.baseUrl}/trending?${params}`, { cache: 'no-cache' });
+        const resp = await fetchWithAuth(`${this.baseUrl}/trending?${params}`, { cache: 'no-cache' });
         if (!resp.ok) throw new Error(`GIF API: ${resp.status}`);
         const data = await resp.json();
         if (data.error) throw new Error(data.error.message || data.error);

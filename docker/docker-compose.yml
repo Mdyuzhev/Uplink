@@ -109,6 +109,9 @@ services:
       SERVER_NAME: uplink.wh-lab.ru
       SYNAPSE_ADMIN_TOKEN: ${SYNAPSE_ADMIN_TOKEN:-}
       GIPHY_API_KEY: ${GIPHY_API_KEY:-}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      GITLAB_WEBHOOK_TOKEN: ${GITLAB_WEBHOOK_TOKEN:-}
+      ALERTMANAGER_TOKEN: ${ALERTMANAGER_TOKEN:-}
     volumes:
       - uplink-botservice-data:/app/data
     depends_on:

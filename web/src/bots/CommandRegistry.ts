@@ -4,6 +4,7 @@
  */
 
 import { getConfig } from '../config';
+import { fetchWithAuth } from '../utils/api';
 
 export interface BotCommand {
     command: string;
@@ -23,7 +24,7 @@ class CommandRegistry {
     async load(): Promise<void> {
         try {
             const baseUrl = getConfig().botApiUrl;
-            const resp = await fetch(`${baseUrl}/commands`);
+            const resp = await fetchWithAuth(`${baseUrl}/commands`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             this.commands = await resp.json();
             this.loaded = true;

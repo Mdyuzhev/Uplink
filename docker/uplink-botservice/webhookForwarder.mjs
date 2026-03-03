@@ -100,7 +100,9 @@ export async function forwardToWebhook(bot, event) {
  * Выполнить массив действий от webhook-бота.
  */
 async function executeActions(bot, actions) {
-    for (const action of actions) {
+    if (!Array.isArray(actions)) return;
+    const safeActions = actions.slice(0, 10); // макс 10 действий
+    for (const action of safeActions) {
         try {
             // Задержка между действиями
             if (action.delay_ms && action.delay_ms > 0) {
@@ -114,6 +116,10 @@ async function executeActions(bot, actions) {
                     if (!roomId) break;
                     if (!botHasAccessToRoom(bot.id, roomId)) {
                         console.warn(`Бот ${bot.id} нет доступа к комнате ${roomId}`);
+                        break;
+                    }
+                    if (typeof action.body !== 'string' || action.body.length > 10000) {
+                        console.warn(`Бот ${bot.id}: слишком длинное сообщение (${action.body?.length})`);
                         break;
                     }
                     await sendBotMessage(bot.localpart, roomId, action.body, action.formatted_body);
