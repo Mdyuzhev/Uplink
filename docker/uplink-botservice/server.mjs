@@ -20,6 +20,7 @@ import {
     addBotToRoom, removeBotFromRoom, getCustomBotCommands,
 } from './customBots.mjs';
 import { initBotGateway } from './botGateway.mjs';
+import { scheduleDigest } from './digest.mjs';
 import { checkRateLimit } from './rateLimiter.mjs';
 import { requireAuth } from './middleware/auth.mjs';
 import { verifyWebhook } from './middleware/webhookAuth.mjs';
@@ -419,6 +420,7 @@ async function init() {
 
     const server = http.createServer(app);
     initBotGateway(server);
+    scheduleDigest();
 
     server.listen(PORT, '0.0.0.0', () => {
         logger.info({ port: PORT }, 'Bot Service запущен');
