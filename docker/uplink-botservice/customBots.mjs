@@ -37,7 +37,8 @@ function generateBotId() {
 
 /**
  * Создать кастомного бота.
- * @returns {{ bot, token }} — данные бота и токен (показывается один раз)
+ * @param {{ name: string, description?: string, mode: 'sdk'|'webhook', webhookUrl?: string, commands?: import('./types.mjs').BotCommandDef[], owner: string }} params
+ * @returns {Promise<{ bot: import('./types.mjs').CustomBotDef, token: string }>} данные бота и токен (показывается один раз)
  */
 export async function createCustomBot({ name, description, mode, webhookUrl, commands, owner }) {
     const botId = generateBotId();

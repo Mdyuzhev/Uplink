@@ -24,6 +24,8 @@ let wss = null;
 
 /**
  * Инициализировать WebSocket gateway на HTTP-сервере.
+ * @param {import('http').Server} server
+ * @returns {void}
  */
 export function initBotGateway(server) {
     wss = new WebSocketServer({ noServer: true });
@@ -178,6 +180,8 @@ async function handleBotAction(bot, msg, ws) {
 
 /**
  * Отправить событие SDK-ботам, подключённым и привязанным к комнате.
+ * @param {import('./types.mjs').MatrixEvent & { type: string, command?: string, args?: string[] }} event
+ * @returns {Promise<void>}
  */
 export async function pushEventToSdkBots(event) {
     const allBots = [...connections.entries()];
@@ -206,6 +210,8 @@ export async function pushEventToSdkBots(event) {
 
 /**
  * Проверить, есть ли подключённые SDK-боты для указанной комнаты.
+ * @param {string} roomId
+ * @returns {Promise<boolean>}
  */
 export async function hasConnectedSdkBots(roomId) {
     for (const [botId, wsSet] of connections) {

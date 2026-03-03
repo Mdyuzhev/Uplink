@@ -14,6 +14,8 @@ import { checkRateLimit } from './rateLimiter.mjs';
 
 /**
  * Обработка одного Matrix-события.
+ * @param {import('./types.mjs').MatrixEvent} event
+ * @returns {Promise<void>}
  */
 export async function handleMatrixEvent(event) {
     // Игнорировать события от наших ботов (избежать циклов)
@@ -52,6 +54,11 @@ export async function handleMatrixEvent(event) {
 
 /**
  * Маршрутизация slash-команды к хендлеру бота.
+ * @param {string} roomId
+ * @param {string} sender
+ * @param {string} body
+ * @param {string} eventId
+ * @returns {Promise<void>}
  */
 async function routeCommand(roomId, sender, body, eventId) {
     const parts = body.split(/\s+/);
@@ -129,6 +136,9 @@ async function routeCommand(roomId, sender, body, eventId) {
 
 /**
  * Пересылка события всем кастомным ботам, привязанным к этой комнате.
+ * @param {string} roomId
+ * @param {import('./types.mjs').MatrixEvent} event
+ * @returns {Promise<void>}
  */
 async function forwardToCustomBots(roomId, event) {
     const body = event.content?.body || '';
