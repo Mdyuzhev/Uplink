@@ -4,6 +4,7 @@
  * Пересылка событий к SDK- и webhook-ботам.
  */
 
+import logger from './logger.mjs';
 import { BOT_DEFINITIONS, getBotRoomBindings } from './registry.mjs';
 import { sendBotMessage } from './matrixClient.mjs';
 import { findCustomBotByCommand, getAllCustomBots, botHasAccessToRoom } from './customBots.mjs';
@@ -19,11 +20,11 @@ export async function handleMatrixEvent(event) {
     if (event.sender?.startsWith('@bot_')) return;
 
     // Логировать входящее событие
-    console.log(`[event] ${event.type} в ${event.room_id} от ${event.sender}: ${event.content?.body?.slice(0, 50) || ''}`);
+    logger.debug({ type: event.type, roomId: event.room_id, sender: event.sender }, 'Matrix event');
 
     // Зашифрованные сообщения — боты не могут их прочитать
     if (event.type === 'm.room.encrypted') {
-        console.warn(`[botservice] Зашифрованное сообщение в ${event.room_id} от ${event.sender} — боты не читают E2E`);
+        logger.debug({ roomId: event.room_id, sender: event.sender }, 'Зашифрованное сообщение — боты не читают E2E');
         return;
     }
 
@@ -34,7 +35,7 @@ export async function handleMatrixEvent(event) {
     if (!body || typeof body !== 'string') return;
 
     if (body.length > 10000) {
-        console.warn(`[event] Слишком длинное сообщение (${body.length} chars) от ${event.sender}`);
+        logger.warn({ length: body.length, sender: event.sender }, 'Слишком длинное сообщение');
         return;
     }
 
@@ -55,7 +56,7 @@ export async function handleMatrixEvent(event) {
 async function routeCommand(roomId, sender, body, eventId) {
     const parts = body.split(/\s+/);
     if (parts.length > 50) {
-        console.warn(`[command] Слишком много аргументов (${parts.length}) от ${sender}`);
+        logger.warn({ parts: parts.length, sender }, 'Слишком много аргументов в команде');
         return;
     }
     const commandRoot = parts[0].toLowerCase();
@@ -102,7 +103,7 @@ async function routeCommand(roomId, sender, body, eventId) {
             const handler = await import(`./handlers/${botId}.mjs`);
             await handler.handleCommand({ roomId, sender, subCommand, args, eventId, body });
         } catch (err) {
-            console.error(`Ошибка команды ${botId}:`, err);
+            logger.error({ err, botId }, 'Ошибка выполнения команды');
             await sendBotMessage(botDef.localpart, roomId, `Ошибка выполнения команды: ${err.message}`);
         }
         return;
@@ -167,12 +168,12 @@ async function forwardToCustomBots(roomId, event) {
         }
 
         if (!checkRateLimit(bot.id, 'message')) {
-            console.warn(`Rate limit для webhook-бота ${bot.id}`);
+            logger.warn({ botId: bot.id }, 'Rate limit для webhook-бота');
             continue;
         }
 
         forwardToWebhook(bot, eventPayload).catch(err => {
-            console.error(`Webhook forward ошибка для ${bot.id}:`, err.message);
+            logger.error({ err, botId: bot.id }, 'Webhook forward ошибка');
         });
     }
 }

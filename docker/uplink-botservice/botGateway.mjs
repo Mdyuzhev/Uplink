@@ -6,6 +6,7 @@
  * Получает события из комнат, отправляет действия.
  */
 
+import logger from './logger.mjs';
 import { WebSocketServer } from 'ws';
 import { getCustomBotByToken, botHasAccessToRoom, setBotStatus } from './customBots.mjs';
 import { sendBotMessage, sendBotReaction } from './matrixClient.mjs';
@@ -56,7 +57,7 @@ export function initBotGateway(server) {
     });
 
     wss.on('connection', (ws, _req, bot) => {
-        console.log(`SDK-бот ${bot.id} (${bot.name}) подключён`);
+        logger.info({ botId: bot.id, botName: bot.name }, 'SDK-бот подключён');
 
         // Регистрация подключения
         if (!connections.has(bot.id)) {
@@ -97,11 +98,11 @@ export function initBotGateway(server) {
                 connections.delete(bot.id);
                 setBotStatus(bot.id, 'offline');
             }
-            console.log(`SDK-бот ${bot.id} отключён`);
+            logger.info({ botId: bot.id }, 'SDK-бот отключён');
         });
 
         ws.on('error', (err) => {
-            console.error(`WebSocket ошибка бота ${bot.id}:`, err.message);
+            logger.error({ err, botId: bot.id }, 'WebSocket ошибка бота');
         });
 
         // Приветствие
@@ -125,7 +126,7 @@ export function initBotGateway(server) {
         }
     }, HEARTBEAT_INTERVAL);
 
-    console.log('Bot Gateway (WebSocket) запущен');
+    logger.info('Bot Gateway (WebSocket) запущен');
 }
 
 /**
@@ -216,6 +217,6 @@ function safeSend(ws, data) {
             ws.send(JSON.stringify(data));
         }
     } catch (err) {
-        console.error('Ошибка отправки WebSocket:', err.message);
+        logger.error({ err }, 'Ошибка отправки WebSocket');
     }
 }

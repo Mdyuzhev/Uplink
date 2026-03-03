@@ -4,6 +4,7 @@
  */
 
 import crypto from 'node:crypto';
+import logger from './logger.mjs';
 import { sendBotMessage, sendBotReaction } from './matrixClient.mjs';
 import { botHasAccessToRoom, setBotStatus } from './customBots.mjs';
 
@@ -28,7 +29,7 @@ function signPayload(payload, secret) {
  */
 export async function forwardToWebhook(bot, event) {
     if (!bot.webhookUrl) {
-        console.warn(`Webhook-бот ${bot.id} без URL`);
+        logger.warn({ botId: bot.id }, 'Webhook-бот без URL');
         return [];
     }
 
@@ -91,7 +92,7 @@ export async function forwardToWebhook(bot, event) {
     }
 
     // Все попытки провалились
-    console.error(`Webhook ${bot.id} (${bot.webhookUrl}) недоступен:`, lastError?.message);
+    logger.error({ botId: bot.id, url: bot.webhookUrl, err: lastError }, 'Webhook-бот недоступен');
     setBotStatus(bot.id, 'offline');
     return [];
 }
@@ -115,11 +116,11 @@ async function executeActions(bot, actions) {
                     const roomId = action.room_id || action.roomId;
                     if (!roomId) break;
                     if (!botHasAccessToRoom(bot.id, roomId)) {
-                        console.warn(`Бот ${bot.id} нет доступа к комнате ${roomId}`);
+                        logger.warn({ botId: bot.id, roomId }, 'Бот нет доступа к комнате');
                         break;
                     }
                     if (typeof action.body !== 'string' || action.body.length > 10000) {
-                        console.warn(`Бот ${bot.id}: слишком длинное сообщение (${action.body?.length})`);
+                        logger.warn({ botId: bot.id, length: action.body?.length }, 'Слишком длинное сообщение от бота');
                         break;
                     }
                     await sendBotMessage(bot.localpart, roomId, action.body, action.formatted_body);
@@ -133,10 +134,10 @@ async function executeActions(bot, actions) {
                     break;
                 }
                 default:
-                    console.warn(`Неизвестное действие от webhook-бота ${bot.id}: ${action.type}`);
+                    logger.warn({ botId: bot.id, actionType: action.type }, 'Неизвестное действие от webhook-бота');
             }
         } catch (err) {
-            console.error(`Ошибка выполнения действия ${action.type} от бота ${bot.id}:`, err.message);
+            logger.error({ err, botId: bot.id, actionType: action.type }, 'Ошибка выполнения действия');
         }
     }
 }

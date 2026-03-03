@@ -43,7 +43,9 @@ echo "-> Проверка сервисов..."
 for svc in "Synapse|http://127.0.0.1:8008/_matrix/client/versions" \
            "Фронтенд|http://127.0.0.1:5174/" \
            "LiveKit Token|http://127.0.0.1:7890/health" \
-           "Botservice|http://127.0.0.1:7891/health"; do
+           "Botservice|http://127.0.0.1:7891/health" \
+           "Prometheus|http://127.0.0.1:9090/-/healthy" \
+           "Grafana|http://127.0.0.1:3000/api/health"; do
     NAME="${svc%%|*}"
     URL="${svc##*|}"
     CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$URL" 2>/dev/null || echo "000")

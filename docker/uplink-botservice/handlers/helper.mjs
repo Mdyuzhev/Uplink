@@ -4,6 +4,7 @@
 
 import { sendBotMessage } from '../matrixClient.mjs';
 import { getAllBotCommands, getBotRoomBindings } from '../registry.mjs';
+import logger from '../logger.mjs';
 
 const BOT = 'bot_helper';
 
@@ -127,7 +128,7 @@ async function handleRemind(roomId, sender, args) {
                 `**Напоминание** для ${sender}: ${message}`
             );
         } catch (err) {
-            console.error('Ошибка напоминания:', err);
+            logger.error({ err }, 'Ошибка напоминания');
         }
     }, ms);
 }

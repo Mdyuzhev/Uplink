@@ -3,6 +3,8 @@
  * Кеш на 5 минут (избежать нагрузки на Synapse при каждом запросе).
  */
 
+import logger from '../logger.mjs';
+
 const HOMESERVER_URL = process.env.HOMESERVER_URL || 'http://synapse:8008';
 
 // Кеш: token → { userId, expiresAt }
@@ -41,7 +43,7 @@ async function validateToken(token) {
 
         return userId;
     } catch (err) {
-        console.error('[auth] Ошибка валидации токена:', err.message);
+        logger.error({ err }, '[auth] Ошибка валидации токена');
         return null;
     }
 }
@@ -71,7 +73,7 @@ export function requireAuth(req, res, next) {
         req.userId = userId;
         next();
     }).catch(err => {
-        console.error('[auth] Middleware ошибка:', err);
+        logger.error({ err }, '[auth] Middleware ошибка');
         res.status(500).json({ error: 'Ошибка авторизации' });
     });
 }

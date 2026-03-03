@@ -1,6 +1,9 @@
 server_name: "uplink.wh-lab.ru"
 pid_file: /data/homeserver.pid
 
+# Метрики для Prometheus
+enable_metrics: true
+
 listeners:
   - port: 8008
     tls: false
@@ -9,6 +12,12 @@ listeners:
     resources:
       - names: [client, federation]
         compress: false
+  # Метрики на отдельном порту (не экспозим наружу)
+  - port: 9090
+    tls: false
+    type: metrics
+    resources:
+      - names: [metrics]
 
 database:
   name: psycopg2

@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import logger from './logger.mjs';
 
 const STORAGE_PATH = process.env.STORAGE_PATH || '/app/data/storage.json';
 
@@ -16,7 +17,7 @@ function loadFromDisk() {
             cache = JSON.parse(fs.readFileSync(STORAGE_PATH, 'utf-8'));
         }
     } catch (err) {
-        console.error('Ошибка чтения storage:', err);
+        logger.error({ err }, 'Ошибка чтения storage');
         cache = {};
     }
 }
@@ -26,7 +27,7 @@ function saveToDisk() {
         fs.mkdirSync(path.dirname(STORAGE_PATH), { recursive: true });
         fs.writeFileSync(STORAGE_PATH, JSON.stringify(cache, null, 2));
     } catch (err) {
-        console.error('Ошибка записи storage:', err);
+        logger.error({ err }, 'Ошибка записи storage');
     }
 }
 

@@ -1,0 +1,40 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - alert-rules.yml
+
+scrape_configs:
+  # Synapse метрики
+  - job_name: synapse
+    static_configs:
+      - targets: ['synapse:9090']
+    metrics_path: /_synapse/metrics
+
+  # Node exporter — CPU, RAM, disk
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # PostgreSQL
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Botservice health
+  - job_name: botservice
+    metrics_path: /health
+    static_configs:
+      - targets: ['uplink-botservice:7891']
+
+  # LiveKit token health
+  - job_name: livekit-token
+    metrics_path: /health
+    static_configs:
+      - targets: ['livekit-token:7890']

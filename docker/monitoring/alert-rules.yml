@@ -1,0 +1,67 @@
+groups:
+  - name: uplink-alerts
+    rules:
+      # Synapse не отвечает
+      - alert: SynapseDown
+        expr: up{job="synapse"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Synapse не отвечает"
+          description: "Synapse metrics endpoint недоступен более 1 минуты"
+
+      # Диск заполнен > 80%
+      - alert: DiskSpaceHigh
+        expr: (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Диск заполнен на {{ $value | humanizePercentage }}"
+          description: "Свободного места менее 20% на корневом разделе"
+
+      # Диск заполнен > 95%
+      - alert: DiskSpaceCritical
+        expr: (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) > 0.95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Диск почти полон — {{ $value | humanizePercentage }}"
+
+      # Высокая нагрузка CPU (> 90% в среднем за 5 мин)
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU нагрузка {{ $value }}%"
+
+      # RAM > 90%
+      - alert: HighMemory
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM использование {{ $value | humanizePercentage }}"
+
+      # PostgreSQL connections > 80% от max
+      - alert: PostgresConnectionsHigh
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connections {{ $value | humanizePercentage }} от максимума"
+
+      # PostgreSQL down
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL не отвечает"

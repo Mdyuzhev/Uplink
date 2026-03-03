@@ -10,6 +10,7 @@
 
 import http from 'node:http';
 import express from 'express';
+import logger from './logger.mjs';
 import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands, getBotRoomBindings } from './registry.mjs';
 import { ensureBotUser, joinBotToRoom, isBotInRoom, isRoomEncrypted } from './matrixClient.mjs';
 import { handleMatrixEvent } from './eventHandler.mjs';
@@ -22,8 +23,10 @@ import { initBotGateway } from './botGateway.mjs';
 import { checkRateLimit } from './rateLimiter.mjs';
 import { requireAuth } from './middleware/auth.mjs';
 import { verifyWebhook } from './middleware/webhookAuth.mjs';
+import { requestId } from './middleware/requestId.mjs';
 
 const app = express();
+app.use(requestId);
 app.use(express.json({ limit: '5mb' }));
 
 const HS_TOKEN = process.env.HS_TOKEN;
@@ -58,7 +61,7 @@ app.put('/transactions/:txnId', (req, res) => {
     const events = req.body.events || [];
     for (const event of events) {
         handleMatrixEvent(event).catch(err => {
-            console.error('Ошибка обработки события:', err);
+            logger.error({ err }, 'Ошибка обработки события');
         });
     }
 
@@ -90,7 +93,7 @@ app.post('/hooks/:integrationId', verifyWebhook, async (req, res) => {
         }
         res.json({ ok: true });
     } catch (err) {
-        console.error(`Webhook ${integrationId} ошибка:`, err);
+        logger.error({ err, integrationId }, 'Webhook ошибка');
         res.status(500).json({ error: 'Internal error' });
     }
 });
@@ -149,7 +152,7 @@ app.post('/api/bots/:botId/enable', requireAuth, async (req, res) => {
                 : null,
         });
     } catch (err) {
-        console.error(`Ошибка включения бота ${botId}:`, err);
+        logger.error({ err, botId }, 'Ошибка включения бота');
         res.status(500).json({ error: err.message });
     }
 });
@@ -189,7 +192,7 @@ app.post('/api/custom-bots', requireAuth, async (req, res) => {
             webhookSecret: bot.webhookSecret,
         });
     } catch (err) {
-        console.error('Ошибка создания бота:', err);
+        logger.error({ err }, 'Ошибка создания бота');
         res.status(500).json({ error: err.message });
     }
 });
@@ -341,9 +344,34 @@ app.get('/api/debug/rooms/:roomId', requireAuth, async (req, res) => {
     res.json({ roomId, encrypted, bots: status });
 });
 
-// Health check
-app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', service: 'uplink-botservice' });
+// Health check — deep
+app.get('/health', async (_req, res) => {
+    const checks = {};
+
+    try {
+        const { getStorage } = await import('./storage.mjs');
+        getStorage('_healthcheck');
+        checks.storage = 'ok';
+    } catch {
+        checks.storage = 'error';
+    }
+
+    try {
+        const resp = await fetch(`${process.env.HOMESERVER_URL || 'http://synapse:8008'}/_matrix/client/versions`, {
+            signal: AbortSignal.timeout(3000),
+        });
+        checks.synapse = resp.ok ? 'ok' : 'error';
+    } catch {
+        checks.synapse = 'unreachable';
+    }
+
+    const healthy = Object.values(checks).every(v => v === 'ok');
+    res.status(healthy ? 200 : 503).json({
+        status: healthy ? 'ok' : 'degraded',
+        service: 'uplink-botservice',
+        checks,
+        uptime: Math.floor(process.uptime()),
+    });
 });
 
 // ═══════════════════════════════════
@@ -361,18 +389,16 @@ function sanitizeBot(bot) {
 // ═══════════════════════════════════
 
 async function init() {
-    // Зарегистрировать встроенных бот-пользователей
-    console.log('Регистрация бот-пользователей...');
+    logger.info('Регистрация бот-пользователей...');
     for (const [id, bot] of Object.entries(BOT_DEFINITIONS)) {
         try {
             await ensureBotUser(bot.localpart, bot.displayName);
         } catch (err) {
-            console.warn(`Не удалось зарегистрировать ${id}:`, err.message);
+            logger.warn({ err, botId: id }, 'Не удалось зарегистрировать бота');
         }
     }
-    console.log('Боты зарегистрированы.');
+    logger.info('Боты зарегистрированы.');
 
-    // Присоединить ботов к комнатам, где они включены
     const bindings = getBotRoomBindings();
     for (const [roomId, botIds] of Object.entries(bindings)) {
         for (const botId of botIds) {
@@ -381,26 +407,25 @@ async function init() {
             try {
                 const inRoom = await isBotInRoom(bot.localpart, roomId);
                 if (!inRoom) {
-                    console.log(`[init] Бот ${botId} не в комнате ${roomId}, присоединяю...`);
+                    logger.info({ botId, roomId }, 'Бот не в комнате, присоединяю...');
                     await joinBotToRoom(bot.localpart, roomId);
                 }
             } catch (err) {
-                console.warn(`[init] Не удалось присоединить ${botId} к ${roomId}:`, err.message);
+                logger.warn({ err, botId, roomId }, 'Не удалось присоединить бота к комнате');
             }
         }
     }
-    console.log('Боты присоединены к комнатам.');
+    logger.info('Боты присоединены к комнатам.');
 
-    // HTTP-сервер (Express) + WebSocket gateway на одном порту
     const server = http.createServer(app);
     initBotGateway(server);
 
     server.listen(PORT, '0.0.0.0', () => {
-        console.log(`Bot Service на порту ${PORT}`);
+        logger.info({ port: PORT }, 'Bot Service запущен');
     });
 }
 
 init().catch(err => {
-    console.error('Ошибка запуска bot service:', err);
+    logger.error({ err }, 'Ошибка запуска bot service');
     process.exit(1);
 });

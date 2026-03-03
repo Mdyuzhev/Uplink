@@ -3,6 +3,8 @@
  * Отправляет сообщения от имени виртуальных бот-пользователей через AS API.
  */
 
+import logger from './logger.mjs';
+
 const HOMESERVER_URL = process.env.HOMESERVER_URL || 'http://synapse:8008';
 const AS_TOKEN = process.env.AS_TOKEN;
 const ADMIN_TOKEN = process.env.SYNAPSE_ADMIN_TOKEN;
@@ -29,7 +31,7 @@ export async function ensureBotUser(localpart, displayName) {
             }),
         });
         if (resp.ok) {
-            console.log(`Бот ${userId} зарегистрирован`);
+            logger.info({ userId }, 'Бот зарегистрирован');
         }
     } catch {
         // Пользователь уже существует — нормально
@@ -46,7 +48,7 @@ export async function ensureBotUser(localpart, displayName) {
             body: JSON.stringify({ displayname: displayName }),
         });
     } catch (err) {
-        console.warn(`Не удалось установить displayname для ${userId}:`, err.message);
+        logger.warn({ err, userId }, 'Не удалось установить displayname');
     }
 }
 
@@ -85,12 +87,12 @@ export async function sendBotMessage(botLocalpart, roomId, body, formatted) {
 
     if (!resp.ok) {
         const err = await resp.text();
-        console.error(`[sendBotMessage] ОШИБКА от ${botLocalpart} в ${roomId}: ${resp.status} ${err}`);
+        logger.error({ botLocalpart, roomId, status: resp.status }, 'Ошибка отправки сообщения бота');
         throw new Error(`Ошибка отправки (${resp.status}): ${err}`);
     }
 
     const result = await resp.json();
-    console.log(`[sendBotMessage] ${botLocalpart} → ${roomId}: "${body.slice(0, 50)}..." (${result.event_id})`);
+    logger.debug({ botLocalpart, roomId, eventId: result.event_id }, 'Сообщение отправлено');
     return result.event_id;
 }
 
@@ -115,11 +117,11 @@ export async function joinBotToRoom(botLocalpart, roomId) {
             }
         );
         if (resp.ok) {
-            console.log(`[joinBot] ${userId} joined ${roomId} (direct join)`);
+            logger.info({ userId, roomId }, 'Бот присоединился (direct join)');
             return;
         }
         const err = await resp.text();
-        console.warn(`[joinBot] Direct join failed for ${userId} in ${roomId}: ${resp.status} ${err}`);
+        logger.warn({ userId, roomId, status: resp.status }, 'Direct join не сработал');
     }
 
     // Стратегия 2: Invite от имени участника комнаты (через admin API + AS masquerading)
@@ -161,20 +163,20 @@ export async function joinBotToRoom(botLocalpart, roomId) {
                             }
                         );
                         if (joinResp.ok) {
-                            console.log(`[joinBot] ${userId} joined ${roomId} (invite from ${inviter})`);
+                            logger.info({ userId, roomId, inviter }, 'Бот присоединился (invite from member)');
                             return;
                         }
                     }
                     const invErr = await invResp.text().catch(() => '');
-                    console.warn(`[joinBot] Invite via member failed for ${userId} in ${roomId}: ${invErr}`);
+                    logger.warn({ userId, roomId, invErr }, 'Invite via member не сработал');
                 }
             }
         } catch (err) {
-            console.warn(`[joinBot] Strategy 2 error: ${err.message}`);
+            logger.warn({ err }, 'joinBot strategy 2 error');
         }
     }
 
-    console.error(`[joinBot] Все стратегии join провалились для ${userId} в ${roomId}`);
+    logger.error({ userId, roomId }, 'Все стратегии join провалились');
     throw new Error(`Не удалось присоединить ${userId} к ${roomId}`);
 }
 
