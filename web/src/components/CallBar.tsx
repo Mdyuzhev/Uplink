@@ -1,16 +1,9 @@
 import React from 'react';
 import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
-import { CallParticipant } from '../livekit/LiveKitService';
+import { useCall } from '../contexts/CallContext';
 
 interface CallBarProps {
     roomName: string;
-    participants: CallParticipant[];
-    isMuted: boolean;
-    isCameraOn: boolean;
-    duration: number;
-    onToggleMute: () => void;
-    onToggleCamera: () => void;
-    onLeave: () => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -19,9 +12,9 @@ function formatDuration(seconds: number): string {
     return `${m}:${s}`;
 }
 
-export const CallBar: React.FC<CallBarProps> = ({
-    roomName, participants, isMuted, isCameraOn, duration, onToggleMute, onToggleCamera, onLeave,
-}) => {
+export const CallBar: React.FC<CallBarProps> = ({ roomName }) => {
+    const { participants, isMuted, isCameraOn, duration, toggleMute, toggleCamera, handleLeaveCall } = useCall();
+
     return (
         <div className="call-bar">
             <div className="call-bar__info">
@@ -45,21 +38,21 @@ export const CallBar: React.FC<CallBarProps> = ({
             <div className="call-bar__controls">
                 <button
                     className={`call-bar__btn call-bar__btn--mute ${isMuted ? 'call-bar__btn--active' : ''}`}
-                    onClick={onToggleMute}
+                    onClick={toggleMute}
                     title={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
                 >
                     {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>
                 <button
                     className={`call-bar__btn call-bar__btn--camera ${isCameraOn ? 'call-bar__btn--active' : ''}`}
-                    onClick={onToggleCamera}
+                    onClick={toggleCamera}
                     title={isCameraOn ? 'Выключить камеру' : 'Включить камеру'}
                 >
                     {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                 </button>
                 <button
                     className="call-bar__btn call-bar__btn--leave"
-                    onClick={onLeave}
+                    onClick={handleLeaveCall}
                     title="Завершить звонок"
                 >
                     <PhoneOff size={16} />

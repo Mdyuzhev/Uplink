@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Pin, X, ArrowLeft, Phone, PhoneOff, Bot, Lock, Unlock } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
 import { RoomInfo } from '../matrix/RoomsManager';
-import { CallState } from '../livekit/LiveKitService';
+import { useCall } from '../contexts/CallContext';
+
 interface PinnedMessageInfo {
     id: string;
     sender: string;
@@ -12,10 +13,6 @@ interface PinnedMessageInfo {
 interface RoomHeaderProps {
     room: RoomInfo;
     onBack?: () => void;
-    callState: CallState;
-    activeCallRoomName: string | null;
-    onJoinCall: () => void;
-    onLeaveCall: () => void;
     pinnedMessages?: PinnedMessageInfo[];
     onScrollToMessage?: (eventId: string) => void;
     onUnpin?: (eventId: string) => void;
@@ -24,9 +21,9 @@ interface RoomHeaderProps {
 }
 
 export const RoomHeader: React.FC<RoomHeaderProps> = ({
-    room, onBack, callState, activeCallRoomName, onJoinCall, onLeaveCall,
-    pinnedMessages, onScrollToMessage, onUnpin, showBotSettings, onToggleBotSettings,
+    room, onBack, pinnedMessages, onScrollToMessage, onUnpin, showBotSettings, onToggleBotSettings,
 }) => {
+    const { callState, activeRoomName, handleJoinCall, handleLeaveCall } = useCall();
     const [showPinned, setShowPinned] = useState(false);
     const [showEncryptConfirm, setShowEncryptConfirm] = useState(false);
     const [isEncrypted, setIsEncrypted] = useState(room.encrypted);
@@ -49,9 +46,13 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
         return () => document.removeEventListener('mousedown', handler);
     }, [showPinned]);
 
-    const isThisRoomInCall = activeCallRoomName === room.id;
-    const isOtherRoomInCall = activeCallRoomName !== null && !isThisRoomInCall;
+    const isThisRoomInCall = activeRoomName === room.id;
+    const isOtherRoomInCall = activeRoomName !== null && !isThisRoomInCall;
     const pinCount = pinnedMessages?.length || 0;
+
+    const onJoinCall = useCallback(() => {
+        handleJoinCall(room.id, room.name, room.type);
+    }, [handleJoinCall, room.id, room.name, room.type]);
 
     const handleEnableEncryption = async () => {
         try {
@@ -155,7 +156,7 @@ export const RoomHeader: React.FC<RoomHeaderProps> = ({
                     {isThisRoomInCall ? (
                             <button
                                 className="room-header__call-btn room-header__call-btn--leave"
-                                onClick={onLeaveCall}
+                                onClick={handleLeaveCall}
                                 title="Завершить звонок"
                             >
                                 <PhoneOff size={16} />

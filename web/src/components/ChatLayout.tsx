@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useChatState } from '../hooks/useChatState';
-import { useLiveKit } from '../hooks/useLiveKit';
-import { useCallSignaling } from '../hooks/useCallSignaling';
+import { ChatProvider, useChat } from '../contexts/ChatContext';
+import { CallProvider, useCall } from '../contexts/CallContext';
 import { useVSCodeBridge, base64ToFile } from '../hooks/useVSCodeBridge';
 import { useViewportResize } from '../hooks/useViewportResize';
-import { callSignalingService } from '../livekit/CallSignalingService';
 import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
 import { RoomHeader } from './RoomHeader';
@@ -40,63 +38,18 @@ interface ChatLayoutProps {
     onLogout: () => void;
 }
 
-export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
-    const chat = useChatState();
+function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
+    const chat = useChat();
+    const call = useCall();
     useViewportResize();
-
-    const {
-        callState, participants, duration, isMuted, isCameraOn,
-        activeRoomName, error: callError, joinCall, leaveCall, toggleMute, toggleCamera,
-    } = useLiveKit();
-
-    const {
-        signalState, callInfo, startCall, acceptCall, rejectCall, cancelCall, resetSignaling,
-    } = useCallSignaling();
-
-    // Запуск слушателя сигнализации звонков
-    useEffect(() => {
-        callSignalingService.startListening();
-        return () => callSignalingService.stopListening();
-    }, []);
-
-    // Когда signalState → accepted у звонящего → подключиться к LiveKit
-    useEffect(() => {
-        if (signalState === 'accepted' && callInfo?.direction === 'outgoing') {
-            joinCall(callInfo.roomId);
-        }
-    }, [signalState, callInfo, joinCall]);
-
-    // При завершении LiveKit-звонка → сбросить сигнализацию
-    useEffect(() => {
-        if (callState === 'idle' && signalState === 'accepted') {
-            resetSignaling();
-        }
-    }, [callState, signalState, resetSignaling]);
-
-    // Кнопка «Позвонить» — DM: invite, канал: сразу LiveKit
-    const handleJoinCall = useCallback(() => {
-        if (!chat.activeRoom) return;
-        if (chat.activeRoom.type === 'direct') {
-            startCall(chat.activeRoom.id, chat.activeRoom.name);
-        } else {
-            joinCall(chat.activeRoom.id);
-        }
-    }, [chat.activeRoom, startCall, joinCall]);
-
-    // Принять входящий → подключиться к LiveKit
-    const handleAcceptCall = useCallback(async () => {
-        await acceptCall();
-        if (callInfo) joinCall(callInfo.roomId);
-    }, [acceptCall, callInfo, joinCall]);
-
-    // Завершить звонок — отправить hangup + отключиться от LiveKit
-    const handleLeaveCall = useCallback(async () => {
-        await leaveCall();
-        await callSignalingService.cancelOrHangup();
-    }, [leaveCall]);
 
     // VS Code bridge: snippet для вставки в MessageInput
     const [pendingSnippet, setPendingSnippet] = useState<string | null>(null);
+
+    const handleJoinCall = useCallback(() => {
+        if (!chat.activeRoom) return;
+        call.handleJoinCall(chat.activeRoom.id, chat.activeRoom.name, chat.activeRoom.type);
+    }, [chat.activeRoom, call.handleJoinCall]);
 
     useVSCodeBridge({
         onNavigateRoom: chat.handleSelectRoom,
@@ -128,7 +81,7 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
         return () => cleanup?.();
     }, [chat.handleSelectRoom, handleJoinCall]);
 
-    const showOutgoing = signalState === 'ringing-out' || signalState === 'rejected' || signalState === 'no-answer';
+    const showOutgoing = call.signalState === 'ringing-out' || call.signalState === 'rejected' || call.signalState === 'no-answer';
 
     return (
         <div className="chat-layout">
@@ -162,10 +115,6 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             <RoomHeader
                                 room={chat.activeRoom}
                                 onBack={chat.handleBack}
-                                callState={callState}
-                                activeCallRoomName={activeRoomName}
-                                onJoinCall={handleJoinCall}
-                                onLeaveCall={handleLeaveCall}
                                 pinnedMessages={chat.pinnedMessages}
                                 onScrollToMessage={chat.setScrollToEventId}
                                 onUnpin={chat.togglePin}
@@ -181,23 +130,14 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                             )}
                         </div>
 
-                        {callError && (
-                            <div className="call-error">{callError}</div>
+                        {call.callError && (
+                            <div className="call-error">{call.callError}</div>
                         )}
 
-                        {callState === 'connected' && activeRoomName === chat.activeRoom.id && (
+                        {call.callState === 'connected' && call.activeRoomName === chat.activeRoom.id && (
                             <>
-                                <CallBar
-                                    roomName={chat.activeRoom.name}
-                                    participants={participants}
-                                    isMuted={isMuted}
-                                    isCameraOn={isCameraOn}
-                                    duration={duration}
-                                    onToggleMute={toggleMute}
-                                    onToggleCamera={toggleCamera}
-                                    onLeave={handleLeaveCall}
-                                />
-                                <VideoGrid participants={participants} />
+                                <CallBar roomName={chat.activeRoom.name} />
+                                <VideoGrid participants={call.participants} />
                             </>
                         )}
 
@@ -245,20 +185,20 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
             )}
 
             {/* Оверлей исходящего звонка */}
-            {showOutgoing && callInfo && (
+            {showOutgoing && call.callInfo && (
                 <OutgoingCallOverlay
-                    calleeName={callInfo.callerName}
-                    signalState={signalState}
-                    onCancel={cancelCall}
+                    calleeName={call.callInfo.callerName}
+                    signalState={call.signalState}
+                    onCancel={call.cancelCall}
                 />
             )}
 
             {/* Оверлей входящего звонка */}
-            {signalState === 'ringing-in' && callInfo && (
+            {call.signalState === 'ringing-in' && call.callInfo && (
                 <IncomingCallOverlay
-                    callInfo={callInfo}
-                    onAccept={handleAcceptCall}
-                    onReject={rejectCall}
+                    callInfo={call.callInfo}
+                    onAccept={call.handleAcceptCall}
+                    onReject={call.rejectCall}
                 />
             )}
 
@@ -293,5 +233,15 @@ export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
                 <AdminPanel onClose={() => chat.setShowAdminPanel(false)} />
             )}
         </div>
+    );
+}
+
+export const ChatLayout: React.FC<ChatLayoutProps> = ({ onLogout }) => {
+    return (
+        <ChatProvider>
+            <CallProvider>
+                <ChatLayoutInner onLogout={onLogout} />
+            </CallProvider>
+        </ChatProvider>
     );
 };
