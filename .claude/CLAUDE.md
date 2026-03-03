@@ -19,8 +19,8 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 |---|-------|--------|
 | 0 | Чистый старт инфраструктуры (federation-ready) | ✅ |
 | 0.5 | Деплой на сервер + CI | ✅ |
-| 1 | Безопасность | ⬜ Следующая |
-| 2 | Мониторинг и observability | ⬜ |
+| 1 | Безопасность | ✅ |
+| 2 | Мониторинг и observability | ⬜ Следующая |
 | 3 | Рефакторинг кода | ⬜ |
 | 4 | Масштабирование (worker-архитектура) | ⬜ |
 | 5 | Качество кода (тесты, strict TS, lint) | ⬜ |
@@ -42,7 +42,7 @@ MVP завершён (37 задач). Сейчас идёт стабилизац
 - **Synapse** — Matrix homeserver. server_name: `uplink.wh-lab.ru` (демо) / клиентский домен (продакшен)
 - **PostgreSQL 15** — хранилище Synapse
 - **Redis 7** — кеш Synapse, в будущем backbone для worker'ов (Redis Streams)
-- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy
+- **uplink-botservice** (Node.js/Express) — Application Service, webhook receiver, slash-команды, GIF proxy. Bot API `/api/*` требует Matrix access token (Bearer)
 - **livekit-token** (Node.js) — генерация LiveKit JWT
 - **deploy-webhook** — автодеплой по GitHub push
 - **nginx** (внутри web-контейнера) — SPA + reverse proxy ко всем backend-сервисам
@@ -207,3 +207,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-01 | prod_001 | Чистый старт: server_name→uplink.wh-lab.ru, новые секреты, rate limits, federation well-known, resource limits, logging, network isolation, clean-start.sh, setup-tls.sh, deploy-prod.sh hardening, Cloudflare убран, .env из git убран |
 | 2026-03-03 | prod_002 | Деплой на Yandex Cloud: clean-start.sh, TLS (certbot, cert до 2026-05-29), HTTPS ✓, well-known ✓, CI настроен (PROD_HOST + PROD_SSH_KEY), deploy-prod.sh: git fetch+reset вместо pull |
 | 2026-03-03 | prod_002.1 | Фавикон (SVG/PNG, новый дизайн indigo+white), CI-канал #ci в пространстве Разработка, нотификации успех/фейл в deploy workflow |
+| 2026-03-03 | prod_003 | Безопасность: auth middleware (Matrix token), webhook signature verification, nginx rate limiting, input validation, fetchWithAuth на фронтенде |
