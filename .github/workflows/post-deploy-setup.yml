@@ -16,27 +16,22 @@ jobs:
           script: |
             cd ~/projects/uplink/docker
 
-            echo "=== Статус контейнеров ==="
-            docker compose -f docker-compose.production.yml ps
+            echo "=== Все контейнеры (включая stopped) ==="
+            docker ps -a --filter "name=uplink" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
 
-            echo "=== Логи botservice (последние 50 строк) ==="
-            docker compose -f docker-compose.production.yml logs uplink-botservice --tail 50 2>&1 || echo "Нет логов"
+            echo "=== Логи botservice (последние 80 строк) ==="
+            docker logs uplink-botservice --tail 80 2>&1 || echo "Контейнер не существует"
 
-            echo "=== Логи postgres (последние 20 строк) ==="
-            docker compose -f docker-compose.production.yml logs postgres --tail 20 2>&1 || echo "Нет логов"
+            echo "=== Логи web (последние 20 строк) ==="
+            docker logs uplink-web --tail 20 2>&1 || echo "Контейнер не существует"
 
-            echo "=== Переменные окружения botservice ==="
-            docker compose -f docker-compose.production.yml config --format json 2>/dev/null | python3 -c "
-            import json,sys
-            d=json.load(sys.stdin)
-            s=d.get('services',{}).get('uplink-botservice',{})
-            env=s.get('environment',{})
-            for k,v in env.items():
-                if 'PASS' in k or 'SECRET' in k or 'TOKEN' in k:
-                    print(f'{k}=***')
-                else:
-                    print(f'{k}={v}')
-            " || echo "Не удалось получить env"
+            echo "=== Сборка botservice ==="
+            docker compose -f docker-compose.production.yml build uplink-botservice 2>&1 | tail -30
 
-            echo "=== Файл .env (наличие PG-переменных) ==="
-            grep -E "^POSTGRES" .env 2>/dev/null || echo ".env: PG-переменные не найдены"
+            echo "=== Запуск botservice ==="
+            docker compose -f docker-compose.production.yml up -d uplink-botservice --no-deps 2>&1
+
+            echo "=== Статус botservice после запуска ==="
+            sleep 5
+            docker ps --filter "name=uplink-botservice" --format "table {{.Names}}\t{{.Status}}"
+            docker logs uplink-botservice --tail 30 2>&1
