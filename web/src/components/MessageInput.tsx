@@ -1,11 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Paperclip, Send, Smile, Mic, Video } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
-import { commandRegistry, BotCommand } from '../bots/CommandRegistry';
 import { StickerGifPanel } from './StickerGifPanel';
 import { CreateStickerPackModal } from './CreateStickerPackModal';
 import { VoiceRecordBar } from './VoiceRecordBar';
 import { VideoNoteRecordOverlay } from './VideoNoteRecordOverlay';
+import { useSlashCommands } from '../hooks/useSlashCommands';
+import { useTypingIndicator } from '../hooks/useTypingIndicator';
+import { useFileUpload } from '../hooks/useFileUpload';
 import type { VoiceRecording } from '../services/VoiceRecorder';
 import type { VideoNoteRecording } from '../services/VideoNoteRecorder';
 import type { GifResult } from '../services/GifService';
@@ -36,24 +38,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     pendingText, onPendingTextConsumed,
 }) => {
     const [text, setText] = useState('');
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [suggestions, setSuggestions] = useState<BotCommand[]>([]);
-    const [selectedSuggestion, setSelectedSuggestion] = useState(0);
     const [showStickerPanel, setShowStickerPanel] = useState(false);
     const [showCreatePack, setShowCreatePack] = useState(false);
     const [isRecordingVoice, setIsRecordingVoice] = useState(false);
     const [showVideoNoteRecorder, setShowVideoNoteRecorder] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-    // Загрузить команды ботов при монтировании
-    useEffect(() => {
-        if (!commandRegistry.isLoaded()) {
-            commandRegistry.load();
-        }
-    }, []);
+    const { suggestions, selectedIndex, setSelectedIndex, selectSuggestion, clearSuggestions } = useSlashCommands(text);
+    useTypingIndicator(roomId, text);
+    const {
+        isDragOver, uploading, fileInputRef,
+        handleDragOver, handleDragLeave, handleDrop, handlePaste, handleFileInputChange, openFilePicker,
+    } = useFileUpload(onSendFile);
 
     const adjustHeight = useCallback(() => {
         const ta = textareaRef.current;
@@ -78,14 +74,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }
     }, [pendingText, onPendingTextConsumed]);
 
-    // Сброс typing при unmount
-    useEffect(() => {
-        return () => {
-            if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        };
-    }, [roomId]);
-
     const handleSend = () => {
         const trimmed = text.trim();
         if (!trimmed) return;
@@ -102,36 +90,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             textareaRef.current.style.height = 'auto';
         }
 
-        // Сбросить typing
+        // Сбросить typing при отправке
         if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const value = e.target.value;
-        setText(value);
+        setText(e.target.value);
         adjustHeight();
-
-        // Автокомплит slash-команд
-        if (value.startsWith('/') && !value.includes('\n')) {
-            const matches = commandRegistry.search(value);
-            setSuggestions(matches);
-            setSelectedSuggestion(0);
-        } else {
-            setSuggestions([]);
-        }
-
-        // Typing indicator
-        if (roomId && e.target.value.length > 0) {
-            matrixService.users.sendTyping(roomId, true).catch(() => {});
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = setTimeout(() => {
-                if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
-            }, 4000);
-        } else if (roomId) {
-            matrixService.users.sendTyping(roomId, false).catch(() => {});
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -139,81 +104,33 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         if (suggestions.length > 0) {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                setSelectedSuggestion(i => Math.min(i + 1, suggestions.length - 1));
+                setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1));
                 return;
             }
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                setSelectedSuggestion(i => Math.max(i - 1, 0));
+                setSelectedIndex(i => Math.max(i - 1, 0));
                 return;
             }
             if (e.key === 'Tab') {
                 e.preventDefault();
-                const cmd = suggestions[selectedSuggestion];
-                setText(cmd.command + ' ');
-                setSuggestions([]);
+                setText(selectSuggestion(selectedIndex));
                 return;
             }
             if (e.key === 'Escape') {
-                setSuggestions([]);
+                clearSuggestions();
                 return;
             }
         }
 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            setSuggestions([]);
+            clearSuggestions();
             handleSend();
         }
         if (e.key === 'Escape' && replyTo) {
             onCancelReply?.();
         }
-    };
-
-    const handleFileSelect = async (file: File) => {
-        if (uploading) return;
-        if (file.size > 50 * 1024 * 1024) {
-            alert('Максимальный размер файла — 50 МБ');
-            return;
-        }
-        setUploading(true);
-        try {
-            await onSendFile(file);
-        } catch (err) {
-            console.error('Ошибка отправки файла:', err);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleAttachClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleFileSelect(file);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragOver(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragOver(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(file);
     };
 
     const handleSendGif = useCallback(async (gif: GifResult) => {
@@ -234,19 +151,6 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const handleVideoNoteSend = async (recording: VideoNoteRecording) => {
         setShowVideoNoteRecorder(false);
         if (roomId) await matrixService.media.sendVideoNote(roomId, recording);
-    };
-
-    const handlePaste = (e: React.ClipboardEvent) => {
-        const items = e.clipboardData?.items;
-        if (!items) return;
-        for (const item of Array.from(items)) {
-            if (item.type.startsWith('image/')) {
-                e.preventDefault();
-                const file = item.getAsFile();
-                if (file) handleFileSelect(file);
-                return;
-            }
-        }
     };
 
     return (
@@ -276,10 +180,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                         {suggestions.map((cmd, i) => (
                             <div
                                 key={cmd.command}
-                                className={`command-suggestions__item ${i === selectedSuggestion ? 'command-suggestions__item--active' : ''}`}
+                                className={`command-suggestions__item ${i === selectedIndex ? 'command-suggestions__item--active' : ''}`}
                                 onClick={() => {
-                                    setText(cmd.command + ' ');
-                                    setSuggestions([]);
+                                    setText(selectSuggestion(i));
                                     textareaRef.current?.focus();
                                 }}
                             >
@@ -344,7 +247,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                                 </button>
                                 <button
                                     className="message-input__action-btn"
-                                    onClick={handleAttachClick}
+                                    onClick={openFilePicker}
                                     disabled={uploading}
                                     title="Прикрепить файл"
                                 >
