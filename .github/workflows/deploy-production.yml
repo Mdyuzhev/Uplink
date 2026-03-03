@@ -21,26 +21,35 @@ jobs:
 
       - name: Notify CI channel — success
         if: success()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUM: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
         run: |
+          SUBJECT=$(echo "$COMMIT_MSG" | head -1)
+          jq -n \
+            --arg body "[+] Deploy #${RUN_NUM} OK — ${SUBJECT}" \
+            --arg html "<b>[+] Deploy #${RUN_NUM}</b><br/>${SUBJECT}<br/><code>${SHA}</code>" \
+            '{"msgtype":"m.text","body":$body,"format":"org.matrix.custom.html","formatted_body":$html}' | \
           curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
             -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"msgtype\": \"m.text\",
-              \"body\": \"[+] Deploy #${{ github.run_number }} OK — ${{ github.event.head_commit.message }}\",
-              \"format\": \"org.matrix.custom.html\",
-              \"formatted_body\": \"<b>[+] Deploy #${{ github.run_number }}</b><br/>${{ github.event.head_commit.message }}<br/><code>${{ github.sha }}</code>\"
-            }"
+            -d @-
 
       - name: Notify CI channel — failure
         if: failure()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RUN_NUM: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
         run: |
+          SUBJECT=$(echo "$COMMIT_MSG" | head -1)
+          jq -n \
+            --arg body "[-] Deploy FAILED #${RUN_NUM} — ${SUBJECT}" \
+            --arg html "<b>[-] Deploy FAILED #${RUN_NUM}</b><br/>${SUBJECT}<br/><a href=\"https://github.com/${REPO}/actions/runs/${RUN_ID}\">Логи</a>" \
+            '{"msgtype":"m.text","body":$body,"format":"org.matrix.custom.html","formatted_body":$html}' | \
           curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
             -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"msgtype\": \"m.text\",
-              \"body\": \"[-] Deploy FAILED #${{ github.run_number }} — ${{ github.event.head_commit.message }}\",
-              \"format\": \"org.matrix.custom.html\",
-              \"formatted_body\": \"<b>[-] Deploy FAILED #${{ github.run_number }}</b><br/>${{ github.event.head_commit.message }}<br/><a href=\\\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\\\">Логи</a>\"
-            }"
+            -d @-
