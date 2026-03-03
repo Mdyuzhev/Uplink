@@ -22,7 +22,7 @@ jobs:
       - name: Install & build web
         working-directory: web
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Upload web dist
@@ -79,7 +79,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: web
-        run: npm ci
+        run: npm install
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -121,7 +121,7 @@ jobs:
 
       - name: Install extension dependencies
         working-directory: vscode
-        run: npm ci
+        run: npm install
 
       - name: Copy SPA into extension
         run: |
