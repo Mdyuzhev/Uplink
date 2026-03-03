@@ -16,22 +16,29 @@ jobs:
           script: |
             cd ~/projects/uplink/docker
 
-            echo "=== Все контейнеры (включая stopped) ==="
-            docker ps -a --filter "name=uplink" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+            echo "=== Статус контейнеров ==="
+            docker compose -f docker-compose.production.yml ps
 
-            echo "=== Логи botservice (последние 80 строк) ==="
-            docker logs uplink-botservice --tail 80 2>&1 || echo "Контейнер не существует"
+            echo "=== Логи botservice ==="
+            docker logs uplink-botservice --tail 30 2>&1 || echo "Контейнер не существует"
 
-            echo "=== Логи web (последние 20 строк) ==="
-            docker logs uplink-web --tail 20 2>&1 || echo "Контейнер не существует"
+            echo "=== Проверка postgres listen ==="
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U synapse -c "SHOW listen_addresses;" 2>&1
 
-            echo "=== Сборка botservice ==="
-            docker compose -f docker-compose.production.yml build uplink-botservice 2>&1 | tail -30
+            echo "=== Проверка таблицы bots.kv_store ==="
+            docker compose -f docker-compose.production.yml exec -T postgres \
+              psql -U synapse -c "SELECT key, updated_at FROM bots.kv_store ORDER BY updated_at DESC LIMIT 10;" 2>&1 || \
+              echo "Таблица ещё не создана"
 
-            echo "=== Запуск botservice ==="
-            docker compose -f docker-compose.production.yml up -d uplink-botservice --no-deps 2>&1
+            echo "=== Настройка cron ==="
+            (crontab -l 2>/dev/null | grep -v backup-db.sh | grep -v backup-media.sh; \
+             echo "0 3 * * * /home/ubuntu/projects/uplink/scripts/backup-db.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
+             echo "0 4 * * * /home/ubuntu/projects/uplink/scripts/backup-media.sh >> /home/ubuntu/backups/backup.log 2>&1") | crontab -
+            echo "Crontab:"
+            crontab -l
 
-            echo "=== Статус botservice после запуска ==="
-            sleep 5
-            docker ps --filter "name=uplink-botservice" --format "table {{.Names}}\t{{.Status}}"
-            docker logs uplink-botservice --tail 30 2>&1
+            mkdir -p /home/ubuntu/backups/postgres /home/ubuntu/backups/media
+            chmod +x /home/ubuntu/projects/uplink/scripts/backup-db.sh 2>/dev/null || true
+            chmod +x /home/ubuntu/projects/uplink/scripts/backup-media.sh 2>/dev/null || true
+            echo "=== Готово ==="
