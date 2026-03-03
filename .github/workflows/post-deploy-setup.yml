@@ -7,38 +7,36 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Migrate storage JSON → PostgreSQL + setup cron
+      - name: Диагностика и исправление
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ubuntu
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            set -e
             cd ~/projects/uplink/docker
 
-            echo "=== Запуск миграции JSON → PostgreSQL ==="
-            docker compose -f docker-compose.production.yml exec -T uplink-botservice \
-              node scripts/migrate-json-to-pg.mjs || echo "Миграция завершена (или данных не было)"
+            echo "=== Статус контейнеров ==="
+            docker compose -f docker-compose.production.yml ps
 
-            echo "=== Проверка таблицы bots.kv_store ==="
-            docker compose -f docker-compose.production.yml exec -T postgres \
-              psql -U synapse -c "SELECT key, updated_at FROM bots.kv_store ORDER BY updated_at DESC LIMIT 10;"
+            echo "=== Логи botservice (последние 50 строк) ==="
+            docker compose -f docker-compose.production.yml logs uplink-botservice --tail 50 2>&1 || echo "Нет логов"
 
-            echo "=== Настройка cron ==="
-            (crontab -l 2>/dev/null | grep -v backup-db.sh | grep -v backup-media.sh; \
-             echo "0 3 * * * /home/ubuntu/projects/uplink/scripts/backup-db.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
-             echo "0 4 * * * /home/ubuntu/projects/uplink/scripts/backup-media.sh >> /home/ubuntu/backups/backup.log 2>&1") | crontab -
+            echo "=== Логи postgres (последние 20 строк) ==="
+            docker compose -f docker-compose.production.yml logs postgres --tail 20 2>&1 || echo "Нет логов"
 
-            echo "=== Текущий crontab ==="
-            crontab -l
+            echo "=== Переменные окружения botservice ==="
+            docker compose -f docker-compose.production.yml config --format json 2>/dev/null | python3 -c "
+            import json,sys
+            d=json.load(sys.stdin)
+            s=d.get('services',{}).get('uplink-botservice',{})
+            env=s.get('environment',{})
+            for k,v in env.items():
+                if 'PASS' in k or 'SECRET' in k or 'TOKEN' in k:
+                    print(f'{k}=***')
+                else:
+                    print(f'{k}={v}')
+            " || echo "Не удалось получить env"
 
-            echo "=== Права на скрипты ==="
-            chmod +x /home/ubuntu/projects/uplink/scripts/backup-db.sh
-            chmod +x /home/ubuntu/projects/uplink/scripts/backup-media.sh
-
-            echo "=== Создание директорий для бэкапов ==="
-            mkdir -p /home/ubuntu/backups/postgres
-            mkdir -p /home/ubuntu/backups/media
-
-            echo "=== Готово ==="
+            echo "=== Файл .env (наличие PG-переменных) ==="
+            grep -E "^POSTGRES" .env 2>/dev/null || echo ".env: PG-переменные не найдены"
