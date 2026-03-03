@@ -21,6 +21,10 @@ Tasks/
 releases/
 test/
 
+# VS Code extension builds
+vscode/*.vsix
+vscode/out/
+
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/

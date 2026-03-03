@@ -52,7 +52,7 @@
         │              │              │
         ▼              ▼              ▼
 ┌──────────────┐  ┌──────────────────────┐
-│ Matrix/      │  │ LiveKit Server (SFU) │
+│ Matrix/      │  │ LiveKit Cloud (SFU)  │
 │ Synapse      │  │ - аудио/видео        │
 │ - чаты       │  │ - screen share       │
 │ - E2E крипто │  │ - WebRTC             │
@@ -67,27 +67,20 @@
 - matrix-js-sdk — Matrix-протокол, E2E-шифрование
 - livekit-client — WebRTC аудио/видео
 - Vite — сборка веб-приложения
-- Webpack — сборка VS Code WebView
 - Tauri v2 — нативное десктоп-приложение
 
 **Сервер (on-premise)**
 - Synapse — Matrix homeserver
-- LiveKit Server — SFU для звонков
+- LiveKit Cloud — SFU для звонков (managed)
 - PostgreSQL — хранение
 - Redis — presence, кэш
+- Prometheus + Grafana — мониторинг
+- uplink-botservice — боты, webhooks, slash-команды
 - Docker Compose — оркестрация
 
 ## Структура проекта
 
 ```
-├── src/                    # VS Code Extension
-│   ├── extension.ts        # Точка входа
-│   ├── matrix/             # Matrix SDK обёртка
-│   ├── providers/          # TreeView (каналы, контакты)
-│   ├── context/            # Контекст кода и Git
-│   ├── webview/chat/       # React-чат для WebView
-│   └── utils/              # Конфиг, логгер
-│
 ├── web/                    # Web App + Desktop
 │   ├── src/
 │   │   ├── components/     # React-компоненты
@@ -97,8 +90,11 @@
 │   │   └── styles/         # CSS
 │   └── src-tauri/          # Tauri v2 (Rust, нативные плагины)
 │
-├── test/                   # Тесты (Mocha)
-└── .github/workflows/      # CI: кросс-платформенная сборка
+├── vscode/                 # VS Code Extension (WebView SPA)
+├── docker/                 # Серверная инфраструктура (Compose, Synapse, botservice)
+├── scripts/                # Деплой, бэкапы, setup
+├── docs/                   # Документация (setup, disaster-recovery, federation)
+└── .github/workflows/      # CI: деплой + кросс-платформенная сборка
 ```
 
 ## Быстрый старт

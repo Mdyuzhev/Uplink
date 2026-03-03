@@ -1,61 +1,58 @@
-# Uplink — Развёртывание и настройка
+# Uplink — Развёртывание
 
-## Запуск инфраструктуры
+## Production (uplink.wh-lab.ru)
+
+Деплой автоматический: `git push main` → GitHub Actions → SSH → `deploy-prod.sh`.
+
+Ручной первый запуск:
+```bash
+ssh ubuntu@93.77.189.225
+cd ~/projects/uplink
+bash scripts/clean-start.sh
+```
+
+Сервисы (все за host nginx, порт 443):
+- **Uplink** — https://uplink.wh-lab.ru
+- **Synapse** — `/_matrix/` (API), `/_synapse/` (admin API)
+- **Grafana** — https://uplink.wh-lab.ru/grafana/
+- **Synapse Admin** — localhost:8080 (только с сервера)
+
+Учётные данные: см. `.claude/CLAUDE.md` → Учётные данные.
+
+## Локальная разработка
 
 ```bash
+# 1. Поднять инфраструктуру
 cd docker
+cp .env.example .env   # заполнить реальными значениями
 docker compose up -d
+
+# 2. Дождаться Synapse
+curl -sf http://localhost:8008/health
+
+# 3. Запустить фронтенд
+cd web
+npm install
+npm run dev   # http://localhost:5173
 ```
 
-Сервисы:
-- **Synapse** (Matrix homeserver): http://localhost:8008
-- **Synapse Admin Panel**: http://localhost:8080
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+Dev-сервисы:
+- **Synapse**: http://localhost:8008
+- **Synapse Admin**: http://localhost:8080
+- **Token Service**: http://localhost:7890
+- **Botservice**: http://localhost:7891
 
-## Тестовые пользователи
-
-| User ID | Display Name | Пароль | Комнаты |
-|---------|-------------|--------|---------|
-| @alice:uplink.local | Alice Иванова | test123 | #general, #frontend |
-| @bob:uplink.local | Bob Петров | test123 | #general, #backend |
-| @charlie:uplink.local | Charlie Сидоров | test123 | #general, #backend |
-| @diana:uplink.local | Diana Козлова | test123 | #general, #frontend |
-| @eve:uplink.local | Eve Смирнова | test123 | #general, #backend, #frontend |
-
-Admin: `admin` / `admin_poc_pass`
-
-### Быстрое создание пользователей
+## Создание пользователей
 
 ```bash
-# Windows (PowerShell)
-powershell scripts/create-users.ps1
-
-# Linux/Mac
-bash scripts/create-users.sh
+# Через registration shared secret (см. homeserver.yaml)
+bash scripts/create-user.sh <username> <password> <displayname>
 ```
 
-### Полное наполнение (пользователи + комнаты + сообщения)
+## Бэкапы
 
-```bash
-node scripts/seed-test-data.mjs
-```
+Cron на production (настраивается вручную):
+- `03:00` — `scripts/backup-db.sh` (PostgreSQL + signing key)
+- `04:00` — `scripts/backup-media.sh` (media_store rsync)
 
-## Комнаты
-
-| Комната | Назначение | Участники |
-|---------|-----------|-----------|
-| #general:uplink.local | Общий канал | admin + все 5 |
-| #backend:uplink.local | Backend-разработка | admin, bob, charlie, eve |
-| #frontend:uplink.local | Frontend-разработка | admin, alice, diana, eve |
-
-## Подключение расширения
-
-В настройках VS Code:
-
-```json
-{
-  "uplink.matrix.homeserver": "http://localhost:8008",
-  "uplink.matrix.userId": "@alice:uplink.local"
-}
-```
+Подробнее: `docs/disaster-recovery.md`

@@ -66,6 +66,19 @@
 033: Управление шифрованием — тогл E2E при создании комнат/пространств, кнопка 🔓/🔒 в RoomHeader (необратимо), настройка шифрования DM в ProfileModal, фикс бот-команд в незашифрованных каналах
 034: Стикерпаки и GIF — комната-каталог #sticker-packs:uplink.local, паки через Matrix state events, Lottie-стикеры (lottie-react), Tenor API через прокси botservice, StickerGifPanel, CreateStickerPackModal, StickerPackManager, LottieSticker
 
+### Фаза 11: Production Readiness (prod_001–prod_009)
+
+prod_001: Чистый старт инфраструктуры — server_name→uplink.wh-lab.ru, TLS, federation-ready
+prod_002: Деплой на Yandex Cloud — certbot, CI/CD через GitHub Actions
+prod_003: Безопасность — auth middleware, webhook signatures, rate limiting, input validation
+prod_004: Мониторинг — Prometheus, Grafana, Alertmanager, pino logging, health endpoints
+prod_005: Рефакторинг — React Context, MessageInput декомпозиция, botservice routes, CSS Modules
+prod_006: Масштабирование данных — botservice storage→PostgreSQL, бэкапы, PG тюнинг
+prod_007: Качество кода — Vitest (27 тестов), ESLint react-hooks, Prettier, CI гейт
+prod_008: Федерация — whitelist matrix.org+mozilla.org, бот-совместимость, документация
+prod_009: Очистка — мёртвые конфиги, актуализация документации, botservice fallback
+
+
 ### Фаза 10: Продакшн (036–037)
 
 036: Фиксы ботов и стикеров — исправление бот-ответов в незашифрованных каналах, фикс панели стикеров/GIF
@@ -85,7 +98,7 @@
 - Поиск по сообщениям (Synapse search API)
 - Marketplace/каталог ботов
 - Интерактивные элементы в сообщениях ботов (кнопки, формы)
-- Federation (связь с другими Matrix-серверами)
+- Federation (реализовано в prod_008: whitelist matrix.org+mozilla.org)
 
 
 ## Эволюция архитектуры

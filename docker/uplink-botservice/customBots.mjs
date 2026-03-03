@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { getStorage, setStorage } from './postgresStorage.mjs';
 import { ensureBotUser, joinBotToRoom } from './matrixClient.mjs';
 
-const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
+const SERVER_NAME = process.env.SERVER_NAME || 'localhost';
 const CUSTOM_BOTS_KEY = 'custom_bots';
 
 /**

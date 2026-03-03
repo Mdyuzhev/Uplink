@@ -4,7 +4,7 @@
 
 import { getStorage, setStorage } from './postgresStorage.mjs';
 
-const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
+const SERVER_NAME = process.env.SERVER_NAME || 'localhost';
 
 export const BOT_DEFINITIONS = {
     github: {

@@ -1,10 +1,17 @@
 #!/bin/bash
-# Обновление Uplink на сервере
+# Деплой Uplink — ТОЛЬКО для dev/homelab среды.
+# Для production используйте: deploy-prod.sh (или git push → CI)
 # Запуск: cd ~/projects/uplink && ./deploy.sh
 
 set -e
 
-echo "=== Uplink Deploy ==="
+# Защита от запуска на production
+if [ -f "/home/ubuntu/projects/uplink/deploy-prod.sh" ]; then
+    echo "ОШИБКА: Похоже на production-сервер. Используйте deploy-prod.sh"
+    exit 1
+fi
+
+echo "=== Uplink Dev Deploy ==="
 
 echo "1. Pulling latest code..."
 git pull

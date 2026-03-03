@@ -8,7 +8,7 @@ import logger from './logger.mjs';
 const HOMESERVER_URL = process.env.HOMESERVER_URL || 'http://synapse:8008';
 const AS_TOKEN = process.env.AS_TOKEN;
 const ADMIN_TOKEN = process.env.SYNAPSE_ADMIN_TOKEN;
-const SERVER_NAME = process.env.SERVER_NAME || 'uplink.local';
+const SERVER_NAME = process.env.SERVER_NAME || 'localhost';
 
 /**
  * Зарегистрировать виртуального пользователя бота в Synapse.
