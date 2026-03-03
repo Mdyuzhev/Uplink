@@ -237,3 +237,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_006 post | Фикс postgresql.conf listen_addresses='*', retry в postgresStorage (10 попыток), cron бэкапы настроен на prod (03:00 db, 04:00 media) |
 | 2026-03-03 | prod_007 | Качество кода: Vitest (27 тестов), ESLint react-hooks, Prettier, CI check job, botservice JSDoc+jsconfig |
 | 2026-03-03 | prod_008 | Федерация: whitelist matrix.org+mozilla.org, eventHandler фильтр по SERVER_NAME, docs/federation.md, disaster-recovery signing key |
+| 2026-03-04 | prod_009 | Очистка: удалены мёртвые конфиги (tsconfig/eslintrc корневые), переписан docs/setup.md, PROJECT_MAP.md+README.md актуализированы, botservice fallback→localhost, deploy.sh safeguard |
