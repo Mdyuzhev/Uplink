@@ -103,6 +103,12 @@ export async function sendBotMessage(botLocalpart, roomId, body, formatted) {
 export async function joinBotToRoom(botLocalpart, roomId) {
     const userId = `@${botLocalpart}:${SERVER_NAME}`;
 
+    // Если бот уже в комнате — ничего делать не нужно
+    if (await isBotInRoom(botLocalpart, roomId)) {
+        logger.info({ userId, roomId }, 'Бот уже в комнате, join пропускается');
+        return;
+    }
+
     // Стратегия 1: Прямой join от имени бота (работает для public rooms)
     {
         const resp = await fetch(
