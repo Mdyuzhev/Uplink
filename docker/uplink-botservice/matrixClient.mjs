@@ -192,8 +192,9 @@ export async function joinBotToRoom(botLocalpart, roomId) {
 export async function isBotInRoom(botLocalpart, roomId) {
     const userId = `@${botLocalpart}:${SERVER_NAME}`;
     try {
+        // Masquerade as bot user — AS token без ?user_id= читает state только для своего ghost-user
         const resp = await fetch(
-            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/m.room.member/${encodeURIComponent(userId)}`,
+            `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/state/m.room.member/${encodeURIComponent(userId)}?user_id=${encodeURIComponent(userId)}`,
             {
                 headers: { 'Authorization': `Bearer ${AS_TOKEN}` },
             }
