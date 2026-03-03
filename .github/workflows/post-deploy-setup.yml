@@ -16,26 +16,31 @@ jobs:
           script: |
             cd ~/projects/uplink/docker
 
-            echo "=== Статус контейнеров ==="
-            docker compose -f docker-compose.production.yml ps
+            echo "=== Перезапуск postgres (применить listen_addresses='*') ==="
+            docker compose -f docker-compose.production.yml restart postgres
+            echo "Ждём postgres healthy..."
+            sleep 10
+            docker compose -f docker-compose.production.yml exec -T postgres psql -U synapse -c "SHOW listen_addresses;"
 
-            echo "=== Логи botservice ==="
-            docker logs uplink-botservice --tail 30 2>&1 || echo "Контейнер не существует"
+            echo "=== Запуск botservice (пересоздать с --no-deps) ==="
+            docker compose -f docker-compose.production.yml up -d uplink-botservice --no-deps
+            echo "Ждём запуска botservice (30s)..."
+            sleep 30
 
-            echo "=== Проверка postgres listen ==="
-            docker compose -f docker-compose.production.yml exec -T postgres \
-              psql -U synapse -c "SHOW listen_addresses;" 2>&1
+            echo "=== Статус botservice ==="
+            docker ps --filter "name=uplink-botservice" --format "table {{.Names}}\t{{.Status}}"
+            docker logs uplink-botservice --tail 20 2>&1
 
             echo "=== Проверка таблицы bots.kv_store ==="
             docker compose -f docker-compose.production.yml exec -T postgres \
-              psql -U synapse -c "SELECT key, updated_at FROM bots.kv_store ORDER BY updated_at DESC LIMIT 10;" 2>&1 || \
-              echo "Таблица ещё не создана"
+              psql -U synapse -c "SELECT key, updated_at FROM bots.kv_store ORDER BY updated_at DESC LIMIT 5;" 2>&1
 
             echo "=== Настройка cron ==="
-            (crontab -l 2>/dev/null | grep -v backup-db.sh | grep -v backup-media.sh; \
-             echo "0 3 * * * /home/ubuntu/projects/uplink/scripts/backup-db.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
-             echo "0 4 * * * /home/ubuntu/projects/uplink/scripts/backup-media.sh >> /home/ubuntu/backups/backup.log 2>&1") | crontab -
-            echo "Crontab:"
+            crontab -l 2>/dev/null | grep -v backup-db.sh | grep -v backup-media.sh | \
+            { cat; \
+              echo "0 3 * * * /home/ubuntu/projects/uplink/scripts/backup-db.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
+              echo "0 4 * * * /home/ubuntu/projects/uplink/scripts/backup-media.sh >> /home/ubuntu/backups/backup.log 2>&1"; \
+            } | crontab -
             crontab -l
 
             mkdir -p /home/ubuntu/backups/postgres /home/ubuntu/backups/media
