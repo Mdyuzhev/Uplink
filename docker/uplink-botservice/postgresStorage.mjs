@@ -14,7 +14,7 @@ const { Pool } = pg;
 
 let pool = null;
 
-/** Инициализация пула и схемы */
+/** Инициализация пула и схемы с retry при недоступности postgres */
 export async function initStorage() {
     const connectionString = process.env.DATABASE_URL ||
         `postgresql://${process.env.POSTGRES_USER || 'synapse'}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST || 'postgres'}:5432/${process.env.POSTGRES_DB || 'synapse'}`;
@@ -26,8 +26,21 @@ export async function initStorage() {
         connectionTimeoutMillis: 5000,
     });
 
-    // Проверить подключение
-    const client = await pool.connect();
+    // Retry подключения: postgres может стартовать позже botservice
+    const MAX_RETRIES = 10;
+    const RETRY_DELAY_MS = 3000;
+    let client = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            client = await pool.connect();
+            break;
+        } catch (err) {
+            if (attempt >= MAX_RETRIES) throw err;
+            logger.warn({ attempt, err: err.message }, `PostgreSQL недоступен, retry через ${RETRY_DELAY_MS}ms...`);
+            await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        }
+    }
+
     try {
         // Создать схему и таблицу
         await client.query(`CREATE SCHEMA IF NOT EXISTS bots`);
