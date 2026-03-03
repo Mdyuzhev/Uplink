@@ -1,0 +1,122 @@
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--uplink-input-bg);
+    border-radius: var(--uplink-radius-md);
+    width: 100%;
+}
+
+.cancel {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.cancel:hover {
+    color: var(--uplink-danger);
+}
+
+.waveform {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    position: relative;
+}
+
+.pulse {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--uplink-danger);
+    transition: transform 0.1s;
+}
+
+.recordingDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--uplink-danger);
+    position: absolute;
+    left: 8px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.time {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    color: var(--uplink-text-primary);
+    min-width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.progress {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--uplink-danger);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
+.stop,
+.send {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.stop {
+    background: var(--uplink-danger);
+    color: #fff;
+}
+
+.send {
+    background: var(--uplink-accent);
+    color: #fff;
+}
+
+/* Waveform preview (после записи) */
+.waveformPreview {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 32px;
+    width: 100%;
+}
+
+.waveformBar {
+    flex: 1;
+    min-width: 2px;
+    max-width: 4px;
+    background: var(--uplink-accent);
+    border-radius: 1px;
+    opacity: 0.7;
+}

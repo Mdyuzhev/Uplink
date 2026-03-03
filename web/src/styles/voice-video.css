@@ -1,130 +1,4 @@
-/* ═══════════════════════════════════
-   VOICE RECORD BAR (в MessageInput)
-   ═══════════════════════════════════ */
-.voice-record-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: var(--uplink-input-bg);
-    border-radius: var(--uplink-radius-md);
-    width: 100%;
-}
-
-.voice-record-bar__cancel {
-    background: none;
-    border: none;
-    color: var(--uplink-text-faint);
-    cursor: pointer;
-    padding: 4px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-}
-
-.voice-record-bar__cancel:hover {
-    color: var(--uplink-danger);
-}
-
-.voice-record-bar__waveform {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 32px;
-    position: relative;
-}
-
-.voice-record-bar__pulse {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--uplink-danger);
-    transition: transform 0.1s;
-}
-
-.voice-record-bar__recording-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--uplink-danger);
-    position: absolute;
-    left: 8px;
-    animation: voice-blink 1s infinite;
-}
-
-@keyframes voice-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
-
-.voice-record-bar__time {
-    font-size: 14px;
-    font-variant-numeric: tabular-nums;
-    color: var(--uplink-text-primary);
-    min-width: 36px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.voice-record-bar__progress {
-    flex: 1;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.voice-record-bar__progress-fill {
-    height: 100%;
-    background: var(--uplink-danger);
-    border-radius: 2px;
-    transition: width 0.1s linear;
-}
-
-.voice-record-bar__stop,
-.voice-record-bar__send {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.15s;
-}
-
-.voice-record-bar__stop {
-    background: var(--uplink-danger);
-    color: #fff;
-}
-
-.voice-record-bar__send {
-    background: var(--uplink-accent);
-    color: #fff;
-}
-
-/* ═══════════════════════════════════
-   WAVEFORM PREVIEW (после записи)
-   ═══════════════════════════════════ */
-.waveform-preview {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    height: 32px;
-    width: 100%;
-}
-
-.waveform-preview__bar {
-    flex: 1;
-    min-width: 2px;
-    max-width: 4px;
-    background: var(--uplink-accent);
-    border-radius: 1px;
-    opacity: 0.7;
-}
+/* VoiceRecordBar и WaveformPreview перенесены в VoiceRecordBar.module.css */
 
 /* ═══════════════════════════════════
    VOICE MESSAGE (в timeline)
@@ -303,6 +177,11 @@
     border-radius: 50%;
     background: var(--uplink-danger);
     animation: voice-blink 1s infinite;
+}
+
+@keyframes voice-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
 
 .video-note-overlay__controls {
