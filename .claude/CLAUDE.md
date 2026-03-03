@@ -208,6 +208,8 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 - **Safari:** не поддерживает audio/ogg и video/webm — fallback на mp4
 - **SSH из агента:** НЕ голый ssh — использовать python + paramiko
 - **server_name:** НЕИЗМЕНЯЕМ после первого запуска Synapse
+- **postgresql.conf custom:** ОБЯЗАТЕЛЬНО добавлять `listen_addresses = '*'` — иначе postgres не слушает Docker-сеть и botservice не может подключиться (ECONNREFUSED)
+- **Botservice retry:** postgresStorage.mjs делает 10 попыток подключения с интервалом 3s — нормально если postgres стартует медленнее
 
 
 ## Журнал изменений
@@ -223,3 +225,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-03 | prod_004 | Мониторинг: pino logging в botservice, requestId middleware, deep health endpoints, Synapse metrics, Prometheus+Grafana+Alertmanager+node-exporter+postgres-exporter, nginx /grafana/ + /api/status, alert-rules, dashboard |
 | 2026-03-03 | prod_005 | Рефакторинг: React Context (ChatContext, CallContext), MessageInput декомпозиция (useSlashCommands, useTypingIndicator, useFileUpload), botservice routes/ (6 файлов, server.mjs ~100 строк), CSS Modules стратегия + VoiceRecordBar.module.css |
 | 2026-03-03 | prod_006 | Масштабирование: botservice storage JSON→PostgreSQL (schema bots.kv_store), весь API async/await, migrate-json-to-pg.mjs, postgresql.conf тюнинг, backup-db.sh + backup-media.sh, disaster-recovery.md |
+| 2026-03-03 | prod_006 post | Фикс postgresql.conf listen_addresses='*', retry в postgresStorage (10 попыток), cron бэкапы настроен на prod (03:00 db, 04:00 media) |
