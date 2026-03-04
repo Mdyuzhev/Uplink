@@ -113,6 +113,10 @@ else
     docker compose -f docker-compose.production.yml up -d
 fi
 
+# Права media_store: именованный volume создаётся Docker с uid=root,
+# Synapse работает как uid 991 и не может записывать без этого chown.
+docker exec -u root uplink-synapse chown -R 991:991 /data/media_store || true
+
 # Дождаться готовности Synapse
 echo "-> Ожидание Synapse..."
 for i in $(seq 1 30); do
