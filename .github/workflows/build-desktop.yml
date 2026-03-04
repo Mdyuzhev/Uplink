@@ -137,14 +137,16 @@ jobs:
           npm run build
           # Убираем prepublish (web/dist уже скопирован выше)
           node -e "const p=require('./package.json'); delete p.scripts['vscode:prepublish']; delete p.scripts['build:webview']; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 4))"
-          # Создаём локальный git чтобы vsce не лез в ../  (монорепо)
+          # Удаляем parent .git и файлы чтобы vsce не сканировал ../
+          rm -rf ../.git ../.claude ../.github ../Tasks
+          # Создаём локальный git чтобы vsce работал в изолированном контексте
           git init
           git config user.email "ci@uplink.local"
           git config user.name "CI"
           git add -A
           git commit -m "ci packaging"
           # Используем @vscode/vsce из devDependencies (не npx vsce который deprecated)
-          ./node_modules/.bin/vsce package
+          ./node_modules/.bin/vsce package --allow-missing-repository
 
       - name: Upload VSIX
         uses: actions/upload-artifact@v4
