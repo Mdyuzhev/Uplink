@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+DEPLOY_START=$(date +%s)
+DEPLOY_SUCCESS=false
+
 echo "=== Uplink Production Deploy ==="
 echo "$(date '+%Y-%m-%d %H:%M:%S')"
 
@@ -12,6 +15,37 @@ if [ ! -f "docker/synapse-data/homeserver.yaml" ]; then
     echo "Если это первый запуск — используйте scripts/clean-start.sh"
     exit 1
 fi
+
+# Отправить CI-уведомление через botservice
+# (ждёт до 30 сек пока botservice станет доступен)
+send_ci_notification() {
+    local status=$1
+    local elapsed=$(( $(date +%s) - DEPLOY_START ))
+    local commit_hash commit_msg commit_author
+    commit_hash=$(git rev-parse --short HEAD 2>/dev/null || echo "")
+    commit_msg=$(git log -1 --pretty=format:'%s' 2>/dev/null | sed 's/\\/\\\\/g; s/"/\\"/g' || echo "")
+    commit_author=$(git log -1 --pretty=format:'%an' 2>/dev/null | sed 's/\\/\\\\/g; s/"/\\"/g' || echo "")
+
+    local i
+    for i in $(seq 1 15); do
+        if curl -sf http://127.0.0.1:7891/health > /dev/null 2>&1; then break; fi
+        sleep 2
+    done
+
+    local payload="{\"status\":\"$status\",\"elapsed\":$elapsed,\"commit\":{\"hash\":\"$commit_hash\",\"message\":\"$commit_msg\",\"author\":\"$commit_author\"}}"
+    curl -sf -X POST "http://localhost:7891/hooks/ci" \
+        -H "Content-Type: application/json" \
+        -H "x-deploy-event: deploy" \
+        -d "$payload" || true
+}
+
+# Отправляем failure если скрипт завершился не через DEPLOY_SUCCESS=true
+on_exit() {
+    if [ "$DEPLOY_SUCCESS" != "true" ]; then
+        send_ci_notification "failure"
+    fi
+}
+trap on_exit EXIT
 
 # Запомнить текущий коммит для определения изменений
 OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")
@@ -56,11 +90,17 @@ else
     fi
 fi
 
+# Room ID комнаты #ci для CI-уведомлений
+# Используется botservice (CI_NOTIFY_ROOM_ID env) если не задан в .env
+export CI_NOTIFY_ROOM_ID="${CI_NOTIFY_ROOM_ID:-!tFXRLxMHLSzVoiPXek:uplink.wh-lab.ru}"
+
 cd docker
 
 if [ "$REBUILD" = "all" ]; then
     echo "-> Docker compose: полная пересборка..."
-    docker compose -f docker-compose.production.yml up -d --build
+    # build отдельно от up — Docker не перезапускает контейнеры с неизменённым образом
+    docker compose -f docker-compose.production.yml build
+    docker compose -f docker-compose.production.yml up -d
 elif [ -n "$REBUILD" ]; then
     echo "-> Docker compose: пересборка [$REBUILD ]..."
     docker compose -f docker-compose.production.yml build $REBUILD
@@ -106,5 +146,8 @@ done
 # Очистка старых образов
 echo "-> Очистка Docker..."
 docker image prune -f
+
+DEPLOY_SUCCESS=true
+send_ci_notification "success"
 
 echo "=== Deploy завершён ==="

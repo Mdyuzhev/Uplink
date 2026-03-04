@@ -64,9 +64,8 @@ export function verifyWebhook(req, res, next) {
         return next();
     }
 
-    // CI webhook (GitHub Actions deploy event)
-    if (req.headers['x-deploy-event'] === 'deploy') {
-        // Deploy-webhook внутренний — приходит из docker network
+    // CI webhook (deploy-prod.sh, GitHub Actions — все x-deploy-event типы)
+    if (req.headers['x-deploy-event']) {
         return next();
     }
 
