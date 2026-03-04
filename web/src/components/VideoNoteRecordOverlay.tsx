@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, SwitchCamera } from 'lucide-react';
 import { videoNoteRecorder, VideoNoteRecording } from '../services/VideoNoteRecorder';
 
 interface VideoNoteRecordOverlayProps {
@@ -11,6 +11,7 @@ export const VideoNoteRecordOverlay: React.FC<VideoNoteRecordOverlayProps> = ({ 
     const [phase, setPhase] = useState<'preview' | 'recording' | 'review'>('preview');
     const [elapsed, setElapsed] = useState(0);
     const [recording, setRecording] = useState<VideoNoteRecording | null>(null);
+    const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
     const videoRef = useRef<HTMLVideoElement>(null);
     const reviewVideoRef = useRef<HTMLVideoElement>(null);
     const reviewUrlRef = useRef<string | null>(null);
@@ -18,7 +19,7 @@ export const VideoNoteRecordOverlay: React.FC<VideoNoteRecordOverlayProps> = ({ 
 
     useEffect(() => {
         let cancelled = false;
-        videoNoteRecorder.getPreviewStream().then(stream => {
+        videoNoteRecorder.getPreviewStream('user').then(stream => {
             if (cancelled) return;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
@@ -81,7 +82,21 @@ export const VideoNoteRecordOverlay: React.FC<VideoNoteRecordOverlayProps> = ({ 
         onCancel();
     };
 
-    // URL для превью записи
+    const handleFlipCamera = async () => {
+        if (phase === 'recording') return;
+        const newMode = facingMode === 'user' ? 'environment' : 'user';
+        try {
+            const stream = await videoNoteRecorder.switchCamera(newMode);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                videoRef.current.play();
+            }
+            setFacingMode(newMode);
+        } catch {
+            // камера недоступна
+        }
+    };
+
     useEffect(() => {
         if (phase === 'review' && recording && reviewVideoRef.current) {
             const url = URL.createObjectURL(recording.blob);
@@ -137,21 +152,20 @@ export const VideoNoteRecordOverlay: React.FC<VideoNoteRecordOverlayProps> = ({ 
                     </div>
                 )}
 
-                <div className="video-note-overlay__controls">
+                <div className={`video-note-overlay__controls video-note-overlay__controls--${phase}`}>
                     {phase === 'preview' && (
                         <>
                             <button className="video-note-overlay__btn video-note-overlay__btn--cancel" onClick={handleCancel}>
                                 Отмена
                             </button>
-                            <button className="video-note-overlay__btn video-note-overlay__btn--record" onClick={handleRecord}>
-                                &#9210;
+                            <button className="video-note-overlay__btn video-note-overlay__btn--record" onClick={handleRecord} aria-label="Начать запись" />
+                            <button className="video-note-overlay__btn video-note-overlay__btn--flip" onClick={handleFlipCamera} aria-label="Сменить камеру">
+                                <SwitchCamera size={20} />
                             </button>
                         </>
                     )}
                     {phase === 'recording' && (
-                        <button className="video-note-overlay__btn video-note-overlay__btn--stop" onClick={handleStop}>
-                            &#9209;
-                        </button>
+                        <button className="video-note-overlay__btn video-note-overlay__btn--stop" onClick={handleStop} aria-label="Остановить запись" />
                     )}
                     {phase === 'review' && (
                         <>

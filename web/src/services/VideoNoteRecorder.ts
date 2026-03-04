@@ -27,9 +27,18 @@ class VideoNoteRecorder {
     onTimeUpdate?: (seconds: number) => void;
     onAutoStop?: () => void;
 
-    async getPreviewStream(): Promise<MediaStream> {
+    async getPreviewStream(facingMode: 'user' | 'environment' = 'user'): Promise<MediaStream> {
         this.stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+            video: { facingMode, width: { ideal: 480 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+            audio: true,
+        });
+        return this.stream;
+    }
+
+    async switchCamera(facingMode: 'user' | 'environment'): Promise<MediaStream> {
+        if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+        this.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode, width: { ideal: 480 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
             audio: true,
         });
         return this.stream;
