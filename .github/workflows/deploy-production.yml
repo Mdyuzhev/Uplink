@@ -57,7 +57,10 @@ jobs:
           username: ubuntu
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            cd ~/projects/uplink && bash deploy-prod.sh
+            cd ~/projects/uplink
+            git fetch origin main
+            git reset --hard origin/main
+            SKIP_GIT_PULL=1 bash deploy-prod.sh
 
       # deploy-prod.sh сам отправляет успех/ошибку через botservice.
       # Этот шаг — страховка на случай если SSH-соединение само не установилось.

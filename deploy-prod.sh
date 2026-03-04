@@ -50,10 +50,13 @@ trap on_exit EXIT
 # Запомнить текущий коммит для определения изменений
 OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")
 
-# Забрать последние изменения (reset вместо pull — обходит локальные конфликты)
-echo "-> Git fetch & reset..."
-git fetch origin main
-git reset --hard origin/main
+if [ "${SKIP_GIT_PULL:-0}" = "1" ]; then
+    echo "-> Git уже обновлён (SKIP_GIT_PULL=1)"
+else
+    echo "-> Git fetch & reset..."
+    git fetch origin main
+    git reset --hard origin/main
+fi
 
 NEW_HEAD=$(git rev-parse HEAD)
 
