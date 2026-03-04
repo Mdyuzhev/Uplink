@@ -57,24 +57,7 @@
         display: block;
     }
 
-    /* Sidebar overlay */
-    .chat-sidebar::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: var(--uplink-sidebar-width);
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease;
-    }
-
-    .chat-sidebar:not(.chat-sidebar--hidden)::after {
-        opacity: 1;
-        pointer-events: auto;
-    }
+    /* Sidebar overlay — реализован как div в ChatLayout */
 }
 
 /* ═══════════════════════════════════

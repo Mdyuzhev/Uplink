@@ -108,6 +108,10 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                 />
             </div>
 
+            {chat.mobileView === 'sidebar' && chat.activeRoomId && (
+                <div className="chat-sidebar-overlay" onClick={chat.handleBack} />
+            )}
+
             <div className={`chat-main ${chat.activeThread ? 'chat-main--with-thread' : ''}`}>
                 {chat.activeRoom ? (
                     <>

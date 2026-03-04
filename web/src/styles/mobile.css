@@ -92,6 +92,15 @@
         max-width: 320px;
     }
 
+    /* Overlay под sidebar — тап по нему закрывает sidebar */
+    .chat-sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9; /* ниже sidebar (10), выше chat-main */
+        animation: fadeIn 0.2s ease;
+    }
+
     /* Поиск: font-size 16px чтобы iOS не зумил */
     .chat-sidebar__search-input {
         font-size: 16px;
