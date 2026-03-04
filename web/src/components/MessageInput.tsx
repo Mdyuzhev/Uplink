@@ -145,12 +145,22 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
     const handleVoiceSend = async (recording: VoiceRecording) => {
         setIsRecordingVoice(false);
-        if (roomId) await matrixService.media.sendVoiceMessage(roomId, recording);
+        if (!roomId) return;
+        try {
+            await matrixService.media.sendVoiceMessage(roomId, recording);
+        } catch (e) {
+            console.error('[Voice] Ошибка отправки:', e);
+        }
     };
 
     const handleVideoNoteSend = async (recording: VideoNoteRecording) => {
         setShowVideoNoteRecorder(false);
-        if (roomId) await matrixService.media.sendVideoNote(roomId, recording);
+        if (!roomId) return;
+        try {
+            await matrixService.media.sendVideoNote(roomId, recording);
+        } catch (e) {
+            console.error('[VideoNote] Ошибка отправки:', e);
+        }
     };
 
     return (

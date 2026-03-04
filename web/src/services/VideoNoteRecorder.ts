@@ -114,30 +114,39 @@ class VideoNoteRecorder {
         return new Promise((resolve) => {
             const video = document.createElement('video');
             video.muted = true;
-            video.src = URL.createObjectURL(videoBlob);
+            video.preload = 'auto';
+
+            const cleanup = () => URL.revokeObjectURL(video.src);
+
+            // Таймаут 5s: если браузер не загружает видео (detached element), не зависаем
+            const timeout = setTimeout(() => {
+                cleanup();
+                resolve(null);
+            }, 5000);
+
+            const done = (blob: Blob | null) => {
+                clearTimeout(timeout);
+                cleanup();
+                resolve(blob);
+            };
 
             video.onloadeddata = () => { video.currentTime = 0.1; };
 
             video.onseeked = () => {
                 const canvas = document.createElement('canvas');
-                const size = Math.min(video.videoWidth, video.videoHeight);
+                const size = Math.min(video.videoWidth, video.videoHeight) || 480;
                 canvas.width = size;
                 canvas.height = size;
                 const ctx = canvas.getContext('2d')!;
                 const sx = (video.videoWidth - size) / 2;
                 const sy = (video.videoHeight - size) / 2;
                 ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-
-                canvas.toBlob((blob) => {
-                    URL.revokeObjectURL(video.src);
-                    resolve(blob);
-                }, 'image/jpeg', 0.7);
+                canvas.toBlob((blob) => done(blob), 'image/jpeg', 0.7);
             };
 
-            video.onerror = () => {
-                URL.revokeObjectURL(video.src);
-                resolve(null);
-            };
+            video.onerror = () => done(null);
+
+            video.src = URL.createObjectURL(videoBlob);
         });
     }
 }
