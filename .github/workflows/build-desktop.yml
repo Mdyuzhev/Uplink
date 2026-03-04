@@ -117,8 +117,11 @@ jobs:
           path: web/dist/
 
       - name: Install extension dependencies
-        working-directory: vscode
-        run: npm install --legacy-peer-deps
+        run: |
+          # Break workspace link to prevent vsce from including parent files
+          mv package.json package.json.bak
+          cd vscode && npm install --legacy-peer-deps
+          cd .. && mv package.json.bak package.json
 
       - name: Copy SPA into extension
         run: |
