@@ -1,5 +1,6 @@
 **
 !package.json
+!LICENSE
 !out/**
 !webview-dist/**
 !resources/**
