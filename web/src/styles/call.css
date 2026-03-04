@@ -9,118 +9,165 @@
 }
 
 /* ═══════════════════════════════════
+   CALL CONNECTING
+   ═══════════════════════════════════ */
+.call-connecting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(35, 165, 89, 0.08);
+    color: var(--uplink-success);
+    font-size: 14px;
+}
+
+.call-connecting__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(35, 165, 89, 0.3);
+    border-top-color: var(--uplink-success);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════
    CALL BAR
    ═══════════════════════════════════ */
 .call-bar {
-    background: #1a1e1b;
-    padding: 12px 16px;
+    background: linear-gradient(135deg, #1a1e1b 0%, #1e2124 100%);
+    padding: 12px 20px;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.call-bar__info {
+.call-bar__left {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
-.call-bar__title {
+.call-bar__status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.call-bar__dot {
+    width: 8px;
+    height: 8px;
+    background: var(--uplink-success);
+    border-radius: 50%;
+    animation: callDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes callDotPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(35, 165, 89, 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(35, 165, 89, 0); }
+}
+
+.call-bar__room-name {
     font-size: 14px;
     font-weight: 600;
-    color: var(--uplink-success);
-}
-
-.call-bar__icon {
-    margin-right: 4px;
+    color: var(--uplink-text-primary);
 }
 
 .call-bar__duration {
     font-size: 13px;
     color: var(--uplink-text-muted);
     font-variant-numeric: tabular-nums;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
 }
 
-.call-bar__participants {
+.call-bar__participants-count {
+    font-size: 12px;
+    color: var(--uplink-text-muted);
+}
+
+/* Контролы — по центру */
+.call-bar__controls {
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
+}
+
+.call-bar__control-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--uplink-text-primary);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: var(--uplink-font);
+}
+
+.call-bar__control-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.call-bar__control-btn--danger {
+    background: rgba(218, 55, 60, 0.2);
+    color: #fca5a5;
+}
+
+.call-bar__control-btn--danger:hover {
+    background: rgba(218, 55, 60, 0.3);
+}
+
+.call-bar__control-btn--active {
+    background: rgba(88, 101, 242, 0.2);
+    color: #93c5fd;
+}
+
+.call-bar__control-btn--hangup {
+    background: var(--uplink-danger);
+    color: white;
+}
+
+.call-bar__control-btn--hangup:hover {
+    opacity: 0.9;
+}
+
+.call-bar__control-label {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+/* Участники — справа */
+.call-bar__right {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .call-bar__participant {
     font-size: 12px;
     color: rgba(255, 255, 255, 0.7);
     padding: 2px 10px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
     border-radius: 12px;
+    transition: all 0.2s;
 }
 
 .call-bar__participant--speaking {
     color: var(--uplink-success);
-    background: rgba(35, 165, 89, 0.15);
-    box-shadow: 0 0 0 1px var(--uplink-success), 0 0 8px rgba(35, 165, 89, 0.2);
-}
-
-.call-bar__participant--muted {
-    opacity: 0.5;
-}
-
-.call-bar__controls {
-    display: flex;
-    gap: 8px;
-}
-
-.call-bar__btn {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    font-size: 13px;
-    font-family: var(--uplink-font);
-    cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.call-bar__btn--mute {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.call-bar__btn--mute:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.call-bar__btn--mute.call-bar__btn--active {
-    background: rgba(218, 55, 60, 0.3);
-    color: #fca5a5;
-}
-
-.call-bar__btn--camera {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.call-bar__btn--camera:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.call-bar__btn--camera.call-bar__btn--active {
-    background: rgba(88, 101, 242, 0.3);
-    color: #93c5fd;
-}
-
-.call-bar__btn--leave {
-    background: var(--uplink-danger);
-    color: #fff;
-    border-radius: 20px;
-}
-
-.call-bar__btn--leave:hover {
-    opacity: 0.85;
+    background: rgba(35, 165, 89, 0.12);
+    box-shadow: 0 0 0 1px var(--uplink-success);
 }
 
 /* ═══════════════════════════════════
@@ -178,83 +225,138 @@
 }
 
 /* ═══════════════════════════════════
-   CALL OVERLAYS (Incoming / Outgoing)
+   CALL TOAST (Incoming / Outgoing)
    ═══════════════════════════════════ */
-.incoming-call-overlay {
+.call-toast {
     position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    animation: callToastSlideIn 0.3s ease-out;
+}
+
+@keyframes callToastSlideIn {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.call-toast__card {
+    background: var(--uplink-bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    min-width: 300px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Пульсирующий фон — индикатор звонка */
+.call-toast__pulse {
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    height: 3px;
+    background: var(--uplink-success);
+    animation: callPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes callPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.call-toast__content {
     display: flex;
     align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    gap: 14px;
+    margin-bottom: 16px;
 }
 
-.incoming-call-overlay__card {
-    background: var(--uplink-bg-secondary);
-    border-radius: var(--uplink-radius-lg);
-    padding: 40px 48px;
-    text-align: center;
-    min-width: 280px;
-    box-shadow: var(--uplink-shadow-elevated);
+.call-toast__label {
+    font-size: 12px;
+    color: var(--uplink-success);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.incoming-call-overlay__icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-    animation: pulse 1.5s ease-in-out infinite;
+.call-toast__label--error {
+    color: var(--uplink-danger);
 }
 
-.incoming-call-overlay__title {
-    font-size: 14px;
-    color: var(--uplink-text-muted);
-    margin-bottom: 8px;
-}
-
-.incoming-call-overlay__caller {
-    font-size: 22px;
+.call-toast__caller {
+    font-size: 16px;
     font-weight: 600;
     color: var(--uplink-text-primary);
-    margin-bottom: 24px;
+    margin-top: 2px;
 }
 
-.incoming-call-overlay__actions {
+.call-toast__actions {
     display: flex;
-    gap: 16px;
-    justify-content: center;
+    gap: 12px;
+    justify-content: flex-end;
 }
 
-.incoming-call-overlay__btn {
-    width: 56px;
-    height: 56px;
+.call-toast__btn {
+    width: 44px;
+    height: 44px;
     border: none;
     border-radius: 50%;
-    font-size: 22px;
     cursor: pointer;
-    transition: opacity 0.2s, transform 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    transition: transform 0.15s, opacity 0.15s;
 }
 
-.incoming-call-overlay__btn:hover {
-    opacity: 0.85;
-    transform: scale(1.05);
+.call-toast__btn:hover {
+    transform: scale(1.1);
 }
 
-.incoming-call-overlay__btn--accept {
+.call-toast__btn--accept {
     background: var(--uplink-success);
     color: white;
+    animation: callBtnPulse 2s ease-in-out infinite;
 }
 
-.incoming-call-overlay__btn--reject {
+@keyframes callBtnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(35, 165, 89, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(35, 165, 89, 0); }
+}
+
+.call-toast__btn--reject {
     background: var(--uplink-danger);
     color: white;
 }
 
+/* Иконка телефона — пульсация при вызове (outgoing) */
+.call-outgoing__icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(35, 165, 89, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.call-outgoing__icon--ringing {
+    color: var(--uplink-success);
+    animation: phoneRinging 1s ease-in-out infinite;
+}
+
+@keyframes phoneRinging {
+    0%, 100% { transform: rotate(0); }
+    10% { transform: rotate(15deg); }
+    20% { transform: rotate(-15deg); }
+    30% { transform: rotate(10deg); }
+    40% { transform: rotate(-10deg); }
+    50% { transform: rotate(0); }
+}
+
+.call-outgoing__icon--terminal {
+    color: var(--uplink-danger);
+}

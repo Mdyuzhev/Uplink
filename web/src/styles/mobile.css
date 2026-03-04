@@ -76,13 +76,9 @@
         padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
 
-    /* Overlay звонка — safe area со всех сторон */
-    .incoming-call-overlay__card {
-        margin: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 20px);
-        padding: 32px 24px;
-        min-width: auto;
-        width: calc(100% - 32px);
-        max-width: 340px;
+    /* Call toast — safe area снизу */
+    .call-toast {
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     }
 
 
@@ -413,14 +409,19 @@
     }
 
     .call-bar__controls {
-        flex-wrap: wrap;
-        justify-content: center;
+        gap: 4px;
     }
 
-    .call-bar__btn {
-        min-height: 44px;
-        padding: 8px 16px;
-        font-size: 14px;
+    .call-bar__control-btn {
+        padding: 8px 12px;
+    }
+
+    .call-bar__control-label {
+        display: none;
+    }
+
+    .call-bar__right {
+        display: none;
     }
 
     /* Video grid — вертикальная на телефоне */
@@ -436,19 +437,15 @@
         max-height: 200px;
     }
 
-    /* Входящий звонок — кнопки крупнее */
-    .incoming-call-overlay__btn {
-        width: 64px;
-        height: 64px;
-        font-size: 26px;
+    /* Call toast — на всю ширину */
+    .call-toast {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
     }
 
-    .incoming-call-overlay__actions {
-        gap: 32px;
-    }
-
-    .incoming-call-overlay__caller {
-        font-size: 20px;
+    .call-toast__card {
+        min-width: auto;
     }
 
 
@@ -661,13 +658,13 @@
         min-height: 44px;
     }
 
-    .call-bar__btn {
+    .call-bar__control-btn {
         min-height: 44px;
     }
 
-    .incoming-call-overlay__btn {
-        width: 64px;
-        height: 64px;
+    .call-toast__btn {
+        width: 48px;
+        height: 48px;
     }
 
     /* Input font-size: 16px для iOS (на любом тач-устройстве) */
@@ -712,10 +709,9 @@
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
     }
 
-    /* Звонковый оверлей — горизонтально */
-    .incoming-call-overlay__card {
-        flex-direction: row;
-        max-width: 500px;
+    /* Call toast — горизонтально */
+    .call-toast {
+        left: auto;
     }
 
     /* Video — горизонтальная сетка */

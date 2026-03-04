@@ -1,4 +1,5 @@
 import React from 'react';
+import { Phone, X } from 'lucide-react';
 import { CallSignalState } from '../livekit/CallSignalingService';
 
 interface OutgoingCallOverlayProps {
@@ -7,32 +8,40 @@ interface OutgoingCallOverlayProps {
     onCancel: () => void;
 }
 
-/**
- * Оверлей исходящего звонка.
- * Показывается пока ждём ответа собеседника.
- * Также показывает статус: «Отклонено» / «Нет ответа».
- */
 export const OutgoingCallOverlay: React.FC<OutgoingCallOverlayProps> = ({
     calleeName, signalState, onCancel,
 }) => {
     const isTerminal = signalState === 'rejected' || signalState === 'no-answer';
     const statusText = signalState === 'rejected' ? 'Отклонено'
         : signalState === 'no-answer' ? 'Нет ответа'
-        : 'Вызов...';
+        : 'Соединение...';
+    const statusClass = isTerminal ? 'call-toast__label--error' : '';
 
     return (
-        <div className="incoming-call-overlay">
-            <div className="incoming-call-overlay__card">
-                <div className="incoming-call-overlay__title">{statusText}</div>
-                <div className="incoming-call-overlay__caller">{calleeName}</div>
+        <div className="call-toast">
+            <div className="call-toast__card">
+                {!isTerminal && <div className="call-toast__pulse" />}
+                <div className="call-toast__content">
+                    <div className="call-outgoing__icon-wrap">
+                        {isTerminal ? (
+                            <X size={24} className="call-outgoing__icon--terminal" />
+                        ) : (
+                            <Phone size={24} className="call-outgoing__icon--ringing" />
+                        )}
+                    </div>
+                    <div className="call-toast__info">
+                        <div className={`call-toast__label ${statusClass}`}>{statusText}</div>
+                        <div className="call-toast__caller">{calleeName}</div>
+                    </div>
+                </div>
                 {!isTerminal && (
-                    <div className="incoming-call-overlay__actions">
+                    <div className="call-toast__actions">
                         <button
-                            className="incoming-call-overlay__btn incoming-call-overlay__btn--reject"
+                            className="call-toast__btn call-toast__btn--reject"
                             onClick={onCancel}
-                            title="Отмена"
+                            title="Отменить вызов"
                         >
-                            &#x2715;
+                            <X size={20} />
                         </button>
                     </div>
                 )}

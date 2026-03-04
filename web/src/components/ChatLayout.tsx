@@ -134,6 +134,13 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                             <div className="call-error">{call.callError}</div>
                         )}
 
+                        {call.callState === 'connecting' && (
+                            <div className="call-connecting">
+                                <div className="call-connecting__spinner" />
+                                <span>Подключение к звонку...</span>
+                            </div>
+                        )}
+
                         {call.callState === 'connected' && call.activeRoomName === chat.activeRoom.id && (
                             <>
                                 <CallBar roomName={chat.activeRoom.name} />
