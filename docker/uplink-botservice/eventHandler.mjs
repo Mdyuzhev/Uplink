@@ -98,7 +98,8 @@ async function routeCommand(roomId, sender, body, eventId) {
             const bindings = await getBotRoomBindings();
             const roomBots = bindings[roomId] || [];
             if (!roomBots.includes(botId)) {
-                await sendBotMessage('bot_helper', roomId,
+                // Слать от имени самого бота, а не bot_helper — bot_helper может не быть в комнате
+                await sendBotMessage(botDef.localpart, roomId,
                     `Бот **${botDef.displayName}** не активирован в этом канале. Подключите его в настройках.`
                 );
                 return;

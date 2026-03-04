@@ -83,6 +83,8 @@ async function init() {
     logger.info('Боты зарегистрированы.');
 
     const bindings = await getBotRoomBindings();
+    const roomsWithBindings = new Set(Object.keys(bindings));
+
     for (const [roomId, botIds] of Object.entries(bindings)) {
         for (const botId of botIds) {
             const bot = BOT_DEFINITIONS[botId];
@@ -98,6 +100,21 @@ async function init() {
             }
         }
     }
+
+    // bot_helper нужен в каждой комнате где есть боты — отвечает на /help и ошибки
+    const helperBot = BOT_DEFINITIONS['helper'];
+    for (const roomId of roomsWithBindings) {
+        try {
+            const inRoom = await isBotInRoom(helperBot.localpart, roomId);
+            if (!inRoom) {
+                logger.info({ roomId }, 'Присоединяю bot_helper...');
+                await joinBotToRoom(helperBot.localpart, roomId);
+            }
+        } catch (err) {
+            logger.warn({ err, roomId }, 'Не удалось присоединить bot_helper');
+        }
+    }
+
     logger.info('Боты присоединены к комнатам.');
 
     // Гарантировать что bot_ci в комнате для CI-уведомлений (CI_NOTIFY_ROOM_ID)
