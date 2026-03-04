@@ -26,6 +26,20 @@ export async function handleMatrixEvent(event) {
     // Логировать входящее событие
     logger.debug({ type: event.type, roomId: event.room_id, sender: event.sender }, 'Matrix event');
 
+    // Invite → автоматический join бота
+    if (event.type === 'm.room.member' && event.content?.membership === 'invite') {
+        const stateKey = event.state_key || '';
+        const match = stateKey.match(/^@(bot_\w+):/);
+        if (match) {
+            const botLocalpart = match[1];
+            const { joinBotToRoom } = await import('./matrixClient.mjs');
+            joinBotToRoom(botLocalpart, event.room_id).catch(err =>
+                logger.warn({ err, botLocalpart, roomId: event.room_id }, 'Auto-join по invite не удался')
+            );
+        }
+        return;
+    }
+
     // Зашифрованные сообщения — боты не могут их прочитать
     if (event.type === 'm.room.encrypted') {
         logger.debug({ roomId: event.room_id, sender: event.sender }, 'Зашифрованное сообщение — боты не читают E2E');

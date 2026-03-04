@@ -182,6 +182,31 @@ export async function joinBotToRoom(botLocalpart, roomId) {
         }
     }
 
+    // Стратегия 3: Synapse Admin Force Join — принудительный вход через admin API
+    if (ADMIN_TOKEN) {
+        try {
+            const forceResp = await fetch(
+                `${HOMESERVER_URL}/_synapse/admin/v1/join/${encodeURIComponent(roomId)}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+                    },
+                    body: JSON.stringify({ user_id: userId }),
+                }
+            );
+            if (forceResp.ok) {
+                logger.info({ userId, roomId }, 'Бот присоединился (admin force join)');
+                return;
+            }
+            const forceErr = await forceResp.text().catch(() => '');
+            logger.warn({ userId, roomId, status: forceResp.status, forceErr }, 'Admin force join не сработал');
+        } catch (err) {
+            logger.warn({ err }, 'joinBot strategy 3 error');
+        }
+    }
+
     logger.error({ userId, roomId }, 'Все стратегии join провалились');
     throw new Error(`Не удалось присоединить ${userId} к ${roomId}`);
 }

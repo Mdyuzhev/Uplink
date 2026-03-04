@@ -100,6 +100,20 @@ async function init() {
     }
     logger.info('Боты присоединены к комнатам.');
 
+    // Гарантировать что bot_ci в комнате для CI-уведомлений (CI_NOTIFY_ROOM_ID)
+    const CI_NOTIFY_ROOM_ID = process.env.CI_NOTIFY_ROOM_ID || '';
+    if (CI_NOTIFY_ROOM_ID) {
+        try {
+            const inCiRoom = await isBotInRoom('bot_ci', CI_NOTIFY_ROOM_ID);
+            if (!inCiRoom) {
+                logger.info({ roomId: CI_NOTIFY_ROOM_ID }, 'Присоединяю bot_ci к CI_NOTIFY_ROOM_ID...');
+                await joinBotToRoom('bot_ci', CI_NOTIFY_ROOM_ID);
+            }
+        } catch (err) {
+            logger.warn({ err, roomId: CI_NOTIFY_ROOM_ID }, 'Не удалось присоединить bot_ci к CI_NOTIFY_ROOM_ID');
+        }
+    }
+
     const server = http.createServer(app);
     initBotGateway(server);
     scheduleDigest();

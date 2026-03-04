@@ -125,6 +125,25 @@ for i in $(seq 1 30); do
     sleep 2
 done
 
+# Bootstrap SYNAPSE_ADMIN_TOKEN — нужен для force-join ботов в закрытые комнаты.
+# Однократно: получаем access_token admin и сохраняем в .env.
+if ! grep -qE "^SYNAPSE_ADMIN_TOKEN=.+" .env 2>/dev/null; then
+    echo "-> Получение SYNAPSE_ADMIN_TOKEN..."
+    ADMIN_ACCESS_TOKEN=$(curl -sf -X POST "http://127.0.0.1:8008/_matrix/client/v3/login" \
+        -H "Content-Type: application/json" \
+        -d '{"type":"m.login.password","identifier":{"type":"m.id.user","user":"admin"},"password":"UplinkAdmin2026!","device_id":"botservice_admin"}' \
+        2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('access_token',''))" 2>/dev/null || echo "")
+    if [ -n "$ADMIN_ACCESS_TOKEN" ]; then
+        echo "SYNAPSE_ADMIN_TOKEN=$ADMIN_ACCESS_TOKEN" >> .env
+        export SYNAPSE_ADMIN_TOKEN="$ADMIN_ACCESS_TOKEN"
+        # Перезапустить botservice с новым токеном
+        docker compose -f docker-compose.production.yml up -d --no-deps uplink-botservice
+        echo "  ✓ SYNAPSE_ADMIN_TOKEN добавлен в .env"
+    else
+        echo "  ✗ Не удалось получить admin token — join закрытых комнат может не работать"
+    fi
+fi
+
 # Healthcheck
 echo "-> Проверка сервисов..."
 for svc in "Synapse|http://127.0.0.1:8008/_matrix/client/versions" \
