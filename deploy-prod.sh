@@ -13,15 +13,62 @@ if [ ! -f "docker/synapse-data/homeserver.yaml" ]; then
     exit 1
 fi
 
+# Запомнить текущий коммит для определения изменений
+OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "none")
+
 # Забрать последние изменения (reset вместо pull — обходит локальные конфликты)
 echo "-> Git fetch & reset..."
 git fetch origin main
 git reset --hard origin/main
 
-# Пересобрать и перезапустить
-echo "-> Docker compose build & up..."
+NEW_HEAD=$(git rev-parse HEAD)
+
+# Определить какие сервисы пересобирать
+REBUILD=""
+if [ "$OLD_HEAD" = "none" ] || [ "$OLD_HEAD" = "$NEW_HEAD" ]; then
+    # Первый деплой или ручной запуск — пересобрать всё
+    REBUILD="all"
+    echo "-> Полная пересборка"
+else
+    CHANGED=$(git diff --name-only "$OLD_HEAD" "$NEW_HEAD" 2>/dev/null || echo "")
+    echo "-> Изменённые файлы:"
+    echo "$CHANGED" | head -20
+
+    # Фронтенд
+    if echo "$CHANGED" | grep -q "^web/"; then
+        REBUILD="$REBUILD uplink"
+    fi
+    # Botservice
+    if echo "$CHANGED" | grep -q "^docker/uplink-botservice/"; then
+        REBUILD="$REBUILD uplink-botservice"
+    fi
+    # LiveKit token
+    if echo "$CHANGED" | grep -q "^docker/livekit-token/"; then
+        REBUILD="$REBUILD livekit-token"
+    fi
+    # Deploy webhook
+    if echo "$CHANGED" | grep -q "^docker/deploy-webhook/"; then
+        REBUILD="$REBUILD deploy-webhook"
+    fi
+    # Docker compose / конфиги — пересобрать всё
+    if echo "$CHANGED" | grep -q "^docker/docker-compose\|^docker/synapse/\|^docker/postgres/\|^docker/monitoring/"; then
+        REBUILD="all"
+    fi
+fi
+
 cd docker
-docker compose -f docker-compose.production.yml up -d --build
+
+if [ "$REBUILD" = "all" ]; then
+    echo "-> Docker compose: полная пересборка..."
+    docker compose -f docker-compose.production.yml up -d --build
+elif [ -n "$REBUILD" ]; then
+    echo "-> Docker compose: пересборка [$REBUILD ]..."
+    docker compose -f docker-compose.production.yml build $REBUILD
+    docker compose -f docker-compose.production.yml up -d
+else
+    echo "-> Нет изменений в сервисах, пропуск пересборки"
+    docker compose -f docker-compose.production.yml up -d
+fi
 
 # Дождаться готовности Synapse
 echo "-> Ожидание Synapse..."

@@ -48,17 +48,48 @@ jobs:
         if: steps.deploy.outcome == 'success'
         continue-on-error: true
         env:
+          CI_ROOM_ID: ${{ secrets.CI_ROOM_ID }}
+          MATRIX_BOT_TOKEN: ${{ secrets.MATRIX_BOT_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUM: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
           SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
         run: |
           SUBJECT=$(echo "$COMMIT_MSG" | head -1)
+          SHORT_SHA="${SHA:0:7}"
+          TXN_ID="ci_$(date +%s)_${RANDOM}"
+
+          BODY="✅ Deploy #${RUN_NUM} — ${SUBJECT} (${SHORT_SHA})"
+
+          HTML=$(cat <<'HTMLEOF'
+          <table><tr><td>
+          <h4>✅ Deploy #__RUN_NUM__</h4>
+          <b>__SUBJECT__</b><br/>
+          <code>__SHORT_SHA__</code> · <a href="https://github.com/__REPO__/commit/__SHA__">diff</a> · <a href="https://github.com/__REPO__/actions/runs/__RUN_ID__">logs</a><br/>
+          <sub>by __ACTOR__</sub>
+          </td></tr></table>
+          HTMLEOF
+          )
+
+          HTML=$(echo "$HTML" | sed \
+            -e "s|__RUN_NUM__|${RUN_NUM}|g" \
+            -e "s|__SUBJECT__|${SUBJECT}|g" \
+            -e "s|__SHORT_SHA__|${SHORT_SHA}|g" \
+            -e "s|__SHA__|${SHA}|g" \
+            -e "s|__REPO__|${REPO}|g" \
+            -e "s|__RUN_ID__|${RUN_ID}|g" \
+            -e "s|__ACTOR__|${ACTOR}|g" \
+          )
+
           jq -n \
-            --arg body "[+] Deploy #${RUN_NUM} OK — ${SUBJECT}" \
-            --arg html "<b>[+] Deploy #${RUN_NUM}</b><br/>${SUBJECT}<br/><code>${SHA}</code>" \
+            --arg body "$BODY" \
+            --arg html "$HTML" \
             '{"msgtype":"m.text","body":$body,"format":"org.matrix.custom.html","formatted_body":$html}' | \
-          curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
-            -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
+          curl -v -X PUT \
+            "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${CI_ROOM_ID}/send/m.room.message/${TXN_ID}" \
+            -H "Authorization: Bearer ${MATRIX_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
             -d @-
 
@@ -66,17 +97,46 @@ jobs:
         if: steps.deploy.outcome == 'failure'
         continue-on-error: true
         env:
+          CI_ROOM_ID: ${{ secrets.CI_ROOM_ID }}
+          MATRIX_BOT_TOKEN: ${{ secrets.MATRIX_BOT_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUM: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
         run: |
           SUBJECT=$(echo "$COMMIT_MSG" | head -1)
+          SHORT_SHA="${SHA:0:7}"
+          TXN_ID="ci_$(date +%s)_${RANDOM}"
+
+          BODY="❌ Deploy FAILED #${RUN_NUM} — ${SUBJECT} (${SHORT_SHA})"
+
+          HTML=$(cat <<'HTMLEOF'
+          <table><tr><td>
+          <h4>❌ Deploy FAILED #__RUN_NUM__</h4>
+          <b>__SUBJECT__</b><br/>
+          <code>__SHORT_SHA__</code> · <a href="https://github.com/__REPO__/actions/runs/__RUN_ID__">▶ Логи</a><br/>
+          <sub>by __ACTOR__</sub>
+          </td></tr></table>
+          HTMLEOF
+          )
+
+          HTML=$(echo "$HTML" | sed \
+            -e "s|__RUN_NUM__|${RUN_NUM}|g" \
+            -e "s|__SUBJECT__|${SUBJECT}|g" \
+            -e "s|__SHORT_SHA__|${SHORT_SHA}|g" \
+            -e "s|__REPO__|${REPO}|g" \
+            -e "s|__RUN_ID__|${RUN_ID}|g" \
+            -e "s|__ACTOR__|${ACTOR}|g" \
+          )
+
           jq -n \
-            --arg body "[-] Deploy FAILED #${RUN_NUM} — ${SUBJECT}" \
-            --arg html "<b>[-] Deploy FAILED #${RUN_NUM}</b><br/>${SUBJECT}<br/><a href=\"https://github.com/${REPO}/actions/runs/${RUN_ID}\">Логи</a>" \
+            --arg body "$BODY" \
+            --arg html "$HTML" \
             '{"msgtype":"m.text","body":$body,"format":"org.matrix.custom.html","formatted_body":$html}' | \
-          curl -sf -X POST "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${{ secrets.CI_ROOM_ID }}/send/m.room.message" \
-            -H "Authorization: Bearer ${{ secrets.MATRIX_BOT_TOKEN }}" \
+          curl -v -X PUT \
+            "https://uplink.wh-lab.ru/_matrix/client/v3/rooms/${CI_ROOM_ID}/send/m.room.message/${TXN_ID}" \
+            -H "Authorization: Bearer ${MATRIX_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
             -d @-
