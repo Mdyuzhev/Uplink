@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --ignore-scripts
+RUN npm install --ignore-scripts --legacy-peer-deps
 COPY . .
 # WASM должен быть доступен при сборке и в runtime
 RUN mkdir -p public && cp node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/*.wasm public/
