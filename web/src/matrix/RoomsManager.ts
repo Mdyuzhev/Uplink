@@ -96,8 +96,9 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
     }
 
     // Второй проход: распределить комнаты
+    // Space child имеет приоритет над m.direct (m.direct может быть stale)
     for (const room of rooms) {
-        if (directIds.has(room.roomId)) {
+        if (directIds.has(room.roomId) && !childRoomIds.has(room.roomId)) {
             directs.push(buildRoomInfo(client, room, 'direct'));
             continue;
         }
