@@ -129,7 +129,9 @@ jobs:
         working-directory: vscode
         run: |
           npm run build
-          npx vsce package
+          # Remove prepublish to avoid ../web/dist access (already copied above)
+          node -e "const p=require('./package.json'); delete p.scripts['vscode:prepublish']; delete p.scripts['build:webview']; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 4))"
+          npx vsce package --allow-missing-repository
 
       - name: Upload VSIX
         uses: actions/upload-artifact@v4
