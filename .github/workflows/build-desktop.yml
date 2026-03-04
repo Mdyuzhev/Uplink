@@ -44,6 +44,9 @@ jobs:
           - platform: macos-latest
             target: aarch64-apple-darwin
             artifact-name: Uplink-macOS-ARM64
+          - platform: macos-13
+            target: x86_64-apple-darwin
+            artifact-name: Uplink-macOS-Intel
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             artifact-name: Uplink-Linux-x64
@@ -132,9 +135,16 @@ jobs:
         working-directory: vscode
         run: |
           npm run build
-          # Remove prepublish to avoid ../web/dist access (already copied above)
+          # Убираем prepublish (web/dist уже скопирован выше)
           node -e "const p=require('./package.json'); delete p.scripts['vscode:prepublish']; delete p.scripts['build:webview']; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 4))"
-          npx vsce package --allow-missing-repository
+          # Создаём локальный git чтобы vsce не лез в ../  (монорепо)
+          git init
+          git config user.email "ci@uplink.local"
+          git config user.name "CI"
+          git add -A
+          git commit -m "ci packaging"
+          # Используем @vscode/vsce из devDependencies (не npx vsce который deprecated)
+          ./node_modules/.bin/vsce package
 
       - name: Upload VSIX
         uses: actions/upload-artifact@v4
@@ -170,6 +180,10 @@ jobs:
           find artifacts/Uplink-macOS-ARM64 -name "*.dmg" -exec sh -c \
             'cp "$1" "release-assets/Uplink-macOS-ARM64.dmg"' _ {} \;
 
+          # macOS Intel
+          find artifacts/Uplink-macOS-Intel -name "*.dmg" -exec sh -c \
+            'cp "$1" "release-assets/Uplink-macOS-Intel.dmg"' _ {} \;
+
           # Linux
           find artifacts/Uplink-Linux-x64 -name "*.deb" -exec cp {} release-assets/ \;
           find artifacts/Uplink-Linux-x64 -name "*.AppImage" -exec cp {} release-assets/ \;
@@ -198,6 +212,7 @@ jobs:
             |-----------|------|
             | **Windows** (установщик) | `.exe` / `.msi` |
             | **macOS** Apple Silicon | `Uplink-macOS-ARM64.dmg` |
+            | **macOS** Intel | `Uplink-macOS-Intel.dmg` |
             | **Linux** Debian/Ubuntu | `.deb` |
             | **Linux** Universal | `.AppImage` |
             | **VS Code Extension** | `.vsix` |
