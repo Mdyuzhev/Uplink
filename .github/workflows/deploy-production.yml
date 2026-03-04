@@ -45,7 +45,8 @@ jobs:
             cd ~/projects/uplink && bash deploy-prod.sh
 
       - name: Notify CI channel — success
-        if: success()
+        if: steps.deploy.outcome == 'success'
+        continue-on-error: true
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUM: ${{ github.run_number }}
@@ -62,7 +63,8 @@ jobs:
             -d @-
 
       - name: Notify CI channel — failure
-        if: failure()
+        if: steps.deploy.outcome == 'failure'
+        continue-on-error: true
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           RUN_NUM: ${{ github.run_number }}
