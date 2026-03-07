@@ -138,6 +138,11 @@ export class UplinkPanel {
         const nonce = getNonce();
         const baseUri = webview.asWebviewUri(vscode.Uri.file(distPath));
 
+        // URI для WASM файла через vscode-resource схему
+        const wasmUri = webview.asWebviewUri(
+            vscode.Uri.joinPath(vscode.Uri.file(distPath), 'matrix_sdk_crypto_wasm_bg.wasm')
+        ).toString();
+
         const csp = [
             `default-src 'none'`,
             `script-src ${webview.cspSource} 'nonce-${nonce}' 'wasm-unsafe-eval'`,
@@ -145,14 +150,19 @@ export class UplinkPanel {
             `font-src ${webview.cspSource}`,
             `img-src ${webview.cspSource} https: data: blob:`,
             `media-src ${webview.cspSource} https: blob:`,
-            `connect-src https: wss: ws: http://localhost:*`,
-            `worker-src blob:`,
+            `connect-src ${webview.cspSource} https: wss: ws: blob: http://localhost:*`,
+            `worker-src ${webview.cspSource} blob:`,
+            `frame-src https://www.youtube.com https://rutube.ru https://vk.com`,
         ].join('; ');
 
-        // Переписать пути ассетов
+        // Переписать пути ассетов (абсолютные / → webview URI)
         html = html
             .replace(/(href|src)="\/assets\//g, `$1="${baseUri}/assets/`)
             .replace(/(href|src)="\//g, `$1="${baseUri}/`);
+
+        // Удалить crossorigin — VS Code WebView не поддерживает
+        // CORS-модель для своих ресурсов, атрибут блокирует загрузку
+        html = html.replace(/ crossorigin(?:="[^"]*")?/g, '');
 
         // CSP
         html = html.replace(
@@ -167,13 +177,30 @@ export class UplinkPanel {
         // URL сервера из настроек VSCode
         const serverUrl = vscode.workspace.getConfiguration('uplink').get<string>('serverUrl') || '';
 
-        // Мост VS Code API
+        // Мост VS Code API + WASM fetch-интерсептор
         html = html.replace(
             '</body>',
             `<script nonce="${nonce}">
     window.__VSCODE__ = true;
     window.__UPLINK_SERVER_URL__ = ${JSON.stringify(serverUrl)};
     window.__VSCODE_API__ = acquireVsCodeApi();
+
+    // WASM: перехватываем fetch для корректного пути в WebView
+    (function() {
+        var WASM_URI = ${JSON.stringify(wasmUri)};
+        var _origFetch = window.fetch.bind(window);
+        window.fetch = function(input, init) {
+            if (typeof input === 'string' && input.includes('matrix_sdk_crypto_wasm_bg.wasm')) {
+                console.log('[Uplink] WASM redirect:', input, '->', WASM_URI);
+                return _origFetch(WASM_URI, init);
+            }
+            if (input instanceof Request && input.url.includes('matrix_sdk_crypto_wasm_bg.wasm')) {
+                return _origFetch(new Request(WASM_URI, input), init);
+            }
+            return _origFetch(input, init);
+        };
+    })();
+
     window.__UPLINK_STORAGE_BRIDGE__ = {
         getItem: (key) => {
             return new Promise(resolve => {

@@ -26,6 +26,9 @@ vscode/*.vsix
 vscode/out/
 vscode/webview-dist/
 
+# Generated WASM (copied by prebuild script)
+web/public/*.wasm
+
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/
