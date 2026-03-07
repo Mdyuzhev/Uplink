@@ -1,0 +1,136 @@
+/* ─── Голосовой канал в сайдбаре ─── */
+.voice-channel-item {
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.voice-channel-item:hover {
+    background: var(--uplink-bg-hover);
+}
+
+.voice-channel-item--active {
+    background: var(--uplink-bg-active);
+}
+
+.voice-channel-item__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.voice-channel-item__icon {
+    color: var(--uplink-text-muted);
+    flex-shrink: 0;
+}
+
+.voice-channel-item--active .voice-channel-item__icon {
+    color: #3ba55c;
+}
+
+.voice-channel-item__name {
+    font-size: 14px;
+    color: var(--uplink-text-secondary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.voice-channel-item--active .voice-channel-item__name {
+    color: var(--uplink-text-primary);
+}
+
+.voice-channel-item__badge {
+    color: #3ba55c;
+    font-size: 10px;
+}
+
+.voice-channel-item__members {
+    padding-left: 20px;
+    margin-top: 2px;
+}
+
+.voice-channel-item__member {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 0;
+}
+
+.voice-channel-item__member-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3ba55c;
+    flex-shrink: 0;
+}
+
+.voice-channel-item__member-name {
+    font-size: 12px;
+    color: var(--uplink-text-muted);
+}
+
+/* ─── VoiceBar — нижняя полоска сайдбара ─── */
+.voice-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--uplink-bg-secondary);
+    border-top: 1px solid var(--uplink-border);
+    flex-shrink: 0;
+}
+
+.voice-bar__info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.voice-bar__status {
+    font-size: 11px;
+    color: #3ba55c;
+    font-weight: 600;
+}
+
+.voice-bar__room {
+    font-size: 12px;
+    color: var(--uplink-text-secondary);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.voice-bar__actions {
+    display: flex;
+    gap: 4px;
+}
+
+.voice-bar__btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.voice-bar__btn:hover {
+    background: var(--uplink-bg-hover);
+    color: var(--uplink-text-primary);
+}
+
+.voice-bar__btn--muted {
+    color: #ed4245;
+}
+
+.voice-bar__btn--leave:hover {
+    color: #ed4245;
+}

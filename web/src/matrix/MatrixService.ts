@@ -232,6 +232,9 @@ export class MatrixService {
                 const roomId = event.getRoomId();
                 if (roomId) this.emitNewMessage(roomId, event);
             }
+            if (event.getType() === 'uplink.voice.member') {
+                this.emitRoomsUpdated();
+            }
         });
 
         // Подписка на новые и обновлённые треды

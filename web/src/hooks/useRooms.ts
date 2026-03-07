@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { matrixService } from '../matrix/MatrixService';
-import { getGroupedRooms, RoomInfo, SpaceInfo } from '../matrix/RoomsManager';
+import { getGroupedRooms, RoomInfo, SpaceInfo, VoiceRoomInfo } from '../matrix/RoomsManager';
 
 export function useRooms() {
     const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
     const [channels, setChannels] = useState<RoomInfo[]>([]);
     const [directs, setDirects] = useState<RoomInfo[]>([]);
+    const [voiceChannels, setVoiceChannels] = useState<VoiceRoomInfo[]>([]);
     const [isAdmin, setIsAdmin] = useState(false);
 
     const refresh = useCallback(() => {
@@ -16,6 +17,7 @@ export function useRooms() {
             setSpaces(grouped.spaces);
             setChannels(grouped.channels);
             setDirects(grouped.directs);
+            setVoiceChannels(grouped.voiceChannels);
         } catch { /* ignore */ }
     }, []);
 
@@ -33,5 +35,5 @@ export function useRooms() {
         return () => { unsub1(); unsub2(); };
     }, [refresh]);
 
-    return { spaces, channels, directs, isAdmin, refresh };
+    return { spaces, channels, directs, voiceChannels, isAdmin, refresh };
 }

@@ -9,7 +9,7 @@ import { ParsedMessage } from '../matrix/MessageFormatter';
 import { ReplyToInfo } from '../components/MessageInput';
 
 export function useChatState() {
-    const { spaces, channels, directs, isAdmin, refresh } = useRooms();
+    const { spaces, channels, directs, voiceChannels, isAdmin, refresh } = useRooms();
     const { users, loading: usersLoading } = useUsers();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
     const [activeSpaceId, setActiveSpaceId] = useState<string | null>(null);
@@ -125,7 +125,7 @@ export function useChatState() {
 
     return {
         // Данные
-        spaces, channels, directs, users, usersLoading, isAdmin, refresh,
+        spaces, channels, directs, voiceChannels, users, usersLoading, isAdmin, refresh,
         activeRoomId, activeRoom, allRooms,
         activeSpaceId, isDMsMode, isThreadsMode,
         messages, reactions, pinnedIds, pinnedMessages, threadSummaries, typingUsers,

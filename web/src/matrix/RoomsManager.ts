@@ -15,6 +15,13 @@ export interface RoomInfo {
     topic?: string;
 }
 
+export interface VoiceRoomInfo {
+    id: string;
+    name: string;
+    topic?: string;
+    voiceMembers: string[];
+}
+
 export interface SpaceInfo {
     id: string;
     name: string;
@@ -61,6 +68,7 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
     spaces: SpaceInfo[];
     channels: RoomInfo[];
     directs: RoomInfo[];
+    voiceChannels: VoiceRoomInfo[];
 } {
     const rooms = client.getRooms().filter(r => r.getMyMembership() === 'join');
     const directMap = client.getAccountData('m.direct')?.getContent() || {};
@@ -103,6 +111,38 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
         }
     }
 
+    // Голосовые каналы
+    const voiceChannels: VoiceRoomInfo[] = [];
+    const voiceRoomIds = new Set<string>();
+
+    for (const room of rooms) {
+        if (directIds.has(room.roomId)) continue;
+        const createEv = room.currentState.getStateEvents('m.room.create', '');
+        if (createEv?.getContent()?.type === 'm.space') continue;
+
+        const typeEv = room.currentState.getStateEvents('uplink.room.type' as any, '');
+        if (typeEv?.getContent()?.type !== 'voice') continue;
+
+        voiceRoomIds.add(room.roomId);
+
+        const memberEvents = room.currentState.getStateEvents('uplink.voice.member' as any);
+        const voiceMembers: string[] = [];
+        const eventsArray = Array.isArray(memberEvents) ? memberEvents : (memberEvents ? [memberEvents] : []);
+        for (const ev of eventsArray) {
+            if (ev.getContent()?.joined === true) {
+                const userId = ev.getStateKey();
+                if (userId) voiceMembers.push(userId);
+            }
+        }
+
+        voiceChannels.push({
+            id: room.roomId,
+            name: room.name || 'Без названия',
+            topic: room.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic,
+            voiceMembers,
+        });
+    }
+
     // Второй проход: распределить комнаты
     // Space child имеет приоритет над m.direct (m.direct может быть stale)
     for (const room of rooms) {
@@ -114,6 +154,9 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
         // Пропускаем сами Spaces
         const createEvent = room.currentState.getStateEvents('m.room.create', '');
         if (createEvent?.getContent()?.type === 'm.space') continue;
+
+        // Пропускаем голосовые каналы (у них своя секция)
+        if (voiceRoomIds.has(room.roomId)) continue;
 
         const info = buildRoomInfo(client, room, 'channel');
 
@@ -142,8 +185,9 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
     spaces.forEach(s => s.rooms.sort((a, b) => a.name.localeCompare(b.name)));
     channels.sort((a, b) => a.name.localeCompare(b.name));
     directs.sort((a, b) => (b.lastMessageTs || 0) - (a.lastMessageTs || 0));
+    voiceChannels.sort((a, b) => a.name.localeCompare(b.name));
 
-    return { spaces, channels, directs };
+    return { spaces, channels, directs, voiceChannels };
 }
 
 export function getDisplayName(client: sdk.MatrixClient, userId: string): string {

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Settings, LogOut, Plus } from 'lucide-react';
-import { RoomInfo, SpaceInfo } from '../matrix/RoomsManager';
+import { RoomInfo, SpaceInfo, VoiceRoomInfo } from '../matrix/RoomsManager';
 import { UserInfo } from '../hooks/useUsers';
 import { SpaceItem } from './sidebar/SpaceItem';
 import { RoomItem } from './sidebar/RoomItem';
 import { UserItem } from './sidebar/UserItem';
+import { VoiceChannelItem } from './sidebar/VoiceChannelItem';
 
 interface SidebarProps {
     spaces: SpaceInfo[];
@@ -25,6 +26,11 @@ interface SidebarProps {
     onCreateRoom: (spaceId: string) => void;
     onAdminPanel: () => void;
     onRoomSettings: (roomId: string, isSpace: boolean) => void;
+    voiceChannels: VoiceRoomInfo[];
+    activeVoiceRoomId: string | null;
+    isVoiceConnecting: boolean;
+    onJoinVoiceChannel: (roomId: string) => void;
+    onLeaveVoiceChannel: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -32,6 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeRoomId, userName, isAdmin, activeSpaceId, isDMsMode,
     onSelectRoom, onOpenDM,
     onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel, onRoomSettings,
+    voiceChannels, activeVoiceRoomId, isVoiceConnecting, onJoinVoiceChannel, onLeaveVoiceChannel,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -160,6 +167,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 ))}
                             </div>
                         )}
+
+                        {/* Голосовые каналы */}
+                        {voiceChannels.length > 0 && (
+                            <div className="chat-sidebar__section">
+                                <div className="chat-sidebar__section-title">Голосовые каналы</div>
+                                {voiceChannels.map(ch => (
+                                    <VoiceChannelItem
+                                        key={ch.id}
+                                        channel={ch}
+                                        isActive={ch.id === activeVoiceRoomId}
+                                        isConnecting={isVoiceConnecting}
+                                        onJoin={onJoinVoiceChannel}
+                                        onLeave={onLeaveVoiceChannel}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </>
                 ) : (
                     <>
@@ -187,6 +211,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         onSelectRoom={onSelectRoom}
                                         onCreateRoom={onCreateRoom}
                                         onSettings={(id) => onRoomSettings(id, true)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Голосовые каналы */}
+                        {voiceChannels.length > 0 && (
+                            <div className="chat-sidebar__section">
+                                <div className="chat-sidebar__section-title">Голосовые каналы</div>
+                                {voiceChannels.map(ch => (
+                                    <VoiceChannelItem
+                                        key={ch.id}
+                                        channel={ch}
+                                        isActive={ch.id === activeVoiceRoomId}
+                                        isConnecting={isVoiceConnecting}
+                                        onJoin={onJoinVoiceChannel}
+                                        onLeave={onLeaveVoiceChannel}
                                     />
                                 ))}
                             </div>

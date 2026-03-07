@@ -5,6 +5,8 @@ import { useVSCodeBridge, base64ToFile } from '../hooks/useVSCodeBridge';
 import { useViewportResize } from '../hooks/useViewportResize';
 import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
+import { VoiceBar } from './VoiceBar';
+import { useVoiceChannel } from '../hooks/useVoiceChannel';
 import { RoomHeader } from './RoomHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -37,6 +39,7 @@ import '../styles/mobile.css';
 import '../styles/stickers.css';
 import '../styles/voice-video.css';
 import '../styles/room-settings.css';
+import '../styles/voice-channels.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;
@@ -45,6 +48,7 @@ interface ChatLayoutProps {
 function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
     const chat = useChat();
     const call = useCall();
+    const voice = useVoiceChannel();
     useViewportResize();
 
     // VS Code bridge: snippet для вставки в MessageInput
@@ -141,8 +145,25 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                         }}
                         onAdminPanel={() => chat.setShowAdminPanel(true)}
                         onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
+                        voiceChannels={chat.voiceChannels}
+                        activeVoiceRoomId={voice.activeVoiceRoomId}
+                        isVoiceConnecting={voice.isConnecting}
+                        onJoinVoiceChannel={voice.joinVoiceChannel}
+                        onLeaveVoiceChannel={voice.leaveVoiceChannel}
                     />
                 )}
+
+                {voice.activeVoiceRoomId && (() => {
+                    const ch = chat.voiceChannels.find(c => c.id === voice.activeVoiceRoomId);
+                    return ch ? (
+                        <VoiceBar
+                            channel={ch}
+                            isMuted={voice.isMuted}
+                            onToggleMute={voice.toggleMute}
+                            onLeave={voice.leaveVoiceChannel}
+                        />
+                    ) : null;
+                })()}
             </div>
 
             {chat.mobileView === 'sidebar' && chat.activeRoomId && (
