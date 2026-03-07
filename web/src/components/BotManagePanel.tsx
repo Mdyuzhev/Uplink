@@ -17,10 +17,11 @@ interface CustomBot {
 
 interface BotManagePanelProps {
     currentUserId: string;
+    currentRoomId?: string;
     onCreateBot: () => void;
 }
 
-export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, onCreateBot }) => {
+export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, currentRoomId, onCreateBot }) => {
     const [bots, setBots] = useState<CustomBot[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedBot, setExpandedBot] = useState<string | null>(null);
@@ -64,6 +65,25 @@ export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, o
         } catch (err) {
             console.error('Ошибка перевыпуска токена:', err);
         }
+    };
+
+    const addToCurrentRoom = async (botId: string) => {
+        if (!currentRoomId) return;
+        const baseUrl = getConfig().botApiUrl;
+        await fetchWithAuth(`${baseUrl}/custom-bots/${botId}/rooms`, {
+            method: 'POST',
+            body: JSON.stringify({ roomId: currentRoomId }),
+        });
+        loadBots();
+    };
+
+    const removeFromRoom = async (botId: string, roomId: string) => {
+        const baseUrl = getConfig().botApiUrl;
+        await fetchWithAuth(`${baseUrl}/custom-bots/${botId}/rooms`, {
+            method: 'DELETE',
+            body: JSON.stringify({ roomId }),
+        });
+        loadBots();
     };
 
     const formatDate = (ts: number) => {
@@ -117,8 +137,38 @@ export const BotManagePanel: React.FC<BotManagePanelProps> = ({ currentUserId, o
                                             </div>
                                         )}
 
+                                        <div className="bot-manage__rooms">
+                                            <span className="bot-manage__label">Активен в каналах:</span>
+                                            {bot.rooms.length === 0 ? (
+                                                <span className="bot-manage__rooms-empty">Не добавлен ни в один канал</span>
+                                            ) : (
+                                                bot.rooms.map(roomId => (
+                                                    <div key={roomId} className="bot-manage__room-row">
+                                                        <code className="bot-manage__room-id">{roomId}</code>
+                                                        <button
+                                                            className="bot-manage__room-remove"
+                                                            onClick={() => removeFromRoom(bot.id, roomId)}
+                                                            title="Убрать из канала"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                            {currentRoomId && !bot.rooms.includes(currentRoomId) && (
+                                                <button
+                                                    className="bot-manage__add-to-room"
+                                                    onClick={() => addToCurrentRoom(bot.id)}
+                                                >
+                                                    + Добавить в этот канал
+                                                </button>
+                                            )}
+                                            {currentRoomId && bot.rooms.includes(currentRoomId) && (
+                                                <span className="bot-manage__in-room">✓ Уже в этом канале</span>
+                                            )}
+                                        </div>
+
                                         <div className="bot-manage__meta">
-                                            <span>Каналов: {bot.rooms.length}</span>
                                             <span>Создан: {formatDate(bot.created)}</span>
                                             {bot.mode === 'webhook' && bot.webhookUrl && (
                                                 <span className="bot-manage__webhook-url" title={bot.webhookUrl}>

@@ -657,3 +657,93 @@
     white-space: pre;
     margin: 0;
 }
+
+/* ═══════════════════════════════════
+   УПРАВЛЕНИЕ КОМНАТАМИ (Мои боты)
+   ═══════════════════════════════════ */
+.bot-manage__rooms {
+    margin-bottom: 10px;
+}
+
+.bot-manage__rooms-empty {
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    font-style: italic;
+}
+
+.bot-manage__room-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.bot-manage__room-id {
+    font-family: var(--uplink-font-mono, monospace);
+    font-size: 11px;
+    color: var(--uplink-text-muted);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bot-manage__room-remove {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+}
+
+.bot-manage__room-remove:hover {
+    color: #f04747;
+    background: rgba(240, 71, 71, 0.08);
+}
+
+.bot-manage__add-to-room {
+    margin-top: 6px;
+    background: none;
+    border: 1px dashed rgba(88, 101, 242, 0.4);
+    border-radius: 4px;
+    color: var(--uplink-accent);
+    font-size: 12px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.bot-manage__add-to-room:hover {
+    background: rgba(88, 101, 242, 0.08);
+    border-color: var(--uplink-accent);
+}
+
+.bot-manage__in-room {
+    margin-top: 6px;
+    display: block;
+    font-size: 12px;
+    color: #43b581;
+}
+
+.bot-modal__add-to-room {
+    margin-top: 12px;
+}
+
+.bot-modal__btn--secondary {
+    background: rgba(88, 101, 242, 0.1);
+    border-color: rgba(88, 101, 242, 0.3);
+    color: var(--uplink-accent);
+}
+
+.bot-modal__btn--secondary:hover {
+    background: rgba(88, 101, 242, 0.2);
+}
+
+.bot-modal__btn--secondary:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

@@ -9,11 +9,12 @@ interface BotCommand {
 
 interface BotCreateModalProps {
     currentUserId: string;
+    currentRoomId?: string;
     onCreated: () => void;
     onClose: () => void;
 }
 
-export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, onCreated, onClose }) => {
+export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, currentRoomId, onCreated, onClose }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [mode, setMode] = useState<'sdk' | 'webhook'>('sdk');
@@ -25,6 +26,9 @@ export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, o
     // Результат создания — токен показывается один раз
     const [createdToken, setCreatedToken] = useState<string | null>(null);
     const [createdWebhookSecret, setCreatedWebhookSecret] = useState<string | null>(null);
+    const [createdBotId, setCreatedBotId] = useState<string | null>(null);
+    const [addingToRoom, setAddingToRoom] = useState(false);
+    const [addedToRoom, setAddedToRoom] = useState(false);
 
     const addCommand = () => {
         setCommands([...commands, { command: '', description: '' }]);
@@ -81,6 +85,7 @@ export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, o
 
             const data = await resp.json();
             setCreatedToken(data.token);
+            setCreatedBotId(data.bot?.id || null);
             if (data.webhookSecret) {
                 setCreatedWebhookSecret(data.webhookSecret);
             }
@@ -88,6 +93,22 @@ export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, o
             setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const addCreatedBotToRoom = async (botId: string, roomId: string) => {
+        setAddingToRoom(true);
+        try {
+            const baseUrl = getConfig().botApiUrl;
+            await fetchWithAuth(`${baseUrl}/custom-bots/${botId}/rooms`, {
+                method: 'POST',
+                body: JSON.stringify({ roomId }),
+            });
+            setAddedToRoom(true);
+        } catch (err) {
+            console.error('Ошибка добавления бота в канал:', err);
+        } finally {
+            setAddingToRoom(false);
         }
     };
 
@@ -115,6 +136,21 @@ export const BotCreateModal: React.FC<BotCreateModalProps> = ({ currentUserId, o
                                 <div className="bot-modal__token-block">
                                     <label>Webhook Secret (для проверки подписи):</label>
                                     <code className="bot-modal__token">{createdWebhookSecret}</code>
+                                </div>
+                            )}
+                            {currentRoomId && createdBotId && (
+                                <div className="bot-modal__add-to-room">
+                                    <button
+                                        className="bot-modal__btn bot-modal__btn--secondary"
+                                        onClick={() => addCreatedBotToRoom(createdBotId, currentRoomId)}
+                                        disabled={addingToRoom || addedToRoom}
+                                    >
+                                        {addedToRoom
+                                            ? '✓ Добавлен в канал'
+                                            : addingToRoom
+                                                ? 'Добавление...'
+                                                : '+ Добавить в текущий канал'}
+                                    </button>
                                 </div>
                             )}
                             {mode === 'sdk' && (

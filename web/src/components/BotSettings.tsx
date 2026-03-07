@@ -129,6 +129,7 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
                 ) : (
                     <BotManagePanel
                         currentUserId={currentUserId}
+                        currentRoomId={roomId}
                         onCreateBot={() => setShowCreateModal(true)}
                     />
                 )}
@@ -137,6 +138,7 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
             {showCreateModal && (
                 <BotCreateModal
                     currentUserId={currentUserId}
+                    currentRoomId={roomId}
                     onCreated={() => setShowCreateModal(false)}
                     onClose={() => setShowCreateModal(false)}
                 />
