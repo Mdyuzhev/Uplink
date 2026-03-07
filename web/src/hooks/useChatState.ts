@@ -4,7 +4,7 @@ import { useMessages } from './useMessages';
 import { useUsers } from './useUsers';
 import { useNotifications } from './useNotifications';
 import { matrixService } from '../matrix/MatrixService';
-import { storageGet } from '../utils/storage';
+import { storageGet, storageSet } from '../utils/storage';
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { ReplyToInfo } from '../components/MessageInput';
 
@@ -12,6 +12,9 @@ export function useChatState() {
     const { spaces, channels, directs, isAdmin, refresh } = useRooms();
     const { users, loading: usersLoading } = useUsers();
     const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+    const [activeSpaceId, setActiveSpaceId] = useState<string | null>(null);
+    const [isDMsMode, setIsDMsMode] = useState(false);
+    const [isThreadsMode, setIsThreadsMode] = useState(false);
     const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
     const [showProfile, setShowProfile] = useState(false);
     const [showCreateSpace, setShowCreateSpace] = useState(false);
@@ -39,6 +42,15 @@ export function useChatState() {
             }));
     }, [messages, pinnedIds]);
 
+    // Инициализация: выбрать первый Space или восстановить из localStorage
+    useEffect(() => {
+        if (spaces.length > 0 && !activeSpaceId) {
+            const saved = storageGet('uplink_last_space');
+            const found = saved && spaces.find(s => s.id === saved);
+            setActiveSpaceId(found ? saved : spaces[0].id);
+        }
+    }, [spaces, activeSpaceId]);
+
     // Сброс reply при смене комнаты
     useEffect(() => { setReplyTo(null); }, [activeRoomId]);
 
@@ -65,6 +77,18 @@ export function useChatState() {
         setMobileView('chat');
         matrixService.messages.markRoomAsRead(roomId).then(() => refresh());
     }, [refresh]);
+
+    const handleSelectSpace = useCallback((spaceId: string) => {
+        setActiveSpaceId(spaceId);
+        setIsDMsMode(false);
+        setIsThreadsMode(false);
+        storageSet('uplink_last_space', spaceId);
+
+        const space = spaces.find(s => s.id === spaceId);
+        if (space?.rooms[0]) {
+            handleSelectRoom(space.rooms[0].id);
+        }
+    }, [spaces, handleSelectRoom]);
 
     const handleOpenThread = useCallback((threadRootId: string) => {
         if (activeRoomId) {
@@ -103,6 +127,7 @@ export function useChatState() {
         // Данные
         spaces, channels, directs, users, usersLoading, isAdmin, refresh,
         activeRoomId, activeRoom, allRooms,
+        activeSpaceId, isDMsMode, isThreadsMode,
         messages, reactions, pinnedIds, pinnedMessages, threadSummaries, typingUsers,
         replyTo, scrollToEventId, activeThread,
         mobileView,
@@ -113,7 +138,8 @@ export function useChatState() {
         showAdminPanel, setShowAdminPanel,
         showBotSettings, setShowBotSettings,
         // Actions
-        handleSelectRoom, handleBack, handleOpenDM, handleOpenThread, handleReply,
+        handleSelectRoom, handleSelectSpace, handleBack, handleOpenDM, handleOpenThread, handleReply,
+        setIsDMsMode, setIsThreadsMode,
         setReplyTo, setScrollToEventId, setActiveThread,
         sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
     };

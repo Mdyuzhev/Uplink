@@ -17,11 +17,13 @@ interface BotSettingsProps {
     roomId: string;
     currentUserId: string;
     onClose: () => void;
+    spaceRole?: 'global_admin' | 'space_admin' | 'member';
 }
 
 type Tab = 'builtin' | 'custom';
 
-export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId, onClose }) => {
+export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId, onClose, spaceRole = 'member' }) => {
+    const canManageBots = spaceRole !== 'member';
     const [tab, setTab] = useState<Tab>('builtin');
     const [bots, setBots] = useState<BotInfo[]>([]);
     const [loading, setLoading] = useState(true);
@@ -81,12 +83,14 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
                     >
                         Встроенные
                     </button>
-                    <button
-                        className={`bot-settings__tab ${tab === 'custom' ? 'active' : ''}`}
-                        onClick={() => setTab('custom')}
-                    >
-                        Мои боты
-                    </button>
+                    {canManageBots && (
+                        <button
+                            className={`bot-settings__tab ${tab === 'custom' ? 'active' : ''}`}
+                            onClick={() => setTab('custom')}
+                        >
+                            Мои боты
+                        </button>
+                    )}
                 </div>
 
                 {warning && (
@@ -104,14 +108,20 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
                                 <div key={bot.id} className="bot-settings__item">
                                     <div className="bot-settings__item-header">
                                         <span className="bot-settings__item-name">{bot.displayName}</span>
-                                        <label className="bot-settings__toggle">
-                                            <input
-                                                type="checkbox"
-                                                checked={bot.enabledInRoom}
-                                                onChange={e => toggleBot(bot.id, e.target.checked)}
-                                            />
-                                            <span className="bot-settings__toggle-slider" />
-                                        </label>
+                                        {canManageBots ? (
+                                            <label className="bot-settings__toggle">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={bot.enabledInRoom}
+                                                    onChange={e => toggleBot(bot.id, e.target.checked)}
+                                                />
+                                                <span className="bot-settings__toggle-slider" />
+                                            </label>
+                                        ) : (
+                                            <span className="bot-settings__status">
+                                                {bot.enabledInRoom ? 'Вкл' : 'Выкл'}
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="bot-settings__item-desc">{bot.description}</p>
                                     {bot.enabledInRoom && bot.commands.length > 0 && (

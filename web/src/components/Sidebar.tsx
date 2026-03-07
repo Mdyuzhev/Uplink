@@ -15,6 +15,8 @@ interface SidebarProps {
     activeRoomId: string | null;
     userName: string;
     isAdmin: boolean;
+    activeSpaceId: string | null;
+    isDMsMode: boolean;
     onSelectRoom: (roomId: string) => void;
     onOpenDM: (userId: string) => void;
     onProfileClick: () => void;
@@ -27,7 +29,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({
     spaces, channels, directs, users, usersLoading,
-    activeRoomId, userName, isAdmin, onSelectRoom, onOpenDM,
+    activeRoomId, userName, isAdmin, activeSpaceId, isDMsMode,
+    onSelectRoom, onOpenDM,
     onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel, onRoomSettings,
 }) => {
     const [filter, setFilter] = useState('');
@@ -47,25 +50,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         );
     };
 
-    const filterSpaces = (list: SpaceInfo[]) => {
-        if (!filter) return list;
-        const q = filter.toLowerCase();
-        return list.map(s => ({
-            ...s,
-            rooms: s.rooms.filter(r => r.name.toLowerCase().includes(q)),
-        })).filter(s => s.name.toLowerCase().includes(q) || s.rooms.length > 0);
-    };
+    const activeSpace = spaces.find(s => s.id === activeSpaceId);
+    const sidebarTitle = isDMsMode ? 'Личные сообщения' : activeSpace?.name || 'Uplink';
+    const canManageSpace = activeSpace && activeSpace.myRole !== 'member';
 
-    const filteredSpaces = filterSpaces(spaces);
-    const filteredChannels = filterRooms(channels);
+    // In DM mode: show only directs and users
+    // In Space mode: show only the active space's rooms + orphan channels
     const filteredDirects = filterRooms(directs);
+    const filteredChannels = filterRooms(channels);
     const filteredUsers = filterUsers(users);
 
     return (
         <>
             <div className="chat-sidebar__header">
-                <span className="chat-sidebar__title">Uplink</span>
-                {isAdmin && (
+                <span className="chat-sidebar__title">{sidebarTitle}</span>
+                {isAdmin && !isDMsMode && (
                     <button
                         className="chat-sidebar__admin-btn"
                         onClick={onAdminPanel}
@@ -99,85 +98,102 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="chat-sidebar__rooms">
-                {/* Каналы (Spaces) */}
-                {(filteredSpaces.length > 0 || isAdmin) && (
-                    <div className="chat-sidebar__section">
-                        <div className="chat-sidebar__section-title-row">
-                            <span className="chat-sidebar__section-title chat-sidebar__section-title--inline">Каналы</span>
-                            {isAdmin && (
-                                <button
-                                    className="chat-sidebar__section-add-btn"
-                                    onClick={onCreateSpace}
-                                    title="Создать канал"
-                                >
-                                    <Plus size={14} />
-                                </button>
+                {isDMsMode ? (
+                    <>
+                        {/* DM mode: directs + users */}
+                        {filteredDirects.length > 0 && (
+                            <div className="chat-sidebar__section">
+                                <div className="chat-sidebar__section-title">Диалоги</div>
+                                {filteredDirects.map(room => (
+                                    <RoomItem
+                                        key={room.id}
+                                        room={room}
+                                        active={room.id === activeRoomId}
+                                        onClick={() => onSelectRoom(room.id)}
+                                        onSettings={(id) => onRoomSettings(id, false)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        <div className="chat-sidebar__section">
+                            <div className="chat-sidebar__section-title">
+                                Пользователи{usersLoading ? ' ...' : ` (${filteredUsers.length})`}
+                            </div>
+                            {filteredUsers.map(user => (
+                                <UserItem
+                                    key={user.userId}
+                                    user={user}
+                                    onClick={() => onOpenDM(user.userId)}
+                                />
+                            ))}
+                            {!usersLoading && filteredUsers.length === 0 && (
+                                <div className="chat-sidebar__empty">Нет пользователей</div>
                             )}
                         </div>
-                        {filteredSpaces.map(space => (
+                    </>
+                ) : activeSpace ? (
+                    <>
+                        {/* Space mode: only active space rooms */}
+                        <div className="chat-sidebar__section">
                             <SpaceItem
-                                key={space.id}
-                                space={space}
+                                space={activeSpace}
                                 activeRoomId={activeRoomId}
-                                isAdmin={isAdmin}
+                                isAdmin={isAdmin || !!canManageSpace}
                                 onSelectRoom={onSelectRoom}
                                 onCreateRoom={onCreateRoom}
                                 onSettings={(id) => onRoomSettings(id, true)}
                             />
-                        ))}
-                    </div>
-                )}
+                        </div>
 
-                {/* Другие комнаты (не привязанные к каналам) */}
-                {filteredChannels.length > 0 && (
-                    <div className="chat-sidebar__section">
-                        <div className="chat-sidebar__section-title">Другие комнаты</div>
-                        {filteredChannels.map(room => (
-                            <RoomItem
-                                key={room.id}
-                                room={room}
-                                active={room.id === activeRoomId}
-                                onClick={() => onSelectRoom(room.id)}
-                                onSettings={(id) => onRoomSettings(id, false)}
-                            />
-                        ))}
-                    </div>
+                        {/* Orphan channels */}
+                        {filteredChannels.length > 0 && (
+                            <div className="chat-sidebar__section">
+                                <div className="chat-sidebar__section-title">Другие комнаты</div>
+                                {filteredChannels.map(room => (
+                                    <RoomItem
+                                        key={room.id}
+                                        room={room}
+                                        active={room.id === activeRoomId}
+                                        onClick={() => onSelectRoom(room.id)}
+                                        onSettings={(id) => onRoomSettings(id, false)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        {/* Fallback: show all spaces (no active space yet) */}
+                        {spaces.length > 0 && (
+                            <div className="chat-sidebar__section">
+                                <div className="chat-sidebar__section-title-row">
+                                    <span className="chat-sidebar__section-title chat-sidebar__section-title--inline">Каналы</span>
+                                    {isAdmin && (
+                                        <button
+                                            className="chat-sidebar__section-add-btn"
+                                            onClick={onCreateSpace}
+                                            title="Создать канал"
+                                        >
+                                            <Plus size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                                {spaces.map(space => (
+                                    <SpaceItem
+                                        key={space.id}
+                                        space={space}
+                                        activeRoomId={activeRoomId}
+                                        isAdmin={isAdmin}
+                                        onSelectRoom={onSelectRoom}
+                                        onCreateRoom={onCreateRoom}
+                                        onSettings={(id) => onRoomSettings(id, true)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
-
-                {/* Личные сообщения */}
-                {filteredDirects.length > 0 && (
-                    <div className="chat-sidebar__section">
-                        <div className="chat-sidebar__section-title">Личные сообщения</div>
-                        {filteredDirects.map(room => (
-                            <RoomItem
-                                key={room.id}
-                                room={room}
-                                active={room.id === activeRoomId}
-                                onClick={() => onSelectRoom(room.id)}
-                                onSettings={(id) => onRoomSettings(id, false)}
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {/* Пользователи */}
-                <div className="chat-sidebar__section">
-                    <div className="chat-sidebar__section-title">
-                        Пользователи{usersLoading ? ' ...' : ` (${filteredUsers.length})`}
-                    </div>
-                    {filteredUsers.map(user => (
-                        <UserItem
-                            key={user.userId}
-                            user={user}
-                            onClick={() => onOpenDM(user.userId)}
-                        />
-                    ))}
-                    {!usersLoading && filteredUsers.length === 0 && (
-                        <div className="chat-sidebar__empty">Нет пользователей</div>
-                    )}
-                </div>
             </div>
         </>
     );
 };
-

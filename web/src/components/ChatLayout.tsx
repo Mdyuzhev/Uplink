@@ -18,6 +18,8 @@ import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
 import { ThreadPanel } from './ThreadPanel';
 import { BotSettings } from './BotSettings';
+import { SpaceSwitcher } from './SpaceSwitcher';
+import { ThreadsPanel } from './ThreadsPanel';
 import { RoomSettingsModal } from './sidebar/RoomSettingsModal';
 import { initDeepLinkHandler } from '../utils/deepLink';
 import { storageSet } from '../utils/storage';
@@ -93,28 +95,54 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
 
     return (
         <div className="chat-layout">
+            {/* Space Switcher — левая колонка */}
+            <SpaceSwitcher
+                spaces={chat.spaces}
+                activeSpaceId={chat.activeSpaceId}
+                isGlobalAdmin={chat.isAdmin}
+                currentUserId={matrixService.getUserId()}
+                onSelectSpace={chat.handleSelectSpace}
+                onSelectDMs={() => { chat.setIsDMsMode(true); chat.setIsThreadsMode(false); }}
+                onSelectThreads={() => { chat.setIsThreadsMode(true); chat.setIsDMsMode(false); }}
+                onCreateSpace={() => chat.setShowCreateSpace(true)}
+                isDMsActive={chat.isDMsMode}
+                isThreadsActive={chat.isThreadsMode}
+            />
+
             <div className={`chat-sidebar ${chat.mobileView === 'chat' ? 'chat-sidebar--hidden' : ''}`}>
-                <Sidebar
-                    spaces={chat.spaces}
-                    channels={chat.channels}
-                    directs={chat.directs}
-                    users={chat.users}
-                    usersLoading={chat.usersLoading}
-                    activeRoomId={chat.activeRoomId}
-                    userName={matrixService.users.getMyDisplayName()}
-                    isAdmin={chat.isAdmin}
-                    onSelectRoom={chat.handleSelectRoom}
-                    onOpenDM={chat.handleOpenDM}
-                    onProfileClick={() => chat.setShowProfile(true)}
-                    onLogout={onLogout}
-                    onCreateSpace={() => chat.setShowCreateSpace(true)}
-                    onCreateRoom={(spaceId) => {
-                        const space = chat.spaces.find(s => s.id === spaceId);
-                        chat.setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
-                    }}
-                    onAdminPanel={() => chat.setShowAdminPanel(true)}
-                    onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
-                />
+                {chat.isThreadsMode ? (
+                    <ThreadsPanel
+                        onOpenThread={(roomId, threadRootId) => {
+                            chat.handleSelectRoom(roomId);
+                            chat.setActiveThread({ roomId, threadRootId });
+                            chat.setIsThreadsMode(false);
+                        }}
+                    />
+                ) : (
+                    <Sidebar
+                        spaces={chat.spaces}
+                        channels={chat.channels}
+                        directs={chat.directs}
+                        users={chat.users}
+                        usersLoading={chat.usersLoading}
+                        activeRoomId={chat.activeRoomId}
+                        userName={matrixService.users.getMyDisplayName()}
+                        isAdmin={chat.isAdmin}
+                        activeSpaceId={chat.activeSpaceId}
+                        isDMsMode={chat.isDMsMode}
+                        onSelectRoom={chat.handleSelectRoom}
+                        onOpenDM={chat.handleOpenDM}
+                        onProfileClick={() => chat.setShowProfile(true)}
+                        onLogout={onLogout}
+                        onCreateSpace={() => chat.setShowCreateSpace(true)}
+                        onCreateRoom={(spaceId) => {
+                            const space = chat.spaces.find(s => s.id === spaceId);
+                            chat.setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
+                        }}
+                        onAdminPanel={() => chat.setShowAdminPanel(true)}
+                        onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
+                    />
+                )}
             </div>
 
             {chat.mobileView === 'sidebar' && chat.activeRoomId && (
@@ -139,6 +167,7 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                                     roomId={chat.activeRoomId}
                                     currentUserId={matrixService.getUserId()}
                                     onClose={() => chat.setShowBotSettings(false)}
+                                    spaceRole={chat.spaces.find(s => s.id === chat.activeSpaceId)?.myRole || 'member'}
                                 />
                             )}
                         </div>
@@ -262,12 +291,16 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                     chat.channels.find(r => r.id === roomId)?.name ??
                     chat.directs.find(r => r.id === roomId)?.name ??
                     'Комната';
+                const spaceRole = isSpace
+                    ? chat.spaces.find(s => s.id === roomId)?.myRole || 'member'
+                    : chat.spaces.find(s => s.id === chat.activeSpaceId)?.myRole || 'member';
                 return (
                     <RoomSettingsModal
                         roomId={roomId}
                         roomName={roomName}
                         isSpace={isSpace}
                         isAdmin={chat.isAdmin}
+                        spaceRole={spaceRole}
                         onClose={() => setRoomSettingsTarget(null)}
                     />
                 );

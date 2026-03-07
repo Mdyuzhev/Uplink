@@ -7,6 +7,8 @@ import { ReactionService } from './ReactionService';
 import { ThreadService } from './ThreadService';
 import { UserService } from './UserService';
 import { RoomService } from './RoomService';
+import { SpaceService } from './SpaceService';
+import { ThreadIndexService } from './ThreadIndexService';
 import { storageGet, storageSet, storageRemove } from '../utils/storage';
 
 /**
@@ -41,6 +43,8 @@ export class MatrixService {
     readonly threads: ThreadService;
     readonly users: UserService;
     readonly rooms: RoomService;
+    readonly spaces: SpaceService;
+    readonly threadIndex: ThreadIndexService;
 
     constructor() {
         const getClient = () => this.getClient();
@@ -56,6 +60,8 @@ export class MatrixService {
             () => this.emitRoomsUpdated(),
         );
         this.admin = new AdminService(getClient, this.media.mxcToHttp.bind(this.media));
+        this.spaces = new SpaceService(getClient, this.media.mxcToHttp.bind(this.media));
+        this.threadIndex = new ThreadIndexService(getClient, (userId: string) => this.users.getDisplayName(userId));
     }
 
     private _connectionListeners = new Set<Listener<(state: ConnectionState) => void>>();

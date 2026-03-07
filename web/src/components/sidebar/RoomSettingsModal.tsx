@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, UserMinus } from 'lucide-react';
+import { X, UserMinus, ShieldCheck, Shield } from 'lucide-react';
 import { matrixService } from '../../matrix/MatrixService';
 import { fetchWithAuth } from '../../utils/api';
 import { config } from '../../config';
+import type { SpaceRole } from '../../matrix/SpaceService';
 
 interface RoomSettingsModalProps {
     roomId: string;
     roomName: string;
     isSpace: boolean;
     isAdmin: boolean;
+    spaceRole: SpaceRole;
     onClose: () => void;
 }
 
@@ -17,6 +19,8 @@ type Tab = 'info' | 'members' | 'bots';
 interface MemberInfo {
     userId: string;
     displayName: string;
+    role: SpaceRole;
+    powerLevel: number;
 }
 
 interface BotInfo {
@@ -33,11 +37,21 @@ function avatarColor(userId: string): string {
     return colors[Math.abs(hash) % colors.length];
 }
 
+function roleBadge(role: SpaceRole): { label: string; className: string } {
+    switch (role) {
+        case 'global_admin': return { label: 'Глобальный админ', className: 'space-member__badge--global-admin' };
+        case 'space_admin': return { label: 'Администратор', className: 'space-member__badge--space-admin' };
+        default: return { label: 'Участник', className: 'space-member__badge--member' };
+    }
+}
+
 export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
-    roomId, roomName, isSpace, isAdmin, onClose,
+    roomId, roomName, isSpace, isAdmin, spaceRole, onClose,
 }) => {
     const [tab, setTab] = useState<Tab>('info');
     const [copied, setCopied] = useState(false);
+
+    const canManage = isAdmin || spaceRole === 'global_admin' || spaceRole === 'space_admin';
 
     // Участники
     const [members, setMembers] = useState<MemberInfo[]>([]);
@@ -74,17 +88,29 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
         } catch { /* clipboard может быть недоступен */ }
     }, [roomId]);
 
-    // Загрузка участников
+    // Загрузка участников с ролями
     const loadMembers = useCallback(() => {
-        const room = matrixService.getClient().getRoom(roomId);
-        const joined = room?.getJoinedMembers() ?? [];
-        setMembers(joined.map(m => ({
-            userId: m.userId,
-            displayName: m.name || m.userId,
-        })));
+        if (isSpace) {
+            const spaceMembers = matrixService.spaces.getSpaceMembers(roomId);
+            setMembers(spaceMembers.map(m => ({
+                userId: m.userId,
+                displayName: m.displayName,
+                role: m.role,
+                powerLevel: m.powerLevel,
+            })));
+        } else {
+            const room = matrixService.getClient().getRoom(roomId);
+            const joined = room?.getJoinedMembers() ?? [];
+            setMembers(joined.map(m => ({
+                userId: m.userId,
+                displayName: m.name || m.userId,
+                role: 'member' as SpaceRole,
+                powerLevel: 0,
+            })));
+        }
         setMembersLoaded(true);
         setMembersLoading(false);
-    }, [roomId]);
+    }, [roomId, isSpace]);
 
     // Загрузка ботов
     const loadBots = useCallback(async () => {
@@ -117,9 +143,23 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
     const handleKick = async (userId: string) => {
         if (!window.confirm('Исключить пользователя?')) return;
         try {
-            await matrixService.getClient().kick(roomId, userId, 'Исключён администратором');
+            if (isSpace) {
+                await matrixService.spaces.kickMemberFromSpace(roomId, userId);
+            } else {
+                await matrixService.getClient().kick(roomId, userId, 'Исключён администратором');
+            }
             loadMembers();
         } catch { /* ошибка кика */ }
+    };
+
+    // Изменение роли
+    const handleToggleRole = async (userId: string, currentRole: SpaceRole) => {
+        if (!isSpace) return;
+        const newRole = currentRole === 'space_admin' ? 'member' : 'space_admin';
+        try {
+            await matrixService.spaces.setMemberRole(roomId, userId, newRole);
+            loadMembers();
+        } catch { /* ignore */ }
     };
 
     // Приглашение
@@ -129,7 +169,11 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
         setInviting(true);
         setInviteError('');
         try {
-            await matrixService.getClient().invite(roomId, uid);
+            if (isSpace) {
+                await matrixService.spaces.inviteMemberToSpace(roomId, uid);
+            } else {
+                await matrixService.getClient().invite(roomId, uid);
+            }
             setInviteId('');
             loadMembers();
         } catch (err: unknown) {
@@ -143,7 +187,6 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
     const handleToggleBot = async (bot: BotInfo) => {
         setTogglingBot(bot.id);
         const prev = bot.enabledInRoom;
-        // Оптимистичное обновление
         setBots(bs => bs.map(b => b.id === bot.id ? { ...b, enabledInRoom: !prev } : b));
         try {
             if (prev) {
@@ -160,7 +203,6 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                 if (!res.ok) throw new Error();
             }
         } catch {
-            // Откат
             setBots(bs => bs.map(b => b.id === bot.id ? { ...b, enabledInRoom: prev } : b));
         }
         setTogglingBot(null);
@@ -180,6 +222,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
     const room = matrixService.getClient().getRoom(roomId);
     const topic = room?.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic ?? '—';
     const encrypted = room?.hasEncryptionStateEvent() ?? false;
+    const myId = matrixService.getUserId();
 
     return (
         <div className="room-settings-overlay" onClick={onClose}>
@@ -242,7 +285,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                             <div className="room-settings-modal__section">
                                 <div className="room-settings-modal__section-label">Шифрование</div>
                                 <div className="room-settings-modal__section-value">
-                                    {encrypted ? '🔒 Включено' : 'Выключено'}
+                                    {encrypted ? 'Включено' : 'Выключено'}
                                 </div>
                             </div>
                         </>
@@ -258,7 +301,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                                 <div className="room-settings-modal__empty">Нет участников</div>
                             )}
                             {members.map(m => {
-                                const myId = matrixService.getUserId();
+                                const badge = roleBadge(m.role);
                                 return (
                                     <div key={m.userId} className="room-settings-modal__member-row">
                                         <div
@@ -268,22 +311,42 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                                             {(m.displayName || m.userId)[0].toUpperCase()}
                                         </div>
                                         <div className="room-settings-modal__member-info">
-                                            <div className="room-settings-modal__member-name">{m.displayName}</div>
+                                            <div className="room-settings-modal__member-name">
+                                                {m.displayName}
+                                                {isSpace && (
+                                                    <span className={`space-member__badge ${badge.className}`}>
+                                                        {badge.label}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="room-settings-modal__member-id">{m.userId}</div>
                                         </div>
-                                        {isAdmin && m.userId !== myId && (
-                                            <button
-                                                className="room-settings-modal__kick-btn"
-                                                onClick={() => handleKick(m.userId)}
-                                                title="Исключить"
-                                            >
-                                                <UserMinus size={16} />
-                                            </button>
+                                        {canManage && m.userId !== myId && (
+                                            <div className="room-settings-modal__member-actions">
+                                                {isSpace && m.role !== 'global_admin' && (
+                                                    <button
+                                                        className="room-settings-modal__role-btn"
+                                                        onClick={() => handleToggleRole(m.userId, m.role)}
+                                                        title={m.role === 'space_admin' ? 'Понизить до участника' : 'Назначить администратором'}
+                                                    >
+                                                        {m.role === 'space_admin' ? <Shield size={16} /> : <ShieldCheck size={16} />}
+                                                    </button>
+                                                )}
+                                                {m.role !== 'global_admin' && (
+                                                    <button
+                                                        className="room-settings-modal__kick-btn"
+                                                        onClick={() => handleKick(m.userId)}
+                                                        title="Исключить"
+                                                    >
+                                                        <UserMinus size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 );
                             })}
-                            {isAdmin && (
+                            {canManage && (
                                 <>
                                     <div className="room-settings-modal__invite-row">
                                         <input
@@ -341,7 +404,7 @@ export const RoomSettingsModal: React.FC<RoomSettingsModalProps> = ({
                 </div>
 
                 {/* Опасная зона */}
-                {isAdmin && (
+                {canManage && (
                     <div className="room-settings-modal__danger-zone">
                         <div className="room-settings-modal__danger-title">Опасная зона</div>
                         <button className="room-settings-modal__danger-btn" onClick={handleDelete}>

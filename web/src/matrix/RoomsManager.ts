@@ -1,4 +1,5 @@
 import * as sdk from 'matrix-js-sdk';
+import type { SpaceRole } from './SpaceService';
 
 export interface RoomInfo {
     id: string;
@@ -19,6 +20,7 @@ export interface SpaceInfo {
     name: string;
     topic?: string;
     rooms: RoomInfo[];
+    myRole: SpaceRole;
 }
 
 function buildRoomInfo(client: sdk.MatrixClient, room: sdk.Room, type: 'channel' | 'direct'): RoomInfo {
@@ -86,11 +88,17 @@ export function getGroupedRooms(client: sdk.MatrixClient): {
 
             childIds.forEach(id => childRoomIds.add(id));
 
+            const plEvent = room.currentState.getStateEvents('m.room.power_levels', '');
+            const plUsers: Record<string, number> = plEvent?.getContent()?.users || {};
+            const myPl = plUsers[client.getUserId()!] ?? 0;
+            const myRole: SpaceRole = myPl >= 100 ? 'global_admin' : myPl >= 75 ? 'space_admin' : 'member';
+
             spaces.push({
                 id: room.roomId,
                 name: room.name || 'Без названия',
                 topic: room.currentState.getStateEvents('m.room.topic', '')?.getContent()?.topic,
                 rooms: [],
+                myRole,
             });
         }
     }

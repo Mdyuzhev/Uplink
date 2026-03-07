@@ -376,3 +376,45 @@
     padding: 8px 0;
     font-style: italic;
 }
+
+/* Role badges */
+.space-member__badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.space-member__badge--global-admin { background: rgba(240,71,71,0.15); color: #f04747; }
+.space-member__badge--space-admin  { background: rgba(88,101,242,0.15); color: #5865f2; }
+.space-member__badge--member       { background: rgba(255,255,255,0.06); color: var(--uplink-text-faint); }
+
+/* Member actions */
+.room-settings-modal__member-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.room-settings-modal__member-row:hover .room-settings-modal__member-actions {
+    opacity: 1;
+}
+
+.room-settings-modal__role-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--uplink-radius-sm);
+    transition: color 0.15s;
+}
+
+.room-settings-modal__role-btn:hover {
+    color: var(--uplink-accent);
+}
