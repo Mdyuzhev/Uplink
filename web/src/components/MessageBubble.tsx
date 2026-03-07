@@ -312,10 +312,42 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         )}
                     </div>
                 ) : (
-                    <div
-                        className="message-bubble__body"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
-                    />
+                    <>
+                        {message.videoEmbed && (
+                            <div className="message-bubble__video-embed">
+                                <div className="message-bubble__video-embed-player">
+                                    <iframe
+                                        src={message.videoEmbed.embedUrl}
+                                        title="Видео"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <div className="message-bubble__video-embed-footer">
+                                    <span className="message-bubble__video-embed-provider">
+                                        {message.videoEmbed.provider === 'youtube' && '▶ YouTube'}
+                                        {message.videoEmbed.provider === 'rutube' && '▶ RuTube'}
+                                        {message.videoEmbed.provider === 'vkvideo' && '▶ VK Video'}
+                                    </span>
+                                    <a
+                                        href={message.videoEmbed.originalUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="message-bubble__video-embed-link"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        Открыть на сайте ↗
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+                        <div
+                            className="message-bubble__body"
+                            dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
+                        />
+                    </>
                 )}
 
                 {/* Inline-кнопки от SDK-бота */}

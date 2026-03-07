@@ -37,6 +37,62 @@ export interface ParsedMessage {
     mentionedUserIds?: string[];
     // Inline-кнопки от SDK-бота
     buttons?: Array<Array<{ label: string; callback: string }>>;
+    // Embed-превью внешнего видео (YouTube, RuTube, VK Video)
+    videoEmbed?: {
+        provider: 'youtube' | 'rutube' | 'vkvideo';
+        embedUrl: string;
+        originalUrl: string;
+    } | null;
+}
+
+function extractYouTubeId(text: string): { id: string; url: string } | null {
+    const patterns = [
+        /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?(?:[^&\s]*&)*v=([a-zA-Z0-9_-]{11})/,
+        /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return { id: match[1], url: match[0] };
+    }
+    return null;
+}
+
+function extractRuTubeId(text: string): { id: string; url: string } | null {
+    const match = text.match(/(?:https?:\/\/)?rutube\.ru\/video\/([a-f0-9]{32})\/?/);
+    if (match) return { id: match[1], url: match[0] };
+    return null;
+}
+
+function extractVKVideoId(text: string): { ownerId: string; videoId: string; url: string } | null {
+    const match = text.match(/(?:https?:\/\/)?(?:www\.)?(?:vk\.com|vkvideo\.ru)\/video(-?\d+)_(\d+)/);
+    if (match) return { ownerId: match[1], videoId: match[2], url: match[0] };
+    return null;
+}
+
+export function detectVideoEmbed(text: string): ParsedMessage['videoEmbed'] {
+    const yt = extractYouTubeId(text);
+    if (yt) return {
+        provider: 'youtube',
+        embedUrl: `https://www.youtube.com/embed/${yt.id}?rel=0&modestbranding=1`,
+        originalUrl: yt.url,
+    };
+
+    const rt = extractRuTubeId(text);
+    if (rt) return {
+        provider: 'rutube',
+        embedUrl: `https://rutube.ru/play/embed/${rt.id}`,
+        originalUrl: rt.url,
+    };
+
+    const vk = extractVKVideoId(text);
+    if (vk) return {
+        provider: 'vkvideo',
+        embedUrl: `https://vk.com/video_ext.php?oid=${vk.ownerId}&id=${vk.videoId}&hd=2`,
+        originalUrl: vk.url,
+    };
+
+    return null;
 }
 
 export function parseEvent(
@@ -252,5 +308,6 @@ export function parseEvent(
         replyToBody,
         mentionedUserIds,
         buttons,
+        videoEmbed: content.msgtype === 'm.text' ? detectVideoEmbed(body) : null,
     };
 }
