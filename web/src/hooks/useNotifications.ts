@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { matrixService } from '../matrix/MatrixService';
+import { soundService } from '../utils/SoundService';
 
 // Проверить среду выполнения
 const isTauri = '__TAURI_INTERNALS__' in window;
@@ -107,6 +108,8 @@ export function useNotifications(
             const bodyText = content.body || '';
             const isMention = bodyText.includes(myUserId) ||
                 (myDisplayName && bodyText.toLowerCase().includes(myDisplayName.toLowerCase()));
+
+            soundService.play(isMention ? 'mention' : 'message');
 
             showNotification(
                 `Новое сообщение от ${senderName}`,

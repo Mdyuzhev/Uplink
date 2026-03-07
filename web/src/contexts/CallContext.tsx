@@ -9,7 +9,7 @@ import { useCallSignaling } from '../hooks/useCallSignaling';
 import { callSignalingService } from '../livekit/CallSignalingService';
 import { CallState, CallParticipant } from '../livekit/LiveKitService';
 import { CallSignalState, CallInfo } from '../livekit/CallSignalingService';
-import { startDialingTone, startRingtone, stopAllSounds } from '../utils/callSounds';
+import { soundService } from '../utils/SoundService';
 
 interface CallContextValue {
     // LiveKit state
@@ -69,13 +69,19 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     // Звуки при изменении состояния сигнализации
     useEffect(() => {
         if (sig.signalState === 'ringing-out') {
-            startDialingTone();
+            soundService.startDialingTone();
         } else if (sig.signalState === 'ringing-in') {
-            startRingtone();
+            soundService.startIncomingCall();
+        } else if (sig.signalState === 'accepted') {
+            soundService.stopAllSounds();
+            soundService.play('call-accepted');
+        } else if (sig.signalState === 'ended' || sig.signalState === 'rejected' || sig.signalState === 'no-answer') {
+            soundService.stopAllSounds();
+            soundService.play('call-ended');
         } else {
-            stopAllSounds();
+            soundService.stopAllSounds();
         }
-        return () => stopAllSounds();
+        return () => soundService.stopAllSounds();
     }, [sig.signalState]);
 
     // Push-уведомление о входящем звонке

@@ -59,7 +59,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, error }) => {
                         type="text"
                         value={userId}
                         onChange={e => setUserId(e.target.value)}
-                        placeholder="@username:uplink.local"
+                        placeholder="admin"
                         autoComplete="username"
                     />
                 </div>

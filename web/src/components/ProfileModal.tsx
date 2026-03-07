@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, ShieldOff } from 'lucide-react';
+import { ShieldCheck, ShieldOff, Volume2, VolumeX } from 'lucide-react';
 import { matrixService } from '../matrix/MatrixService';
 import { storageGet, storageSet } from '../utils/storage';
+import { soundService } from '../utils/SoundService';
 import { AvatarSection } from './profile/AvatarSection';
 import { NameSection } from './profile/NameSection';
 import { PasswordSection } from './profile/PasswordSection';
@@ -21,6 +22,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
     const [dmEncrypted, setDmEncrypted] = useState(
         () => storageGet('uplink_dm_encrypted') === 'true'
     );
+    const [soundsEnabled, setSoundsEnabled] = useState(() => soundService.enabled);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -32,6 +34,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
         const newValue = !dmEncrypted;
         setDmEncrypted(newValue);
         storageSet('uplink_dm_encrypted', String(newValue));
+    };
+
+    const handleSoundsToggle = () => {
+        const newValue = !soundsEnabled;
+        setSoundsEnabled(newValue);
+        soundService.setEnabled(newValue);
+        if (newValue) soundService.play('message');
     };
 
     return (
@@ -69,6 +78,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
                             Новые личные чаты создаются без шифрования. Можно включить позже в заголовке чата.
                         </div>
                     )}
+
+                    <label className="create-modal__toggle-row" onClick={handleSoundsToggle}>
+                        <span className="create-modal__toggle-label">
+                            {soundsEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                            Звуки интерфейса
+                        </span>
+                        <div className={`create-modal__toggle ${soundsEnabled ? 'create-modal__toggle--on' : ''}`}>
+                            <div className="create-modal__toggle-knob" />
+                        </div>
+                    </label>
+                    <div className="create-modal__toggle-hint">
+                        Звуковые сигналы при новых сообщениях, упоминаниях и звонках.
+                    </div>
                 </div>
 
                 <div className="profile-modal__divider" />

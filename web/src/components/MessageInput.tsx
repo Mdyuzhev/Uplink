@@ -14,6 +14,7 @@ import type { VideoNoteRecording } from '../services/VideoNoteRecorder';
 import type { GifResult } from '../services/GifService';
 import type { Sticker } from '../services/StickerService';
 import { stickerService } from '../services/StickerService';
+import { soundService } from '../utils/SoundService';
 
 export interface ReplyToInfo {
     eventId: string;
@@ -122,6 +123,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                     onSend(trimmed);
                 }
             }
+            soundService.play('message-sent');
         } catch (e) {
             console.error('[MessageInput] Ошибка отправки:', e);
         }

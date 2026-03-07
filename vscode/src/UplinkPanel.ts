@@ -96,7 +96,11 @@ export class UplinkPanel {
      */
     private _getHtmlForWebview(webview: vscode.Webview): string {
         const distPath = path.join(this._context.extensionUri.fsPath, 'webview-dist');
-        const isDev = !fs.existsSync(distPath) || !fs.existsSync(path.join(distPath, 'index.html'));
+        const hasIndex = fs.existsSync(path.join(distPath, 'index.html'));
+        const isDev = !fs.existsSync(distPath) || !hasIndex;
+
+        console.log(`[Uplink] extensionUri: ${this._context.extensionUri.fsPath}`);
+        console.log(`[Uplink] distPath: ${distPath}, hasIndex: ${hasIndex}, isDev: ${isDev}`);
 
         if (isDev) {
             return this._getDevHtml();
@@ -136,7 +140,7 @@ export class UplinkPanel {
 
         const csp = [
             `default-src 'none'`,
-            `script-src 'nonce-${nonce}' 'wasm-unsafe-eval'`,
+            `script-src ${webview.cspSource} 'nonce-${nonce}' 'wasm-unsafe-eval'`,
             `style-src ${webview.cspSource} 'unsafe-inline'`,
             `font-src ${webview.cspSource}`,
             `img-src ${webview.cspSource} https: data: blob:`,
@@ -156,7 +160,8 @@ export class UplinkPanel {
             `<head>\n<meta http-equiv="Content-Security-Policy" content="${csp}">`,
         );
 
-        // Nonce для скриптов
+        // Nonce для скриптов (включая <script> без атрибутов)
+        html = html.replace(/<script>/g, `<script nonce="${nonce}">`);
         html = html.replace(/<script /g, `<script nonce="${nonce}" `);
 
         // URL сервера из настроек VSCode
