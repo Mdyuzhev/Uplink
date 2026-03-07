@@ -93,7 +93,7 @@
 .message-input__row {
     display: flex;
     align-items: flex-end;
-    padding: 4px 8px 6px 14px;
+    padding: 2px 8px 4px 14px;
     gap: 4px;
 }
 
@@ -110,9 +110,9 @@
     font-family: var(--uplink-font);
     line-height: 1.5;
     resize: none;
-    padding: 8px 0;
+    padding: 4px 0;
     max-height: 150px;
-    min-height: 38px;
+    min-height: 24px;
     caret-color: var(--uplink-accent);
 }
 
