@@ -247,3 +247,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-07 | task_041 | bot_wh_ci — отдельный бот для WarehouseHub CI: handler wh_ci.mjs, webhook /hooks/wh_ci, WH_CI_WEBHOOK_TOKEN, join в WH_CI_NOTIFY_ROOM_ID |
 | 2026-03-07 | task_042 | Улучшение UI ботов: BotManagePanel — управление комнатами (добавить/удалить бота из канала), BotCreateModal — «Добавить в канал» после создания |
 | 2026-03-07 | task_043 | Команды /wh в bot_wh_ci: registry commands, enableBotInRoom binding, handleCommand форвард на WH_BOT_INCOMING_URL, docker-compose env |
+| 2026-03-07 | task_044 | Фильтрация автокомплита команд по комнате: GET /api/commands?roomId, CommandRegistry кэш по roomId, invalidate при toggle бота |
