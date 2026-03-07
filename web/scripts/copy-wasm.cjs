@@ -3,13 +3,22 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = path.join(__dirname, '..', 'node_modules',
-    '@matrix-org', 'matrix-sdk-crypto-wasm', 'pkg',
-    'matrix_sdk_crypto_wasm_bg.wasm');
+const wasmFile = 'matrix_sdk_crypto_wasm_bg.wasm';
+const pkgPath = path.join('@matrix-org', 'matrix-sdk-crypto-wasm', 'pkg', wasmFile);
 
-const destDir = path.join(__dirname, '..', 'public');
-const dest = path.join(destDir, 'matrix_sdk_crypto_wasm_bg.wasm');
+// Ищем в web/node_modules и в корневом node_modules (workspace hoisting)
+const candidates = [
+    path.join(__dirname, '..', 'node_modules', pkgPath),
+    path.join(__dirname, '..', '..', 'node_modules', pkgPath),
+];
 
-fs.mkdirSync(destDir, { recursive: true });
-fs.copyFileSync(src, dest);
-console.log('WASM copied to public/');
+const src = candidates.find(p => fs.existsSync(p));
+
+if (src) {
+    const destDir = path.join(__dirname, '..', 'public');
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.copyFileSync(src, path.join(destDir, wasmFile));
+    console.log('WASM copied to public/');
+} else {
+    console.log('WASM source not found, skipping (Docker will copy it)');
+}
