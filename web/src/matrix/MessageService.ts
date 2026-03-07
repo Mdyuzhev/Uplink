@@ -150,6 +150,15 @@ export class MessageService {
         });
     }
 
+    /** Отправить callback от нажатия inline-кнопки бота */
+    async sendBotCallback(roomId: string, originalEventId: string, callbackData: string): Promise<void> {
+        await this.getClient().sendEvent(roomId, 'uplink.bot.callback' as sdk.EventType, {
+            original_event_id: originalEventId,
+            callback_data: callbackData,
+            room_id: roomId,
+        });
+    }
+
     /** Найти событие по ID в timeline комнаты */
     findEventInRoom(roomId: string, eventId: string): sdk.MatrixEvent | undefined {
         const client = this.getClient();

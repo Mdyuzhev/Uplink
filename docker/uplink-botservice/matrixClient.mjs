@@ -55,7 +55,7 @@ export async function ensureBotUser(localpart, displayName) {
 /**
  * Отправить сообщение от имени бота.
  */
-export async function sendBotMessage(botLocalpart, roomId, body, formatted) {
+export async function sendBotMessage(botLocalpart, roomId, body, formatted, editEventId) {
     const userId = `@${botLocalpart}:${SERVER_NAME}`;
     const txnId = `bot_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -74,6 +74,23 @@ export async function sendBotMessage(botLocalpart, roomId, body, formatted) {
         bot_id: botLocalpart.replace('bot_', ''),
         is_bot: true,
     };
+
+    // Редактирование существующего сообщения (Matrix m.replace)
+    if (editEventId) {
+        content['m.new_content'] = {
+            msgtype: 'm.text',
+            body,
+        };
+        if (formatted) {
+            content['m.new_content'].format = 'org.matrix.custom.html';
+            content['m.new_content'].formatted_body = formatted;
+        }
+        content['m.relates_to'] = {
+            rel_type: 'm.replace',
+            event_id: editEventId,
+        };
+        content.body = `* ${body}`;
+    }
 
     const url = `${HOMESERVER_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/send/m.room.message/${txnId}?user_id=${encodeURIComponent(userId)}`;
     const resp = await fetch(url, {

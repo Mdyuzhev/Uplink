@@ -35,6 +35,8 @@ export interface ParsedMessage {
     replyToBody?: string;
     // Mentions
     mentionedUserIds?: string[];
+    // Inline-кнопки от SDK-бота
+    buttons?: Array<Array<{ label: string; callback: string }>>;
 }
 
 export function parseEvent(
@@ -199,6 +201,32 @@ export function parseEvent(
         };
     }
 
+    // Inline-кнопки от SDK-бота (uplink.buttons)
+    const rawButtons = content['uplink.buttons'];
+    let buttons: Array<Array<{ label: string; callback: string }>> | undefined;
+    if (Array.isArray(rawButtons)) {
+        buttons = (rawButtons as unknown[])
+            .slice(0, 5)
+            .map((row: unknown) =>
+                Array.isArray(row)
+                    ? (row as unknown[])
+                          .slice(0, 4)
+                          .filter(
+                              (btn: unknown): btn is { label: string; callback: string } =>
+                                  typeof btn === 'object' && btn !== null &&
+                                  typeof (btn as Record<string, unknown>).label === 'string' &&
+                                  typeof (btn as Record<string, unknown>).callback === 'string',
+                          )
+                          .map((btn) => ({
+                              label: String(btn.label).slice(0, 64),
+                              callback: String(btn.callback).slice(0, 256),
+                          }))
+                    : [],
+            )
+            .filter((row) => row.length > 0);
+        if (buttons.length === 0) buttons = undefined;
+    }
+
     return {
         id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
         timestamp: event.getTs(),
@@ -216,5 +244,6 @@ export function parseEvent(
         replyToSender,
         replyToBody,
         mentionedUserIds,
+        buttons,
     };
 }

@@ -314,6 +314,60 @@
     font-weight: 600;
 }
 
+/* ═══════════════════════════════════
+   BOT INLINE BUTTONS
+   ═══════════════════════════════════ */
+.message-bubble__bot-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    max-width: 400px;
+}
+
+.message-bubble__bot-buttons-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.message-bubble__bot-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 14px;
+    background: rgba(88, 101, 242, 0.12);
+    border: 1px solid rgba(88, 101, 242, 0.25);
+    border-radius: 8px;
+    color: var(--uplink-text-secondary);
+    font-size: 13px;
+    font-family: var(--uplink-font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.message-bubble__bot-btn:hover {
+    background: rgba(88, 101, 242, 0.22);
+    border-color: rgba(88, 101, 242, 0.5);
+    color: var(--uplink-text-primary);
+}
+
+.message-bubble__bot-btn:active {
+    transform: scale(0.97);
+    background: rgba(88, 101, 242, 0.3);
+}
+
+.message-bubble__bot-btn--loading {
+    opacity: 0.6;
+    cursor: default;
+    pointer-events: none;
+}
+
 .message-bubble__encrypted {
     color: var(--uplink-text-faint);
     font-style: italic;

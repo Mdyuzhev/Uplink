@@ -18,6 +18,7 @@ const QUICK_EMOJIS = ['👍', '❤️', '😂', '🎉', '👀', '🔥', '✅', '
 
 interface MessageBubbleProps {
     message: ParsedMessage;
+    roomId?: string;
     showAuthor: boolean;
     reactions?: ReactionInfo[];
     isPinned?: boolean;
@@ -31,7 +32,7 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
-    message, showAuthor, reactions, isPinned, threadSummary,
+    message, roomId, showAuthor, reactions, isPinned, threadSummary,
     onReply, onReact, onRemoveReaction, onPin, onOpenThread, onScrollToMessage,
 }) => {
     const myUserId = matrixService.getClient().getUserId();
@@ -235,6 +236,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         className="message-bubble__body"
                         dangerouslySetInnerHTML={{ __html: renderMarkdown(message.body) }}
                     />
+                )}
+
+                {/* Inline-кнопки от SDK-бота */}
+                {message.buttons && message.buttons.length > 0 && roomId && (
+                    <div className="message-bubble__bot-buttons">
+                        {message.buttons.map((row, rowIdx) => (
+                            <div key={rowIdx} className="message-bubble__bot-buttons-row">
+                                {row.map((btn, btnIdx) => (
+                                    <button
+                                        key={btnIdx}
+                                        className="message-bubble__bot-btn"
+                                        onClick={() =>
+                                            matrixService.messages.sendBotCallback(
+                                                roomId,
+                                                message.id,
+                                                btn.callback,
+                                            )
+                                        }
+                                        title={btn.callback}
+                                    >
+                                        {btn.label}
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 )}
 
                 {/* Реакции */}

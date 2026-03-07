@@ -235,6 +235,16 @@ bot.start();`}</pre>
                         </span>
                     </div>
 
+                    {mode === 'sdk' && (
+                        <div className="bot-modal__e2e-warning">
+                            <span className="bot-modal__e2e-icon">&#x26A0;&#xFE0F;</span>
+                            <span>
+                                SDK-боты не поддерживают E2E-шифрование. Inline-кнопки и команды
+                                будут недоступны в зашифрованных комнатах.
+                            </span>
+                        </div>
+                    )}
+
                     {mode === 'webhook' && (
                         <div className="bot-modal__field">
                             <label>Webhook URL</label>

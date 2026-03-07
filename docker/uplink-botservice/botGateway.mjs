@@ -173,6 +173,21 @@ async function handleBotAction(bot, msg, ws) {
             safeSend(ws, { type: 'ack', action_id: actionId });
             break;
         }
+        case 'edit_message': {
+            const roomId = msg.room_id;
+            const editEventId = msg.edit_event_id;
+            if (!roomId || !msg.body || !editEventId) {
+                safeSend(ws, { type: 'error', action_id: actionId, error: 'room_id, body и edit_event_id обязательны' });
+                return;
+            }
+            if (!(await botHasAccessToRoom(bot.id, roomId))) {
+                safeSend(ws, { type: 'error', action_id: actionId, error: 'Нет доступа к комнате' });
+                return;
+            }
+            const eventId = await sendBotMessage(bot.localpart, roomId, msg.body, msg.formatted_body, editEventId);
+            safeSend(ws, { type: 'ack', action_id: actionId, event_id: eventId });
+            break;
+        }
         default:
             safeSend(ws, { type: 'error', action_id: actionId, error: `Неизвестное действие: ${msg.action}` });
     }

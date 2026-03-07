@@ -4,6 +4,7 @@ import { MessageBubble, ReactionInfo, ThreadSummaryInfo } from './MessageBubble'
 
 interface MessageListProps {
     messages: ParsedMessage[];
+    roomId?: string;
     reactions?: Map<string, ReactionInfo[]>;
     pinnedIds?: Set<string>;
     threadSummaries?: Map<string, ThreadSummaryInfo>;
@@ -38,7 +39,7 @@ function getDayKey(ts: number): string {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
-    messages, reactions, pinnedIds, threadSummaries, typingUsers,
+    messages, roomId, reactions, pinnedIds, threadSummaries, typingUsers,
     scrollToEventId, onScrollComplete,
     onLoadMore, onReply, onReact, onRemoveReaction, onPin, onOpenThread,
 }) => {
@@ -102,6 +103,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             <MessageBubble
                 key={msg.id}
                 message={msg}
+                roomId={roomId}
                 showAuthor={showAuthor}
                 reactions={reactions?.get(msg.id)}
                 isPinned={pinnedIds?.has(msg.id)}

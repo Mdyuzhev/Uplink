@@ -46,6 +46,26 @@ export async function handleMatrixEvent(event) {
         return;
     }
 
+    // Callback от нажатия inline-кнопки
+    if (event.type === 'uplink.bot.callback') {
+        const { original_event_id, callback_data } = event.content || {};
+        if (!original_event_id || !callback_data) return;
+
+        logger.debug(
+            { sender: event.sender, callback_data, roomId: event.room_id },
+            'Bot callback получен',
+        );
+
+        pushEventToSdkBots({
+            type: 'callback',
+            original_event_id,
+            callback_data,
+            room_id: event.room_id,
+            sender: event.sender,
+        });
+        return;
+    }
+
     // Только m.room.message
     if (event.type !== 'm.room.message') return;
 

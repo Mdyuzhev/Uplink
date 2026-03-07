@@ -192,6 +192,7 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
 
                         <MessageList
                             messages={chat.messages}
+                            roomId={chat.activeRoomId || undefined}
                             reactions={chat.reactions}
                             pinnedIds={chat.pinnedIds}
                             threadSummaries={chat.threadSummaries}

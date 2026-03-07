@@ -747,3 +747,22 @@
     opacity: 0.6;
     cursor: default;
 }
+
+.bot-modal__e2e-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(240, 178, 50, 0.08);
+    border: 1px solid rgba(240, 178, 50, 0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--uplink-text-muted);
+    line-height: 1.5;
+    margin-top: 4px;
+}
+
+.bot-modal__e2e-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+}
