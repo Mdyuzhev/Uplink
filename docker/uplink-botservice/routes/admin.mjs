@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import logger from '../logger.mjs';
 import { requireAuth } from '../middleware/auth.mjs';
-import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands } from '../registry.mjs';
+import { BOT_DEFINITIONS, getBotsForRoom, enableBotInRoom, disableBotInRoom, getAllBotCommands, getBotRoomBindings } from '../registry.mjs';
 import { joinBotToRoom, isBotInRoom, isRoomEncrypted } from '../matrixClient.mjs';
 import { getCustomBotCommands } from '../customBots.mjs';
 
@@ -25,9 +25,20 @@ router.get('/bots', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/commands', requireAuth, async (_req, res) => {
-    const builtin = getAllBotCommands();
-    const custom = await getCustomBotCommands();
+router.get('/commands', requireAuth, async (req, res) => {
+    const { roomId } = req.query;
+
+    let builtin;
+    if (roomId) {
+        const bindings = await getBotRoomBindings();
+        const roomBots = new Set(bindings[roomId] || []);
+        roomBots.add('helper');
+        builtin = getAllBotCommands().filter(cmd => roomBots.has(cmd.botId));
+    } else {
+        builtin = getAllBotCommands();
+    }
+
+    const custom = await getCustomBotCommands(roomId || null);
     res.json([...builtin, ...custom]);
 });
 

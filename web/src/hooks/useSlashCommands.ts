@@ -6,16 +6,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { commandRegistry, BotCommand } from '../bots/CommandRegistry';
 
-export function useSlashCommands(text: string) {
+export function useSlashCommands(text: string, roomId?: string) {
     const [suggestions, setSuggestions] = useState<BotCommand[]>([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
-    // Загрузить команды при первом использовании
+    // Перезагружать команды при смене комнаты
     useEffect(() => {
-        if (!commandRegistry.isLoaded()) {
+        if (roomId) {
+            commandRegistry.load(roomId);
+        } else if (!commandRegistry.isLoaded()) {
             commandRegistry.load();
         }
-    }, []);
+    }, [roomId]);
 
     // Обновлять suggestions при изменении текста
     useEffect(() => {

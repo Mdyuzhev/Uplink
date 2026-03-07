@@ -1,6 +1,7 @@
 /**
  * Реестр slash-команд ботов.
  * Загружается с бот-сервиса, используется для автокомплита в MessageInput.
+ * Кэширует команды по roomId — показывает только команды активных ботов.
  */
 
 import { getConfig } from '../config';
@@ -14,60 +15,80 @@ export interface BotCommand {
     botName: string;
 }
 
-class CommandRegistry {
-    private commands: BotCommand[] = [];
-    private loaded = false;
+const GLOBAL_KEY = '__global__';
 
-    /**
-     * Загрузить команды с бот-сервиса.
-     */
-    async load(): Promise<void> {
+class CommandRegistry {
+    private cache = new Map<string, BotCommand[]>();
+    private currentRoomId: string | null = null;
+
+    async load(roomId?: string): Promise<void> {
+        const cacheKey = roomId ?? GLOBAL_KEY;
+
+        if (this.cache.has(cacheKey)) {
+            this.currentRoomId = roomId ?? null;
+            return;
+        }
+
         try {
             const baseUrl = getConfig().botApiUrl;
-            const resp = await fetchWithAuth(`${baseUrl}/commands`);
+            const url = roomId
+                ? `${baseUrl}/commands?roomId=${encodeURIComponent(roomId)}`
+                : `${baseUrl}/commands`;
+
+            const resp = await fetchWithAuth(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            this.commands = await resp.json();
-            this.loaded = true;
+            const commands: BotCommand[] = await resp.json();
+            this.cache.set(cacheKey, commands);
+            this.currentRoomId = roomId ?? null;
         } catch (err) {
             console.warn('Не удалось загрузить команды ботов:', err);
-            // Фолбэк — базовые команды, чтобы /help всегда работал
-            this.commands = [{
+            const fallback: BotCommand[] = [{
                 command: '/help',
                 description: 'Список доступных команд',
                 usage: '/help [бот]',
                 botId: 'helper',
                 botName: 'Uplink Helper',
             }];
+            this.cache.set(cacheKey, fallback);
         }
     }
 
     /**
-     * Поиск команд по вводу.
-     * "/" → все команды. "/git" → фильтр по префиксу.
+     * Сбросить кэш для комнаты (после включения/отключения бота).
      */
+    invalidate(roomId?: string): void {
+        if (roomId) {
+            this.cache.delete(roomId);
+        } else {
+            this.cache.clear();
+        }
+    }
+
     search(input: string): BotCommand[] {
         if (!input.startsWith('/')) return [];
+        const cacheKey = this.currentRoomId ?? GLOBAL_KEY;
+        const commands = this.cache.get(cacheKey) ?? [];
         const query = input.toLowerCase();
-        return this.commands
+        return commands
             .filter(cmd => cmd.command.toLowerCase().startsWith(query))
             .slice(0, 8);
     }
 
-    /**
-     * Проверить, является ли текст slash-командой.
-     */
     isCommand(text: string): boolean {
-        return text.startsWith('/') && this.commands.some(
+        const cacheKey = this.currentRoomId ?? GLOBAL_KEY;
+        const commands = this.cache.get(cacheKey) ?? [];
+        return text.startsWith('/') && commands.some(
             cmd => text.startsWith(cmd.command.split(' ')[0])
         );
     }
 
     getAll(): BotCommand[] {
-        return [...this.commands];
+        const cacheKey = this.currentRoomId ?? GLOBAL_KEY;
+        return [...(this.cache.get(cacheKey) ?? [])];
     }
 
-    isLoaded(): boolean {
-        return this.loaded;
+    isLoaded(roomId?: string): boolean {
+        return this.cache.has(roomId ?? GLOBAL_KEY);
     }
 }
 

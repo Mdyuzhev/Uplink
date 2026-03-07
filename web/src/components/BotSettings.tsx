@@ -3,6 +3,7 @@ import { getConfig } from '../config';
 import { fetchWithAuth } from '../utils/api';
 import { BotManagePanel } from './BotManagePanel';
 import { BotCreateModal } from './BotCreateModal';
+import { commandRegistry } from '../bots/CommandRegistry';
 
 interface BotInfo {
     id: string;
@@ -55,8 +56,9 @@ export const BotSettings: React.FC<BotSettingsProps> = ({ roomId, currentUserId,
             const data = await resp.json();
             if (!resp.ok) {
                 setWarning(`Ошибка: ${data.error || 'Не удалось переключить бота'}`);
-            } else if (data.warning) {
-                setWarning(data.warning);
+            } else {
+                commandRegistry.invalidate(roomId);
+                if (data.warning) setWarning(data.warning);
             }
             loadBots();
         } catch {

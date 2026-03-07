@@ -203,10 +203,11 @@ export async function botHasAccessToRoom(botId, roomId) {
 /**
  * Все команды кастомных ботов (для event router).
  */
-export async function getCustomBotCommands() {
+export async function getCustomBotCommands(roomId = null) {
     const bots = await getCustomBots();
     const result = [];
     for (const bot of Object.values(bots)) {
+        if (roomId && !bot.rooms.includes(roomId)) continue;
         for (const cmd of bot.commands) {
             result.push({
                 command: cmd.command,

@@ -46,7 +46,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [cursorPos, setCursorPos] = useState(0);
 
-    const { suggestions, selectedIndex, setSelectedIndex, selectSuggestion, clearSuggestions } = useSlashCommands(text);
+    const { suggestions, selectedIndex, setSelectedIndex, selectSuggestion, clearSuggestions } = useSlashCommands(text, roomId);
     const {
         suggestions: mentionSuggestions,
         selectedIndex: mentionIndex,
