@@ -211,6 +211,47 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         thumbnailUrl={message.thumbnailUrl}
                         duration={message.duration || 0}
                     />
+                ) : message.type === 'video' ? (
+                    /* ─── Inline видео-плеер ─── */
+                    <div className="message-bubble__video">
+                        <video
+                            className="message-bubble__video-player"
+                            controls
+                            preload="metadata"
+                            poster={message.thumbnailUrl || undefined}
+                            style={{
+                                // Ограничиваем ширину: либо оригинальная, либо 480px max
+                                maxWidth: Math.min(message.imageWidth || 480, 480),
+                                // Высота пропорциональна или 270px max
+                                maxHeight: 270,
+                            }}
+                        >
+                            <source src={message.fileUrl || ''} type={message.mimetype || 'video/mp4'} />
+                            Ваш браузер не поддерживает воспроизведение видео.
+                        </video>
+                        {/* Подпись: имя файла + размер + кнопка скачать */}
+                        <div className="message-bubble__video-meta">
+                            <span className="message-bubble__video-name">{message.body}</span>
+                            {message.fileSize && (
+                                <span className="message-bubble__video-size">
+                                    {formatFileSize(message.fileSize)}
+                                </span>
+                            )}
+                            {message.fileUrl && (
+                                <a
+                                    href={message.fileUrl}
+                                    download={message.body}
+                                    className="message-bubble__video-download"
+                                    title="Скачать видео"
+                                    // stopPropagation — чтобы клик по ссылке
+                                    // не всплывал к action-bar
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <Download size={15} />
+                                </a>
+                            )}
+                        </div>
+                    </div>
                 ) : message.type === 'file' ? (
                     <div className="message-bubble__file">
                         <span className="message-bubble__file-icon"><FileText size={24} /></span>

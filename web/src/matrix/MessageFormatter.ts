@@ -6,7 +6,7 @@ export interface ParsedMessage {
     senderDisplayName: string;
     senderAvatarUrl?: string | null;
     timestamp: number;
-    type: 'text' | 'code' | 'image' | 'file' | 'encrypted' | 'sticker' | 'gif' | 'voice' | 'video_note';
+    type: 'text' | 'code' | 'image' | 'file' | 'video' | 'encrypted' | 'sticker' | 'gif' | 'voice' | 'video_note';
     body: string;
     formattedBody?: string;
     codeContext?: {
@@ -182,12 +182,19 @@ export function parseEvent(
             };
         }
 
-        // Обычное видео — как file
+        // Обычное видео — inline-плеер с кнопкой скачать
         return {
             id: event.getId()!, sender, senderDisplayName, senderAvatarUrl,
-            timestamp: event.getTs(), type: 'file' as const,
-            body, fileUrl: videoUrl, fileSize: info.size, mimetype: info.mimetype,
-            thumbnailUrl: thumbUrl, imageWidth: info.w, imageHeight: info.h,
+            timestamp: event.getTs(),
+            type: 'video' as const,
+            body: body || 'Видео',
+            fileUrl: videoUrl,
+            thumbnailUrl: thumbUrl,
+            fileSize: info.size,
+            mimetype: info.mimetype,
+            imageWidth: info.w,
+            imageHeight: info.h,
+            duration: info.duration,
             replyToEventId, replyToSender, replyToBody, mentionedUserIds,
         };
     }
