@@ -242,3 +242,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-04 | prod_011 | Механика и визуал звонков: remote hangup fix, callSounds (Web Audio API), push-уведомления, IncomingCallOverlay/OutgoingCallOverlay → toast, CallBar центрированные контролы, connecting индикатор, мобильная адаптация |
 | 2026-03-04 | prod_010_fix | CI build fix: vscode/LICENSE (MIT), убран --skip-license, macOS Intel (macos-13) в матрицу, @vscode/vsce из deps |
 | 2026-03-07 | task_038 | Модальное окно настроек канала/комнаты: RoomSettingsModal (3 вкладки: инфо/участники/боты), шестерёнка в сайдбаре, Internal Room ID с копированием, invite/kick, тоггл ботов, опасная зона |
+| 2026-03-07 | task_039 | Упоминание участников через @: useMentions хук, автокомплит дропдаун, m.mentions + matrix.to HTML, подсветка входящих упоминаний |
