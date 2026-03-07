@@ -12,7 +12,7 @@ import http from 'node:http';
 import express from 'express';
 import logger from './logger.mjs';
 import { initStorage, checkHealth as checkStorageHealth, closeStorage } from './postgresStorage.mjs';
-import { BOT_DEFINITIONS, getBotRoomBindings } from './registry.mjs';
+import { BOT_DEFINITIONS, getBotRoomBindings, enableBotInRoom } from './registry.mjs';
 import { ensureBotUser, joinBotToRoom, isBotInRoom } from './matrixClient.mjs';
 import { initBotGateway } from './botGateway.mjs';
 import { scheduleDigest } from './digest.mjs';
@@ -140,8 +140,11 @@ async function init() {
                 logger.info({ roomId: WH_CI_NOTIFY_ROOM_ID }, 'Присоединяю bot_wh_ci к WH_CI_NOTIFY_ROOM_ID...');
                 await joinBotToRoom('bot_wh_ci', WH_CI_NOTIFY_ROOM_ID);
             }
+            // Синхронизировать binding — чтобы routeCommand пропускал /wh команды
+            await enableBotInRoom('wh_ci', WH_CI_NOTIFY_ROOM_ID);
+            logger.info({ roomId: WH_CI_NOTIFY_ROOM_ID }, 'bot_wh_ci binding обновлён');
         } catch (err) {
-            logger.warn({ err, roomId: WH_CI_NOTIFY_ROOM_ID }, 'Не удалось присоединить bot_wh_ci');
+            logger.warn({ err, roomId: WH_CI_NOTIFY_ROOM_ID }, 'Не удалось инициализировать bot_wh_ci');
         }
     }
 

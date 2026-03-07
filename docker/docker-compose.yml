@@ -121,6 +121,7 @@ services:
       CI_NOTIFY_ROOM_ID: ${CI_NOTIFY_ROOM_ID:-}
       WH_CI_NOTIFY_ROOM_ID: ${WH_CI_NOTIFY_ROOM_ID:-}
       WH_CI_WEBHOOK_TOKEN: ${WH_CI_WEBHOOK_TOKEN:-}
+      WH_BOT_INCOMING_URL: ${WH_BOT_INCOMING_URL:-}
     volumes:
       - uplink-botservice-data:/app/data
     depends_on:

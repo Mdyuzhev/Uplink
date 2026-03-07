@@ -4,15 +4,56 @@
  * Бот: @bot_wh_ci:uplink.wh-lab.ru
  */
 
+import logger from '../logger.mjs';
 import { sendBotMessage } from '../matrixClient.mjs';
 import { getStorage, setStorage } from '../postgresStorage.mjs';
 
 const BOT = 'bot_wh_ci';
 
 const NOTIFY_ROOM_ID = process.env.WH_CI_NOTIFY_ROOM_ID || '';
+const WH_BOT_INCOMING_URL = process.env.WH_BOT_INCOMING_URL || '';
 
-// Внешний бот — slash-команды не используются
-export async function handleCommand() {}
+/**
+ * Обработка /wh команд — форвард к WarehouseHub uplink-bot.
+ * Маппинг: /wh status -> /status, /wh pods -> /pods и т.д.
+ */
+export async function handleCommand({ roomId, sender, subCommand }) {
+    if (!WH_BOT_INCOMING_URL) {
+        logger.warn('[bot_wh_ci] WH_BOT_INCOMING_URL не задан, команда пропущена');
+        await sendBotMessage(BOT, roomId,
+            '⚠️ WH Bot не настроен (WH_BOT_INCOMING_URL отсутствует).'
+        );
+        return;
+    }
+
+    const upstreamCommand = subCommand ? `/${subCommand}` : '/help';
+
+    try {
+        const resp = await fetch(WH_BOT_INCOMING_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                body: upstreamCommand,
+                sender,
+                room_id: roomId,
+            }),
+            signal: AbortSignal.timeout(15_000),
+        });
+
+        if (!resp.ok) {
+            const err = await resp.text();
+            logger.error({ status: resp.status, err }, '[bot_wh_ci] upstream error');
+            await sendBotMessage(BOT, roomId,
+                `⚠️ WH Bot недоступен (${resp.status}). Попробуйте позже.`
+            );
+        }
+    } catch (err) {
+        logger.error({ err }, '[bot_wh_ci] fetch error');
+        await sendBotMessage(BOT, roomId,
+            '⚠️ WH Bot не отвечает. Проверьте доступность сервера.'
+        );
+    }
+}
 
 /**
  * Основной обработчик webhook.
