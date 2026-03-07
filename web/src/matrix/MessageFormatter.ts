@@ -33,6 +33,8 @@ export interface ParsedMessage {
     replyToEventId?: string;
     replyToSender?: string;
     replyToBody?: string;
+    // Mentions
+    mentionedUserIds?: string[];
 }
 
 export function parseEvent(
@@ -88,6 +90,10 @@ export function parseEvent(
         // Reply info (sender, body) заполняется в useMessages через MatrixService.findEventInRoom
     }
 
+    // Mentions (m.mentions)
+    const mentions = content['m.mentions'];
+    const mentionedUserIds: string[] | undefined = mentions?.user_ids?.length ? mentions.user_ids : undefined;
+
     // Убрать fallback-цитату из body (> <@user:server> текст\n\n)
     let body = content.body || '';
     if (replyToEventId && body.startsWith('> ')) {
@@ -125,6 +131,7 @@ export function parseEvent(
             replyToEventId,
             replyToSender,
             replyToBody,
+            mentionedUserIds,
         };
     }
 
@@ -145,7 +152,7 @@ export function parseEvent(
             mimetype: info.mimetype,
             duration: audioInfo.duration || info.duration,
             waveform: audioInfo.waveform,
-            replyToEventId, replyToSender, replyToBody,
+            replyToEventId, replyToSender, replyToBody, mentionedUserIds,
         };
     }
 
@@ -169,7 +176,7 @@ export function parseEvent(
                 imageWidth: info.w || 240,
                 imageHeight: info.h || 240,
                 isVideoNote: true,
-                replyToEventId, replyToSender, replyToBody,
+                replyToEventId, replyToSender, replyToBody, mentionedUserIds,
             };
         }
 
@@ -179,7 +186,7 @@ export function parseEvent(
             timestamp: event.getTs(), type: 'file' as const,
             body, fileUrl: videoUrl, fileSize: info.size, mimetype: info.mimetype,
             thumbnailUrl: thumbUrl, imageWidth: info.w, imageHeight: info.h,
-            replyToEventId, replyToSender, replyToBody,
+            replyToEventId, replyToSender, replyToBody, mentionedUserIds,
         };
     }
 
@@ -208,5 +215,6 @@ export function parseEvent(
         replyToEventId,
         replyToSender,
         replyToBody,
+        mentionedUserIds,
     };
 }

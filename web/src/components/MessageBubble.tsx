@@ -7,6 +7,7 @@ import { LottieSticker } from './LottieSticker';
 import { VoiceMessage } from './VoiceMessage';
 import { VideoNote } from './VideoNote';
 import { renderMarkdown } from '../utils/markdown';
+import { matrixService } from '../matrix/MatrixService';
 import { formatTime, formatFileSize, getSenderColor, pluralReplies } from './message/formatters';
 export type { ReactionInfo, ThreadSummaryInfo } from './message/types';
 import type { ReactionInfo, ThreadSummaryInfo } from './message/types';
@@ -33,6 +34,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message, showAuthor, reactions, isPinned, threadSummary,
     onReply, onReact, onRemoveReaction, onPin, onOpenThread, onScrollToMessage,
 }) => {
+    const myUserId = matrixService.getClient().getUserId();
+    const mentionsMe = message.mentionedUserIds?.includes(myUserId ?? '') ?? false;
+
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showMobileActions, setShowMobileActions] = useState(false);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,7 +78,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
         <div
-            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''} ${message.type === 'video_note' ? 'message-bubble--video-note' : ''}`}
+            className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''} ${message.type === 'video_note' ? 'message-bubble--video-note' : ''} ${mentionsMe ? 'message-bubble--mention' : ''}`}
             data-event-id={message.id}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}

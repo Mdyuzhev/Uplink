@@ -71,6 +71,14 @@
     margin-top: 16px;
 }
 
+/* Сообщение с упоминанием текущего пользователя */
+.message-bubble--mention {
+    background: rgba(250, 168, 26, 0.08);
+    border-left: 3px solid rgba(250, 168, 26, 0.7);
+    padding-left: 69px;
+    border-radius: var(--uplink-radius-sm);
+}
+
 /* Action-bar (hover на сообщение) */
 .message-bubble__action-bar {
     position: absolute;

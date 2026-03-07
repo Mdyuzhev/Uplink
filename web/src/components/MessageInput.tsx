@@ -6,6 +6,7 @@ import { CreateStickerPackModal } from './CreateStickerPackModal';
 import { VoiceRecordBar } from './VoiceRecordBar';
 import { VideoNoteRecordOverlay } from './VideoNoteRecordOverlay';
 import { useSlashCommands } from '../hooks/useSlashCommands';
+import { useMentions } from '../hooks/useMentions';
 import { useTypingIndicator } from '../hooks/useTypingIndicator';
 import { useFileUpload } from '../hooks/useFileUpload';
 import type { VoiceRecording } from '../services/VoiceRecorder';
@@ -43,8 +44,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     const [isRecordingVoice, setIsRecordingVoice] = useState(false);
     const [showVideoNoteRecorder, setShowVideoNoteRecorder] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [cursorPos, setCursorPos] = useState(0);
 
     const { suggestions, selectedIndex, setSelectedIndex, selectSuggestion, clearSuggestions } = useSlashCommands(text);
+    const {
+        suggestions: mentionSuggestions,
+        selectedIndex: mentionIndex,
+        setSelectedIndex: setMentionIndex,
+        insertMention,
+        clearSuggestions: clearMentions,
+    } = useMentions(text, cursorPos, roomId);
     useTypingIndicator(roomId, text);
     const {
         isDragOver, uploading, fileInputRef,
@@ -74,32 +83,100 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }
     }, [pendingText, onPendingTextConsumed]);
 
-    const handleSend = () => {
+    /** Извлечь userId упомянутых пользователей из текста */
+    const extractMentionedUserIds = (messageText: string): string[] => {
+        if (!roomId) return [];
+        const room = matrixService.getClient().getRoom(roomId);
+        if (!room) return [];
+        const result: string[] = [];
+        for (const member of room.getJoinedMembers()) {
+            const displayName = member.name || member.userId;
+            if (messageText.includes(`@${displayName}`)) {
+                result.push(member.userId);
+            }
+        }
+        return result;
+    };
+
+    const handleSend = async () => {
         const trimmed = text.trim();
         if (!trimmed) return;
 
-        if (replyTo && onSendReply) {
-            onSendReply(replyTo.eventId, trimmed);
-            onCancelReply?.();
-        } else {
-            onSend(trimmed);
+        clearMentions();
+
+        const mentionedIds = extractMentionedUserIds(trimmed);
+        const hasMentions = mentionedIds.length > 0;
+
+        try {
+            if (replyTo && onSendReply) {
+                if (hasMentions && roomId) {
+                    await matrixService.messages.sendReplyWithMentions(roomId, replyTo.eventId, trimmed, mentionedIds);
+                } else {
+                    onSendReply(replyTo.eventId, trimmed);
+                }
+                onCancelReply?.();
+            } else {
+                if (hasMentions && roomId) {
+                    await matrixService.messages.sendMessageWithMentions(roomId, trimmed, mentionedIds);
+                } else {
+                    onSend(trimmed);
+                }
+            }
+        } catch (e) {
+            console.error('[MessageInput] Ошибка отправки:', e);
         }
 
         setText('');
+        setCursorPos(0);
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
         }
 
-        // Сбросить typing при отправке
         if (roomId) matrixService.users.sendTyping(roomId, false).catch(() => {});
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setText(e.target.value);
+        setCursorPos(e.target.selectionStart ?? e.target.value.length);
         adjustHeight();
     };
 
+    const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+        setCursorPos((e.target as HTMLTextAreaElement).selectionStart ?? 0);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        // Навигация по подсказкам упоминаний
+        if (mentionSuggestions.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setMentionIndex(i => Math.min(i + 1, mentionSuggestions.length - 1));
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setMentionIndex(i => Math.max(i - 1, 0));
+                return;
+            }
+            if (e.key === 'Tab' || e.key === 'Enter') {
+                e.preventDefault();
+                const { newText, newCursor } = insertMention(mentionIndex);
+                setText(newText);
+                setCursorPos(newCursor);
+                setTimeout(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.selectionStart = newCursor;
+                        textareaRef.current.selectionEnd = newCursor;
+                    }
+                }, 0);
+                return;
+            }
+            if (e.key === 'Escape') {
+                clearMentions();
+                return;
+            }
+        }
+
         // Навигация по подсказкам команд
         if (suggestions.length > 0) {
             if (e.key === 'ArrowDown') {
@@ -185,6 +262,35 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                         onOpenCreatePack={() => { setShowStickerPanel(false); setShowCreatePack(true); }}
                     />
                 )}
+                {mentionSuggestions.length > 0 && (
+                    <div className="mention-suggestions">
+                        {mentionSuggestions.map((member, i) => (
+                            <div
+                                key={member.userId}
+                                className={`mention-suggestions__item ${i === mentionIndex ? 'mention-suggestions__item--active' : ''}`}
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    const { newText, newCursor } = insertMention(i);
+                                    setText(newText);
+                                    setCursorPos(newCursor);
+                                    setTimeout(() => {
+                                        textareaRef.current?.focus();
+                                        if (textareaRef.current) {
+                                            textareaRef.current.selectionStart = newCursor;
+                                            textareaRef.current.selectionEnd = newCursor;
+                                        }
+                                    }, 0);
+                                }}
+                            >
+                                <span className="mention-suggestions__avatar">
+                                    {member.displayName[0]?.toUpperCase() || '?'}
+                                </span>
+                                <span className="mention-suggestions__name">{member.displayName}</span>
+                                <span className="mention-suggestions__id">{member.userId}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 {suggestions.length > 0 && (
                     <div className="command-suggestions">
                         {suggestions.map((cmd, i) => (
@@ -232,6 +338,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                                 value={text}
                                 onChange={handleChange}
                                 onKeyDown={handleKeyDown}
+                                onSelect={handleSelect}
                                 onPaste={handlePaste}
                                 onFocus={() => {
                                     setTimeout(() => {

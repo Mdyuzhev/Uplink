@@ -35,6 +35,76 @@ export class MessageService {
         });
     }
 
+    /** Отправить сообщение с упоминаниями (Matrix m.mentions) */
+    async sendMessageWithMentions(roomId: string, body: string, mentionedUserIds: string[]): Promise<void> {
+        const client = this.getClient();
+
+        let formattedBody = body
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+
+        for (const userId of mentionedUserIds) {
+            const room = client.getRoom(roomId);
+            const member = room?.getMember(userId);
+            const displayName = member?.name || userId;
+            const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp(`@${escaped}`, 'g');
+            const link = `<a href="https://matrix.to/#/${userId}">@${displayName}</a>`;
+            formattedBody = formattedBody.replace(re, link);
+        }
+
+        await client.sendEvent(roomId, 'm.room.message' as sdk.EventType, {
+            msgtype: 'm.text',
+            body,
+            format: 'org.matrix.custom.html',
+            formatted_body: formattedBody,
+            'm.mentions': {
+                user_ids: mentionedUserIds,
+            },
+        });
+    }
+
+    /** Отправить ответ с упоминаниями */
+    async sendReplyWithMentions(roomId: string, replyToEventId: string, body: string, mentionedUserIds: string[]): Promise<void> {
+        const client = this.getClient();
+        const room = client.getRoom(roomId);
+        const replyEvent = room?.findEventById(replyToEventId);
+        const originalBody = replyEvent?.getContent()?.body || '';
+        const originalSender = replyEvent?.getSender() || '';
+
+        const fallbackBody = `> <${originalSender}> ${originalBody}\n\n${body}`;
+
+        let formattedBody = body
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+
+        for (const userId of mentionedUserIds) {
+            const member = room?.getMember(userId);
+            const displayName = member?.name || userId;
+            const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const re = new RegExp(`@${escaped}`, 'g');
+            const link = `<a href="https://matrix.to/#/${userId}">@${displayName}</a>`;
+            formattedBody = formattedBody.replace(re, link);
+        }
+
+        await client.sendEvent(roomId, 'm.room.message' as sdk.EventType, {
+            msgtype: 'm.text',
+            body: fallbackBody,
+            format: 'org.matrix.custom.html',
+            formatted_body: `<mx-reply><blockquote><a href="https://matrix.to/#/${roomId}/${replyToEventId}">In reply to</a> <a href="https://matrix.to/#/${originalSender}">${originalSender}</a><br>${originalBody}</blockquote></mx-reply>${formattedBody}`,
+            'm.relates_to': {
+                'm.in_reply_to': { event_id: replyToEventId },
+            },
+            'm.mentions': {
+                user_ids: mentionedUserIds,
+            },
+        });
+    }
+
     async loadMoreMessages(roomId: string, limit: number = 30): Promise<boolean> {
         const client = this.getClient();
         const room = client.getRoom(roomId);
