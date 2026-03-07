@@ -132,9 +132,9 @@ export function useMessages(roomId: string | null) {
         await matrixService.messages.sendReply(roomId, replyToEventId, body);
     }, [roomId]);
 
-    const sendFile = useCallback(async (file: File) => {
+    const sendFile = useCallback(async (file: File, onProgress?: (percent: number) => void) => {
         if (!roomId) return;
-        await matrixService.media.sendFile(roomId, file);
+        await matrixService.media.sendFile(roomId, file, onProgress);
     }, [roomId]);
 
     const sendReaction = useCallback(async (eventId: string, emoji: string) => {

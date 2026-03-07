@@ -40,11 +40,22 @@ export class MediaService {
     }
 
     /** Загрузить файл на сервер и отправить как сообщение */
-    async sendFile(roomId: string, file: File): Promise<void> {
+    async sendFile(roomId: string, file: File, onProgress?: (percent: number) => void): Promise<void> {
         const client = this.getClient();
-        const uploadResponse = await client.uploadContent(file, { type: file.type });
+        onProgress?.(0);
+        const uploadResponse = await client.uploadContent(file, {
+            type: file.type,
+            progressHandler: (progress: { loaded: number; total: number }) => {
+                if (progress.total > 0) {
+                    onProgress?.(Math.round((progress.loaded / progress.total) * 100));
+                }
+            },
+        });
         const mxcUrl = uploadResponse.content_uri;
+        onProgress?.(100);
+
         const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
 
         if (isImage) {
             const dims = await this.getImageDimensions(file);
@@ -53,6 +64,24 @@ export class MediaService {
                 body: file.name,
                 url: mxcUrl,
                 info: { mimetype: file.type, size: file.size, w: dims.width, h: dims.height },
+            } as any);
+        } else if (isVideo) {
+            const meta = await this.getVideoMetadata(file);
+            await client.sendMessage(roomId, {
+                msgtype: 'm.video',
+                body: file.name,
+                url: mxcUrl,
+                info: {
+                    mimetype: file.type,
+                    size: file.size,
+                    w: meta.width,
+                    h: meta.height,
+                    duration: meta.duration,
+                    ...(meta.thumbnailMxc ? {
+                        thumbnail_url: meta.thumbnailMxc,
+                        thumbnail_info: { mimetype: 'image/jpeg', w: meta.width, h: meta.height },
+                    } : {}),
+                },
             } as any);
         } else {
             await client.sendMessage(roomId, {
@@ -126,6 +155,54 @@ export class MediaService {
         };
 
         await client.sendEvent(roomId, 'm.room.message' as sdk.EventType, content);
+    }
+
+    /** Получить метаданные видео (размеры, длительность, thumbnail) */
+    async getVideoMetadata(file: File): Promise<{ width: number; height: number; duration: number; thumbnailMxc?: string }> {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            const objectUrl = URL.createObjectURL(file);
+            video.src = objectUrl;
+
+            const cleanup = () => { URL.revokeObjectURL(objectUrl); };
+            const fallback = () => { cleanup(); resolve({ width: 0, height: 0, duration: 0 }); };
+
+            video.onloadedmetadata = () => {
+                const width = video.videoWidth;
+                const height = video.videoHeight;
+                const duration = Math.round(video.duration * 1000);
+
+                // Генерируем thumbnail из первого кадра
+                video.currentTime = Math.min(1, video.duration / 2);
+                video.onseeked = async () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx?.drawImage(video, 0, 0, width, height);
+                        const blob = await new Promise<Blob | null>((res) =>
+                            canvas.toBlob(res, 'image/jpeg', 0.7),
+                        );
+                        cleanup();
+                        if (blob) {
+                            const thumbFile = new File([blob], 'thumb.jpg', { type: 'image/jpeg' });
+                            const thumbnailMxc = await this.uploadFile(thumbFile);
+                            resolve({ width, height, duration, thumbnailMxc });
+                        } else {
+                            resolve({ width, height, duration });
+                        }
+                    } catch {
+                        cleanup();
+                        resolve({ width, height, duration });
+                    }
+                };
+            };
+            video.onerror = fallback;
+            // Таймаут на случай если видео не грузится
+            setTimeout(fallback, 10000);
+        });
     }
 
     /** Получить размеры изображения из File */

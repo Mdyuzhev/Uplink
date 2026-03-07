@@ -24,7 +24,7 @@ export interface ReplyToInfo {
 interface MessageInputProps {
     onSend: (body: string) => void;
     onSendReply?: (replyToEventId: string, body: string) => void;
-    onSendFile: (file: File) => void;
+    onSendFile: (file: File, onProgress?: (percent: number) => void) => void;
     roomId?: string;
     roomName?: string;
     replyTo?: ReplyToInfo | null;
@@ -56,7 +56,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     } = useMentions(text, cursorPos, roomId);
     useTypingIndicator(roomId, text);
     const {
-        isDragOver, uploading, fileInputRef,
+        isDragOver, uploading, uploadProgress, fileInputRef,
         handleDragOver, handleDragLeave, handleDrop, handlePaste, handleFileInputChange, openFilePicker,
     } = useFileUpload(onSendFile);
 
@@ -321,7 +321,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
                 )}
                 {uploading && (
                     <div className="message-input__uploading">
-                        Загрузка файла...
+                        <div className="message-input__upload-info">
+                            Загрузка файла… {uploadProgress > 0 && `${uploadProgress}%`}
+                        </div>
+                        <div className="message-input__upload-track">
+                            <div
+                                className="message-input__upload-bar"
+                                style={{ width: `${uploadProgress}%` }}
+                            />
+                        </div>
                     </div>
                 )}
                 <div className="message-input__row">

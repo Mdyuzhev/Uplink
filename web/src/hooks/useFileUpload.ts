@@ -5,9 +5,10 @@
 
 import { useState, useRef, useCallback } from 'react';
 
-export function useFileUpload(onSendFile: (file: File) => void) {
+export function useFileUpload(onSendFile: (file: File, onProgress?: (percent: number) => void) => void) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = useCallback(async (file: File) => {
@@ -17,12 +18,14 @@ export function useFileUpload(onSendFile: (file: File) => void) {
             return;
         }
         setUploading(true);
+        setUploadProgress(0);
         try {
-            await onSendFile(file);
+            await onSendFile(file, (percent) => setUploadProgress(percent));
         } catch (err) {
             console.error('Ошибка отправки файла:', err);
         } finally {
             setUploading(false);
+            setUploadProgress(0);
         }
     }, [uploading, onSendFile]);
 
@@ -72,6 +75,7 @@ export function useFileUpload(onSendFile: (file: File) => void) {
     return {
         isDragOver,
         uploading,
+        uploadProgress,
         fileInputRef,
         handleDragOver,
         handleDragLeave,
