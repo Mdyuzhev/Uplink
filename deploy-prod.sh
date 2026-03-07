@@ -111,18 +111,22 @@ export CI_NOTIFY_ROOM_ID="${CI_NOTIFY_ROOM_ID:-!tFXRLxMHLSzVoiPXek:uplink.wh-lab
 
 cd docker
 
+# Убрать zombie-контейнеры с префиксными именами (остаются после прерванных деплоев)
+docker compose -f docker-compose.production.yml rm -f 2>/dev/null || true
+docker container prune -f 2>/dev/null || true
+
 if [ "$REBUILD" = "all" ]; then
     echo "-> Docker compose: полная пересборка..."
     # build отдельно от up — Docker не перезапускает контейнеры с неизменённым образом
     docker compose -f docker-compose.production.yml build
-    docker compose -f docker-compose.production.yml up -d
+    docker compose -f docker-compose.production.yml up -d --remove-orphans
 elif [ -n "$REBUILD" ]; then
     echo "-> Docker compose: пересборка [$REBUILD ]..."
     docker compose -f docker-compose.production.yml build $REBUILD
-    docker compose -f docker-compose.production.yml up -d
+    docker compose -f docker-compose.production.yml up -d --remove-orphans
 else
     echo "-> Нет изменений в сервисах, пропуск пересборки"
-    docker compose -f docker-compose.production.yml up -d
+    docker compose -f docker-compose.production.yml up -d --remove-orphans
 fi
 
 # Права media_store: именованный volume создаётся Docker с uid=root,
