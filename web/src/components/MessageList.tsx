@@ -17,6 +17,7 @@ interface MessageListProps {
     onRemoveReaction?: (reactionEventId: string) => void;
     onPin?: (eventId: string) => void;
     onOpenThread?: (eventId: string) => void;
+    onDelete?: (eventId: string) => void;
 }
 
 const SAME_AUTHOR_THRESHOLD = 5 * 60 * 1000; // 5 минут
@@ -41,7 +42,7 @@ function getDayKey(ts: number): string {
 export const MessageList: React.FC<MessageListProps> = ({
     messages, roomId, reactions, pinnedIds, threadSummaries, typingUsers,
     scrollToEventId, onScrollComplete,
-    onLoadMore, onReply, onReact, onRemoveReaction, onPin, onOpenThread,
+    onLoadMore, onReply, onReact, onRemoveReaction, onPin, onOpenThread, onDelete,
 }) => {
     const listRef = useRef<HTMLDivElement>(null);
     const isAtBottom = useRef(true);
@@ -113,6 +114,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 onRemoveReaction={onRemoveReaction}
                 onPin={onPin}
                 onOpenThread={onOpenThread}
+                onDelete={onDelete}
                 onScrollToMessage={scrollToMessage}
             />
         );

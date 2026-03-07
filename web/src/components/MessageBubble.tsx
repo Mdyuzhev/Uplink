@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { SmilePlus, Reply, MessageSquare, Pin, ChevronRight, FileText, Download } from 'lucide-react';
+import { MessageContextMenu } from './MessageContextMenu';
 import { ParsedMessage } from '../matrix/MessageFormatter';
 import { Avatar } from './Avatar';
 import { CodeSnippet } from './CodeSnippet';
@@ -28,18 +29,20 @@ interface MessageBubbleProps {
     onRemoveReaction?: (reactionEventId: string) => void;
     onPin?: (eventId: string) => void;
     onOpenThread?: (eventId: string) => void;
+    onDelete?: (eventId: string) => void;
     onScrollToMessage?: (eventId: string) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message, roomId, showAuthor, reactions, isPinned, threadSummary,
-    onReply, onReact, onRemoveReaction, onPin, onOpenThread, onScrollToMessage,
+    onReply, onReact, onRemoveReaction, onPin, onOpenThread, onDelete, onScrollToMessage,
 }) => {
     const myUserId = matrixService.getClient().getUserId();
     const mentionsMe = message.mentionedUserIds?.includes(myUserId ?? '') ?? false;
 
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showMobileActions, setShowMobileActions] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleTouchStart = useCallback(() => {
@@ -69,6 +72,41 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         onReact?.(message.id, emoji);
     };
 
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+        setShowEmojiPicker(false);
+    }, []);
+
+    const isOwn = message.sender === myUserId;
+
+    const handleCopyText = ['text', 'code'].includes(message.type)
+        ? () => navigator.clipboard.writeText(message.body)
+        : undefined;
+
+    const handleDownloadFile = ['file', 'video', 'voice', 'video_note'].includes(message.type) && message.fileUrl
+        ? () => {
+            const a = document.createElement('a');
+            a.href = message.fileUrl!;
+            a.download = message.body;
+            a.click();
+        }
+        : undefined;
+
+    const handleOpenImage = ['image', 'gif', 'sticker'].includes(message.type) && (message.imageUrl || message.fileUrl)
+        ? () => window.open(message.imageUrl || message.fileUrl || '', '_blank')
+        : undefined;
+
+    const handleDownloadImage = ['image', 'gif'].includes(message.type) && (message.imageUrl || message.fileUrl)
+        ? () => {
+            const a = document.createElement('a');
+            a.href = message.imageUrl || message.fileUrl || '';
+            a.download = message.body;
+            a.click();
+        }
+        : undefined;
+
     const handleReactionClick = (reaction: ReactionInfo) => {
         if (reaction.myReactionEventId) {
             onRemoveReaction?.(reaction.myReactionEventId);
@@ -81,6 +119,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div
             className={`message-bubble ${showAuthor ? 'message-bubble--full' : ''} ${message.type === 'sticker' ? 'message-bubble--sticker' : ''} ${message.type === 'video_note' ? 'message-bubble--video-note' : ''} ${mentionsMe ? 'message-bubble--mention' : ''}`}
             data-event-id={message.id}
+            onContextMenu={handleContextMenu}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             onTouchMove={handleTouchMove}
@@ -338,6 +377,25 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Context menu (ПКМ на десктопе) */}
+            {contextMenu && (
+                <MessageContextMenu
+                    position={contextMenu}
+                    isPinned={isPinned ?? false}
+                    isOwn={isOwn}
+                    onClose={() => setContextMenu(null)}
+                    onReply={() => onReply?.(message)}
+                    onReact={(emoji) => onReact?.(message.id, emoji)}
+                    onPin={() => onPin?.(message.id)}
+                    onOpenThread={() => onOpenThread?.(message.id)}
+                    onDelete={() => onDelete?.(message.id)}
+                    onCopyText={handleCopyText}
+                    onDownloadFile={handleDownloadFile}
+                    onOpenImage={handleOpenImage}
+                    onDownloadImage={handleDownloadImage}
+                />
+            )}
 
             {/* Mobile action sheet (long-press на тач-устройствах) */}
             {showMobileActions && isTouchDevice && (

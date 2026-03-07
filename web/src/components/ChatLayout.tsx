@@ -226,6 +226,7 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                             onRemoveReaction={chat.removeReaction}
                             onPin={chat.togglePin}
                             onOpenThread={chat.handleOpenThread}
+                            onDelete={chat.deleteMessage}
                         />
                         <MessageInput
                             onSend={chat.sendMessage}

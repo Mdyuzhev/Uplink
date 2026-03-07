@@ -239,3 +239,91 @@
     background: var(--uplink-bg-hover);
 }
 
+/* ═══════════════════════════════════
+   CONTEXT MENU
+   ═══════════════════════════════════ */
+.msg-context-menu {
+    position: fixed;
+    z-index: 9999;
+    min-width: 220px;
+    background: var(--uplink-bg-elevated, #2b2d31);
+    border: 1px solid var(--uplink-border, rgba(255,255,255,0.08));
+    border-radius: var(--uplink-radius-md, 8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    animation: ctx-menu-in 0.1s ease;
+}
+
+@keyframes ctx-menu-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.msg-context-menu__emoji-strip {
+    display: flex;
+    gap: 2px;
+    padding: 2px 4px 6px;
+}
+
+.msg-context-menu__emoji-strip button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px;
+    line-height: 1;
+    transition: background 0.1s, transform 0.1s;
+}
+
+.msg-context-menu__emoji-strip button:hover {
+    background: var(--uplink-bg-hover);
+    transform: scale(1.2);
+}
+
+.msg-context-menu__divider {
+    height: 1px;
+    background: var(--uplink-border, rgba(255,255,255,0.08));
+    margin: 4px 0;
+}
+
+.msg-context-menu > button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--uplink-text-primary);
+    font-size: 14px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+}
+
+.msg-context-menu > button:hover {
+    background: var(--uplink-bg-hover);
+}
+
+.msg-context-menu > button svg {
+    color: var(--uplink-text-muted);
+    flex-shrink: 0;
+}
+
+.msg-context-menu__item--danger {
+    color: var(--uplink-color-danger, #ed4245) !important;
+}
+
+.msg-context-menu__item--danger svg {
+    color: var(--uplink-color-danger, #ed4245) !important;
+}
+
+.msg-context-menu__item--danger:hover {
+    background: rgba(237, 66, 69, 0.1) !important;
+}
+

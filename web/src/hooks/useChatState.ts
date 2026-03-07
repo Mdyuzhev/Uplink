@@ -27,7 +27,7 @@ export function useChatState() {
 
     const {
         messages, reactions, pinnedIds, threadSummaries, typingUsers,
-        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
+        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, deleteMessage, loadMore,
     } = useMessages(activeRoomId);
 
     // Закреплённые сообщения для панели в шапке
@@ -141,6 +141,6 @@ export function useChatState() {
         handleSelectRoom, handleSelectSpace, handleBack, handleOpenDM, handleOpenThread, handleReply,
         setIsDMsMode, setIsThreadsMode,
         setReplyTo, setScrollToEventId, setActiveThread,
-        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
+        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, deleteMessage, loadMore,
     };
 }

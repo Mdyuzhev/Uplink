@@ -162,6 +162,15 @@ export function useMessages(roomId: string | null) {
         }
     }, [roomId, pinnedIds]);
 
+    const deleteMessage = useCallback(async (eventId: string) => {
+        if (!roomId) return;
+        try {
+            await matrixService.getClient().redactEvent(roomId, eventId);
+        } catch (err) {
+            console.error('Ошибка удаления сообщения:', err);
+        }
+    }, [roomId]);
+
     const loadMore = useCallback(async () => {
         if (!roomId) return;
         await matrixService.messages.loadMoreMessages(roomId);
@@ -170,6 +179,6 @@ export function useMessages(roomId: string | null) {
 
     return {
         messages, reactions, pinnedIds, threadSummaries, typingUsers,
-        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, loadMore,
+        sendMessage, sendReply, sendFile, sendReaction, removeReaction, togglePin, deleteMessage, loadMore,
     };
 }
