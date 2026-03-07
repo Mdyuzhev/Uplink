@@ -44,6 +44,9 @@ jobs:
           - platform: macos-latest
             target: aarch64-apple-darwin
             artifact-name: Uplink-macOS-ARM64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            artifact-name: Uplink-macOS-Intel
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             artifact-name: Uplink-Linux-x64
@@ -181,6 +184,10 @@ jobs:
           find artifacts/Uplink-macOS-ARM64 -name "*.dmg" -exec sh -c \
             'cp "$1" "release-assets/Uplink-macOS-ARM64.dmg"' _ {} \;
 
+          # macOS Intel
+          find artifacts/Uplink-macOS-Intel -name "*.dmg" -exec sh -c \
+            'cp "$1" "release-assets/Uplink-macOS-Intel.dmg"' _ {} \;
+
           # Linux
           find artifacts/Uplink-Linux-x64 -name "*.deb" -exec cp {} release-assets/ \;
           find artifacts/Uplink-Linux-x64 -name "*.AppImage" -exec cp {} release-assets/ \;
@@ -209,6 +216,7 @@ jobs:
             |-----------|------|
             | **Windows** (установщик) | `.exe` / `.msi` |
             | **macOS** Apple Silicon | `Uplink-macOS-ARM64.dmg` |
+            | **macOS** Intel | `Uplink-macOS-Intel.dmg` |
             | **Linux** Debian/Ubuntu | `.deb` |
             | **Linux** Universal | `.AppImage` |
             | **VS Code Extension** | `.vsix` |

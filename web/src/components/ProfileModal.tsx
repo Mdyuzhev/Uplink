@@ -5,6 +5,10 @@ import { storageGet, storageSet } from '../utils/storage';
 import { AvatarSection } from './profile/AvatarSection';
 import { NameSection } from './profile/NameSection';
 import { PasswordSection } from './profile/PasswordSection';
+import { useUpdateCheck } from '../hooks/useUpdateCheck';
+import { isTauri, isVSCode } from '../config';
+
+declare const __APP_VERSION__: string;
 
 interface ProfileModalProps {
     onClose: () => void;
@@ -13,6 +17,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout }) => {
     const displayName = matrixService.users.getMyDisplayName();
+    const { status, updateInfo, checkForUpdates } = useUpdateCheck();
     const [dmEncrypted, setDmEncrypted] = useState(
         () => storageGet('uplink_dm_encrypted') === 'true'
     );
@@ -64,6 +69,55 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
                             Новые личные чаты создаются без шифрования. Можно включить позже в заголовке чата.
                         </div>
                     )}
+                </div>
+
+                <div className="profile-modal__divider" />
+                <div className="profile-modal__section">
+                    <label className="profile-modal__label">О приложении</label>
+
+                    <div className="profile-modal__app-info">
+                        <span className="profile-modal__app-version">
+                            Версия {__APP_VERSION__}
+                            {isVSCode && ' · VS Code Extension'}
+                            {isTauri && ' · Desktop'}
+                        </span>
+                    </div>
+
+                    {status === 'idle' || status === 'error' ? (
+                        <button
+                            className={`profile-modal__btn ${status === 'error' ? 'profile-modal__btn--warning' : ''}`}
+                            onClick={checkForUpdates}
+                        >
+                            {status === 'error' ? 'Не удалось проверить. Повторить' : 'Проверить обновления'}
+                        </button>
+                    ) : status === 'checking' ? (
+                        <button className="profile-modal__btn" disabled>
+                            Проверяем...
+                        </button>
+                    ) : status === 'up-to-date' ? (
+                        <button className="profile-modal__btn" disabled>
+                            ✓ Актуальная версия
+                        </button>
+                    ) : status === 'available' && updateInfo ? (
+                        <div className="profile-modal__update-block">
+                            <span className="profile-modal__update-note">
+                                Доступна версия {updateInfo.version}
+                            </span>
+                            <a
+                                href={updateInfo.downloadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="profile-modal__btn profile-modal__btn--accent"
+                            >
+                                {isVSCode ? 'Скачать .vsix' : 'Скачать обновление'}
+                            </a>
+                            {isVSCode && (
+                                <span className="profile-modal__update-hint">
+                                    После скачивания: Extensions → ··· → Install from VSIX
+                                </span>
+                            )}
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="profile-modal__divider" />

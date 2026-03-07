@@ -29,6 +29,8 @@ pub fn run() {
         ))
         // Deep links (uplink:// протокол)
         .plugin(tauri_plugin_deep_link::init())
+        // Открытие внешних ссылок в системном браузере
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // --- Контекстное меню трея ---
             let show = MenuItem::with_id(app, "show", "Показать Uplink", true, None::<&str>)?;

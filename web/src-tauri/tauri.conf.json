@@ -65,6 +65,9 @@
       "desktop": {
         "schemes": ["uplink"]
       }
+    },
+    "shell": {
+      "open": true
     }
   }
 }

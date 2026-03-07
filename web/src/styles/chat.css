@@ -380,3 +380,48 @@
     text-decoration: underline;
 }
 
+/* ═══════════════════════════════════
+   PROFILE MODAL — UPDATE SECTION
+   ═══════════════════════════════════ */
+.profile-modal__app-info {
+    margin-bottom: 10px;
+}
+
+.profile-modal__app-version {
+    font-size: 13px;
+    color: var(--uplink-text-muted);
+}
+
+.profile-modal__update-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-modal__update-note {
+    font-size: 13px;
+    color: var(--uplink-text-secondary);
+}
+
+.profile-modal__update-hint {
+    font-size: 12px;
+    color: var(--uplink-text-muted);
+    line-height: 1.4;
+}
+
+.profile-modal__btn--accent {
+    background: var(--uplink-accent, #5865f2);
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+}
+
+.profile-modal__btn--accent:hover {
+    background: var(--uplink-accent-hover, #4752c4);
+}
+
+.profile-modal__btn--warning {
+    color: var(--uplink-color-danger, #ed4245);
+}
+
