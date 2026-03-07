@@ -249,3 +249,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-07 | task_043 | Команды /wh в bot_wh_ci: registry commands, enableBotInRoom binding, handleCommand форвард на WH_BOT_INCOMING_URL, docker-compose env |
 | 2026-03-07 | task_044 | Фильтрация автокомплита команд по комнате: GET /api/commands?roomId, CommandRegistry кэш по roomId, invalidate при toggle бота |
 | 2026-03-07 | task_045 | Space Switcher (Discord-стиль, 64px левая колонка), роли в Space (global_admin/space_admin/member через power levels), панель тредов (ThreadIndexService + ThreadsPanel), SpaceService, фильтрация сайдбара по activeSpaceId |
+| 2026-03-07 | task_046 | Редизайн поля ввода: мягкая рамка без синего glow, border-radius 14px, квадратные кнопки (8px), floating автокомплит, scale-эффект send-кнопки |
