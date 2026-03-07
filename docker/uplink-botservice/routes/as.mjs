@@ -15,7 +15,8 @@ const HS_TOKEN = process.env.HS_TOKEN;
 const processedTxns = new Set();
 const MAX_TXNS = 10000;
 
-router.put('/transactions/:txnId', (req, res) => {
+// Synapse шлёт на /_matrix/app/v1/transactions/:txnId
+router.put(['/_matrix/app/v1/transactions/:txnId', '/transactions/:txnId'], (req, res) => {
     const token = req.query.access_token;
     if (token !== HS_TOKEN) {
         return res.status(403).json({ errcode: 'M_FORBIDDEN' });
@@ -45,7 +46,7 @@ router.put('/transactions/:txnId', (req, res) => {
     res.json({});
 });
 
-router.get('/users/:userId', (req, res) => {
+router.get(['/_matrix/app/v1/users/:userId', '/users/:userId'], (req, res) => {
     const userId = req.params.userId;
     if (userId.startsWith('@bot_')) {
         return res.json({});
@@ -53,7 +54,7 @@ router.get('/users/:userId', (req, res) => {
     res.status(404).json({ errcode: 'M_NOT_FOUND' });
 });
 
-router.get('/rooms/:roomAlias', (_req, res) => {
+router.get(['/_matrix/app/v1/rooms/:roomAlias', '/rooms/:roomAlias'], (_req, res) => {
     res.status(404).json({ errcode: 'M_NOT_FOUND' });
 });
 
