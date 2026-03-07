@@ -73,7 +73,7 @@ E:\Uplink\
 │   │   ├── components/     — React-компоненты (31 файл)
 │   │   ├── contexts/       — React Contexts (ChatContext, CallContext)
 │   │   ├── hooks/          — хуки-обёртки над сервисами (14 файлов)
-│   │   ├── matrix/         — Matrix сервисный слой (11 файлов, декомпозирован)
+│   │   ├── matrix/         — Matrix сервисный слой (13 файлов: +SpaceService, ThreadIndexService)
 │   │   ├── livekit/        — LiveKitService, CallSignalingService
 │   │   ├── services/       — GIF, стикеры, voice/video recorder
 │   │   ├── bots/           — CommandRegistry (slash-команды)
@@ -248,3 +248,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-07 | task_042 | Улучшение UI ботов: BotManagePanel — управление комнатами (добавить/удалить бота из канала), BotCreateModal — «Добавить в канал» после создания |
 | 2026-03-07 | task_043 | Команды /wh в bot_wh_ci: registry commands, enableBotInRoom binding, handleCommand форвард на WH_BOT_INCOMING_URL, docker-compose env |
 | 2026-03-07 | task_044 | Фильтрация автокомплита команд по комнате: GET /api/commands?roomId, CommandRegistry кэш по roomId, invalidate при toggle бота |
+| 2026-03-07 | task_045 | Space Switcher (Discord-стиль, 64px левая колонка), роли в Space (global_admin/space_admin/member через power levels), панель тредов (ThreadIndexService + ThreadsPanel), SpaceService, фильтрация сайдбара по activeSpaceId |
