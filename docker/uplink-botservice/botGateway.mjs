@@ -155,7 +155,7 @@ async function handleBotAction(bot, msg, ws) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'Нет доступа к комнате' });
                 return;
             }
-            const eventId = await sendBotMessage(bot.localpart, roomId, msg.body, msg.formatted_body);
+            const eventId = await sendBotMessage(bot.localpart, roomId, msg.body, msg.formatted_body, undefined, msg['uplink.buttons']);
             safeSend(ws, { type: 'ack', action_id: actionId, event_id: eventId });
             break;
         }
@@ -184,7 +184,7 @@ async function handleBotAction(bot, msg, ws) {
                 safeSend(ws, { type: 'error', action_id: actionId, error: 'Нет доступа к комнате' });
                 return;
             }
-            const eventId = await sendBotMessage(bot.localpart, roomId, msg.body, msg.formatted_body, editEventId);
+            const eventId = await sendBotMessage(bot.localpart, roomId, msg.body, msg.formatted_body, editEventId, msg['uplink.buttons']);
             safeSend(ws, { type: 'ack', action_id: actionId, event_id: eventId });
             break;
         }

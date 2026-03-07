@@ -55,7 +55,7 @@ export async function ensureBotUser(localpart, displayName) {
 /**
  * Отправить сообщение от имени бота.
  */
-export async function sendBotMessage(botLocalpart, roomId, body, formatted, editEventId) {
+export async function sendBotMessage(botLocalpart, roomId, body, formatted, editEventId, buttons) {
     const userId = `@${botLocalpart}:${SERVER_NAME}`;
     const txnId = `bot_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -74,6 +74,11 @@ export async function sendBotMessage(botLocalpart, roomId, body, formatted, edit
         bot_id: botLocalpart.replace('bot_', ''),
         is_bot: true,
     };
+
+    // Inline-кнопки от SDK-бота
+    if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+        content['uplink.buttons'] = buttons;
+    }
 
     // Редактирование существующего сообщения (Matrix m.replace)
     if (editEventId) {
