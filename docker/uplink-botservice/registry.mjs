@@ -32,14 +32,8 @@ export const BOT_DEFINITIONS = {
         userId: `@bot_wh_ci:${SERVER_NAME}`,
         localpart: 'bot_wh_ci',
         displayName: 'WarehouseHub CI',
-        description: 'CI/CD уведомления и статус WarehouseHub',
-        commands: [
-            { command: '/wh status',  description: 'Статус серверов',      usage: '/wh status' },
-            { command: '/wh pods',    description: 'Сервисы (docker)',      usage: '/wh pods' },
-            { command: '/wh metrics', description: 'CPU / RAM',             usage: '/wh metrics' },
-            { command: '/wh robot',   description: 'Статус робота',         usage: '/wh robot' },
-            { command: '/wh help',    description: 'Список команд WH Bot',  usage: '/wh help' },
-        ],
+        description: 'CI/CD уведомления WarehouseHub (только webhooks)',
+        commands: [],
     },
     alerts: {
         userId: `@bot_alerts:${SERVER_NAME}`,
