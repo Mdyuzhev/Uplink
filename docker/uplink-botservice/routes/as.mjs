@@ -33,6 +33,9 @@ router.put('/transactions/:txnId', (req, res) => {
     }
 
     const events = req.body.events || [];
+    if (events.length > 0) {
+        logger.info({ txnId, count: events.length }, 'AS transaction received');
+    }
     for (const event of events) {
         handleMatrixEvent(event).catch(err => {
             logger.error({ err }, 'Ошибка обработки события');

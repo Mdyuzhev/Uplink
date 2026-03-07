@@ -83,6 +83,7 @@ async function routeCommand(roomId, sender, body, eventId) {
         return;
     }
     const commandRoot = parts[0].toLowerCase();
+    logger.info({ commandRoot, sender, roomId }, 'routeCommand');
 
     // 1. Сначала ищем среди встроенных ботов
     const botEntry = Object.entries(BOT_DEFINITIONS).find(([_id, bot]) =>
