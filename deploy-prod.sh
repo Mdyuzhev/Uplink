@@ -9,6 +9,18 @@ echo "$(date '+%Y-%m-%d %H:%M:%S')"
 
 cd ~/projects/uplink
 
+# Установить maintenance-страницу для host nginx (502/503/504)
+if [ -f "scripts/maintenance.html" ]; then
+    sudo cp scripts/maintenance.html /var/www/html/maintenance.html 2>/dev/null || true
+    # Добавить error_page в host nginx если ещё нет
+    if ! grep -q "maintenance.html" /etc/nginx/sites-available/default 2>/dev/null; then
+        # Вставляем error_page перед первым location блоком
+        sudo sed -i '/location \//i\    error_page 502 503 504 /maintenance.html;\n    location = /maintenance.html {\n        root /var/www/html;\n        internal;\n    }' /etc/nginx/sites-available/default 2>/dev/null || true
+        sudo nginx -t 2>/dev/null && sudo systemctl reload nginx 2>/dev/null || true
+        echo "-> maintenance.html установлен в host nginx"
+    fi
+fi
+
 # Защита: synapse-data должна существовать
 if [ ! -f "docker/synapse-data/homeserver.yaml" ]; then
     echo "ОШИБКА: docker/synapse-data/homeserver.yaml не найден."
