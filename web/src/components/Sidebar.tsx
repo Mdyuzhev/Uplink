@@ -22,12 +22,13 @@ interface SidebarProps {
     onCreateSpace: () => void;
     onCreateRoom: (spaceId: string) => void;
     onAdminPanel: () => void;
+    onRoomSettings: (roomId: string, isSpace: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
     spaces, channels, directs, users, usersLoading,
     activeRoomId, userName, isAdmin, onSelectRoom, onOpenDM,
-    onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel,
+    onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel, onRoomSettings,
 }) => {
     const [filter, setFilter] = useState('');
 
@@ -121,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 isAdmin={isAdmin}
                                 onSelectRoom={onSelectRoom}
                                 onCreateRoom={onCreateRoom}
+                                onSettings={(id) => onRoomSettings(id, true)}
                             />
                         ))}
                     </div>
@@ -136,6 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 room={room}
                                 active={room.id === activeRoomId}
                                 onClick={() => onSelectRoom(room.id)}
+                                onSettings={(id) => onRoomSettings(id, false)}
                             />
                         ))}
                     </div>
@@ -151,6 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 room={room}
                                 active={room.id === activeRoomId}
                                 onClick={() => onSelectRoom(room.id)}
+                                onSettings={(id) => onRoomSettings(id, false)}
                             />
                         ))}
                     </div>

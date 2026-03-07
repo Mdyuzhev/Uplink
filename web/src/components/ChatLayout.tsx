@@ -18,6 +18,7 @@ import { CreateRoomModal } from './CreateRoomModal';
 import { AdminPanel } from './AdminPanel';
 import { ThreadPanel } from './ThreadPanel';
 import { BotSettings } from './BotSettings';
+import { RoomSettingsModal } from './sidebar/RoomSettingsModal';
 import { initDeepLinkHandler } from '../utils/deepLink';
 import { storageSet } from '../utils/storage';
 import '../styles/chat.css';
@@ -33,6 +34,7 @@ import '../styles/bots.css';
 import '../styles/mobile.css';
 import '../styles/stickers.css';
 import '../styles/voice-video.css';
+import '../styles/room-settings.css';
 
 interface ChatLayoutProps {
     onLogout: () => void;
@@ -45,6 +47,12 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
 
     // VS Code bridge: snippet для вставки в MessageInput
     const [pendingSnippet, setPendingSnippet] = useState<string | null>(null);
+
+    // Настройки комнаты/канала
+    const [roomSettingsTarget, setRoomSettingsTarget] = useState<{
+        roomId: string;
+        isSpace: boolean;
+    } | null>(null);
 
     const handleJoinCall = useCallback(() => {
         if (!chat.activeRoom) return;
@@ -105,6 +113,7 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                         chat.setCreateRoomForSpace({ id: spaceId, name: space?.name || '' });
                     }}
                     onAdminPanel={() => chat.setShowAdminPanel(true)}
+                    onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
                 />
             </div>
 
@@ -243,6 +252,26 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
             {chat.showAdminPanel && (
                 <AdminPanel onClose={() => chat.setShowAdminPanel(false)} />
             )}
+
+            {/* Настройки комнаты/канала */}
+            {roomSettingsTarget && (() => {
+                const { roomId, isSpace } = roomSettingsTarget;
+                const roomName =
+                    chat.spaces.find(s => s.id === roomId)?.name ??
+                    chat.spaces.flatMap(s => s.rooms).find(r => r.id === roomId)?.name ??
+                    chat.channels.find(r => r.id === roomId)?.name ??
+                    chat.directs.find(r => r.id === roomId)?.name ??
+                    'Комната';
+                return (
+                    <RoomSettingsModal
+                        roomId={roomId}
+                        roomName={roomName}
+                        isSpace={isSpace}
+                        isAdmin={chat.isAdmin}
+                        onClose={() => setRoomSettingsTarget(null)}
+                    />
+                );
+            })()}
         </div>
     );
 }

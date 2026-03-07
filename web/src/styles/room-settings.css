@@ -1,0 +1,378 @@
+/* ═══════════════════════════════════
+   ROOM SETTINGS MODAL
+   ═══════════════════════════════════ */
+
+.room-settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.room-settings-modal {
+    background: var(--uplink-bg-secondary);
+    border-radius: var(--uplink-radius-lg);
+    width: 500px;
+    max-width: 92vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.room-settings-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--uplink-border);
+    flex-shrink: 0;
+}
+
+.room-settings-modal__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--uplink-text-primary);
+}
+
+.room-settings-modal__close {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 2px 6px;
+    border-radius: var(--uplink-radius-sm);
+    transition: color 0.15s;
+}
+
+.room-settings-modal__close:hover {
+    color: var(--uplink-text-primary);
+}
+
+/* Вкладки */
+.room-settings-modal__tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 20px 0;
+    border-bottom: 1px solid var(--uplink-border);
+    flex-shrink: 0;
+}
+
+.room-settings-modal__tab {
+    background: none;
+    border: none;
+    color: var(--uplink-text-secondary);
+    cursor: pointer;
+    padding: 8px 14px;
+    font-size: 14px;
+    border-radius: var(--uplink-radius-sm) var(--uplink-radius-sm) 0 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.room-settings-modal__tab:hover {
+    color: var(--uplink-text-primary);
+}
+
+.room-settings-modal__tab--active {
+    color: var(--uplink-accent);
+    border-bottom-color: var(--uplink-accent);
+}
+
+/* Прокручиваемый контент */
+.room-settings-modal__content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Секция внутри вкладки */
+.room-settings-modal__section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.room-settings-modal__section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--uplink-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.room-settings-modal__section-value {
+    font-size: 14px;
+    color: var(--uplink-text-primary);
+}
+
+/* Room ID строка */
+.room-settings-modal__id-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--uplink-bg-tertiary);
+    border-radius: var(--uplink-radius-sm);
+    padding: 8px 12px;
+}
+
+.room-settings-modal__id-code {
+    flex: 1;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--uplink-text-secondary);
+    word-break: break-all;
+    user-select: all;
+}
+
+.room-settings-modal__copy-btn {
+    background: none;
+    border: 1px solid var(--uplink-border);
+    color: var(--uplink-text-secondary);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--uplink-radius-sm);
+    font-size: 12px;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.room-settings-modal__copy-btn:hover {
+    color: var(--uplink-text-primary);
+    border-color: var(--uplink-text-secondary);
+}
+
+.room-settings-modal__copy-btn--copied {
+    color: #57F287;
+    border-color: #57F287;
+}
+
+/* Участники */
+.room-settings-modal__member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.room-settings-modal__member-row:last-child {
+    border-bottom: none;
+}
+
+.room-settings-modal__member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.room-settings-modal__member-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.room-settings-modal__member-name {
+    font-size: 14px;
+    color: var(--uplink-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.room-settings-modal__member-id {
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.room-settings-modal__kick-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--uplink-radius-sm);
+    transition: color 0.15s;
+    flex-shrink: 0;
+    opacity: 0;
+}
+
+.room-settings-modal__member-row:hover .room-settings-modal__kick-btn {
+    opacity: 1;
+}
+
+.room-settings-modal__kick-btn:hover {
+    color: #ED4245;
+}
+
+/* Поле приглашения */
+.room-settings-modal__invite-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.room-settings-modal__invite-input {
+    flex: 1;
+    background: var(--uplink-bg-tertiary);
+    border: 1px solid var(--uplink-border);
+    border-radius: var(--uplink-radius-sm);
+    color: var(--uplink-text-primary);
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.room-settings-modal__invite-input:focus {
+    outline: none;
+    border-color: var(--uplink-accent);
+}
+
+.room-settings-modal__invite-btn {
+    background: var(--uplink-accent);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: var(--uplink-radius-sm);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.room-settings-modal__invite-btn:hover {
+    opacity: 0.9;
+}
+
+/* Боты */
+.room-settings-modal__bot-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.room-settings-modal__bot-row:last-child {
+    border-bottom: none;
+}
+
+.room-settings-modal__bot-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.room-settings-modal__bot-name {
+    font-size: 14px;
+    color: var(--uplink-text-primary);
+}
+
+.room-settings-modal__bot-desc {
+    font-size: 12px;
+    color: var(--uplink-text-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Тоггл */
+.room-settings-modal__toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--uplink-border);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border: none;
+    padding: 0;
+}
+
+.room-settings-modal__toggle--on {
+    background: var(--uplink-accent);
+}
+
+.room-settings-modal__toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+}
+
+.room-settings-modal__toggle--on .room-settings-modal__toggle-knob {
+    transform: translateX(16px);
+}
+
+/* Опасная зона */
+.room-settings-modal__danger-zone {
+    margin: 0 20px 20px;
+    padding: 16px;
+    border: 1px solid rgba(237, 66, 69, 0.4);
+    border-radius: var(--uplink-radius-md);
+}
+
+.room-settings-modal__danger-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ED4245;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 12px;
+}
+
+.room-settings-modal__danger-btn {
+    background: transparent;
+    border: 1px solid #ED4245;
+    color: #ED4245;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: var(--uplink-radius-sm);
+    font-size: 14px;
+    transition: background 0.15s;
+}
+
+.room-settings-modal__danger-btn:hover {
+    background: rgba(237, 66, 69, 0.15);
+}
+
+/* Ошибка и загрузка */
+.room-settings-modal__error {
+    font-size: 13px;
+    color: #ED4245;
+    padding: 8px 0;
+}
+
+.room-settings-modal__loading {
+    font-size: 13px;
+    color: var(--uplink-text-faint);
+    padding: 8px 0;
+}
+
+.room-settings-modal__empty {
+    font-size: 13px;
+    color: var(--uplink-text-faint);
+    padding: 8px 0;
+    font-style: italic;
+}

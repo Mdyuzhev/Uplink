@@ -320,3 +320,63 @@
 .presence-dot--unavailable { background: var(--uplink-warning); }
 .presence-dot--offline { background: var(--uplink-text-faint); }
 
+/* Шестерёнка настроек у Space */
+.sidebar-space__settings-btn {
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: var(--uplink-radius-sm);
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sidebar-space__header:hover .sidebar-space__settings-btn {
+    opacity: 1;
+}
+
+.sidebar-space__settings-btn:hover {
+    color: var(--uplink-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Wrapper и шестерёнка для RoomItem */
+.sidebar-room-item__wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-room-item__wrapper .sidebar-room-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-room-item__settings-btn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--uplink-text-faint);
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: var(--uplink-radius-sm);
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sidebar-room-item__wrapper:hover .sidebar-room-item__settings-btn {
+    opacity: 1;
+}
+
+.sidebar-room-item__settings-btn:hover {
+    color: var(--uplink-text-primary);
+}
+
