@@ -20,6 +20,7 @@ function mockEvent(overrides: {
         isDecryptionFailure: () => overrides.decryptionFailure || false,
         getClearContent: () =>
             overrides.clearContent !== undefined ? overrides.clearContent : content,
+        isRedacted: () => false,
     };
 }
 

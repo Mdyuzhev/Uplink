@@ -197,10 +197,17 @@ export class MatrixService {
         this.client.on(sdk.RoomEvent.Timeline, (event: sdk.MatrixEvent, room: sdk.Room | undefined) => {
             if (!room) return;
             const evType = event.getType();
-            if (evType === 'm.room.message' || evType === 'm.room.encrypted' || evType === 'm.reaction' || evType === 'm.sticker') {
+            if (evType === 'm.room.message' || evType === 'm.room.encrypted' || evType === 'm.reaction' || evType === 'm.sticker' || evType === 'm.room.redaction') {
                 this.emitNewMessage(room.roomId, event);
                 this.emitRoomsUpdated();
             }
+        });
+
+        // Redaction — удаление сообщений (отдельный ивент в matrix-js-sdk)
+        this.client.on(sdk.RoomEvent.Redaction, (_event: sdk.MatrixEvent, room: sdk.Room) => {
+            if (!room) return;
+            this.emitNewMessage(room.roomId, _event);
+            this.emitRoomsUpdated();
         });
 
         // Typing indicator

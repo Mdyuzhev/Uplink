@@ -104,6 +104,7 @@ export function parseEvent(
 ): ParsedMessage | null {
     const type = event.getType();
     if (type !== 'm.room.message' && type !== 'm.room.encrypted' && type !== 'm.sticker') return null;
+    if (event.isRedacted()) return null;
 
     const sender = event.getSender()!;
     const senderDisplayName = getDisplayName(sender);
