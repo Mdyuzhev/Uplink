@@ -28,6 +28,13 @@ export const BOT_DEFINITIONS = {
             { command: '/ci trigger', description: 'Запустить пайплайн', usage: '/ci trigger [pipeline]' },
         ],
     },
+    wh_ci: {
+        userId: `@bot_wh_ci:${SERVER_NAME}`,
+        localpart: 'bot_wh_ci',
+        displayName: 'WarehouseHub CI',
+        description: 'CI/CD уведомления проекта WarehouseHub',
+        commands: [],
+    },
     alerts: {
         userId: `@bot_alerts:${SERVER_NAME}`,
         localpart: 'bot_alerts',

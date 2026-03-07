@@ -131,6 +131,20 @@ async function init() {
         }
     }
 
+    // Гарантировать что bot_wh_ci в комнате для WarehouseHub CI-уведомлений
+    const WH_CI_NOTIFY_ROOM_ID = process.env.WH_CI_NOTIFY_ROOM_ID || '';
+    if (WH_CI_NOTIFY_ROOM_ID) {
+        try {
+            const inRoom = await isBotInRoom('bot_wh_ci', WH_CI_NOTIFY_ROOM_ID);
+            if (!inRoom) {
+                logger.info({ roomId: WH_CI_NOTIFY_ROOM_ID }, 'Присоединяю bot_wh_ci к WH_CI_NOTIFY_ROOM_ID...');
+                await joinBotToRoom('bot_wh_ci', WH_CI_NOTIFY_ROOM_ID);
+            }
+        } catch (err) {
+            logger.warn({ err, roomId: WH_CI_NOTIFY_ROOM_ID }, 'Не удалось присоединить bot_wh_ci');
+        }
+    }
+
     const server = http.createServer(app);
     initBotGateway(server);
     scheduleDigest();

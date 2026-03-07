@@ -8,6 +8,7 @@ import logger from '../logger.mjs';
 
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || '';
 const GITLAB_WEBHOOK_TOKEN = process.env.GITLAB_WEBHOOK_TOKEN || '';
+const WH_CI_WEBHOOK_TOKEN = process.env.WH_CI_WEBHOOK_TOKEN || '';
 const ALERTMANAGER_TOKEN = process.env.ALERTMANAGER_TOKEN || '';
 
 /**
@@ -35,6 +36,18 @@ export function verifyWebhook(req, res, next) {
         if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
             logger.warn({ ip: req.ip }, '[webhook] Невалидная GitHub подпись');
             return res.status(403).json({ error: 'Invalid signature' });
+        }
+        return next();
+    }
+
+    // WarehouseHub CI — отдельный токен для /hooks/wh_ci
+    if (integrationId === 'wh_ci' && req.headers['x-gitlab-token']) {
+        if (!WH_CI_WEBHOOK_TOKEN) {
+            return next();
+        }
+        if (req.headers['x-gitlab-token'] !== WH_CI_WEBHOOK_TOKEN) {
+            logger.warn({ ip: req.ip }, '[webhook] Невалидный WH_CI токен');
+            return res.status(403).json({ error: 'Invalid token' });
         }
         return next();
     }
