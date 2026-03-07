@@ -245,3 +245,4 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-07 | task_039 | Упоминание участников через @: useMentions хук, автокомплит дропдаун, m.mentions + matrix.to HTML, подсветка входящих упоминаний |
 | 2026-03-07 | task_040 | bot_ci подключён к #CI (WAREHOUSE): CI_NOTIFY_ROOM_ID + GITLAB_WEBHOOK_TOKEN в .env, webhook уведомления работают |
 | 2026-03-07 | task_041 | bot_wh_ci — отдельный бот для WarehouseHub CI: handler wh_ci.mjs, webhook /hooks/wh_ci, WH_CI_WEBHOOK_TOKEN, join в WH_CI_NOTIFY_ROOM_ID |
+| 2026-03-07 | task_042 | Улучшение UI ботов: BotManagePanel — управление комнатами (добавить/удалить бота из канала), BotCreateModal — «Добавить в канал» после создания |
