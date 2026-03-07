@@ -17,8 +17,11 @@ const MAX_TXNS = 10000;
 
 // Synapse шлёт на /_matrix/app/v1/transactions/:txnId
 router.put(['/_matrix/app/v1/transactions/:txnId', '/transactions/:txnId'], (req, res) => {
-    const token = req.query.access_token;
+    // Synapse может передать HS token через query param или Authorization header
+    const token = req.query.access_token
+        || (req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : null);
     if (token !== HS_TOKEN) {
+        logger.warn({ hasQuery: !!req.query.access_token, hasHeader: !!req.headers.authorization }, 'AS auth failed');
         return res.status(403).json({ errcode: 'M_FORBIDDEN' });
     }
 
