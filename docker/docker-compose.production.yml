@@ -194,6 +194,8 @@ services:
       WH_CI_NOTIFY_ROOM_ID: ${WH_CI_NOTIFY_ROOM_ID:-}
       WH_CI_WEBHOOK_TOKEN: ${WH_CI_WEBHOOK_TOKEN:-}
       WH_BOT_INCOMING_URL: ${WH_BOT_INCOMING_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - uplink-botservice-data:/app/data
     depends_on:
