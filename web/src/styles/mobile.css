@@ -14,15 +14,37 @@
 /* Всё что ниже — только для мобильных экранов */
 @media (max-width: 768px) {
 
-    /* Использовать реальную высоту viewport (учитывает клавиатуру на iOS) */
-    body, #root, .chat-layout {
+    /* Базовая высота на мобильном */
+    body, #root {
         height: var(--vh, 100dvh);
+        overflow: hidden;
+    }
+
+    /*
+     * chat-layout: position fixed + top из visualViewport.offsetTop.
+     *
+     * Почему position: fixed:
+     * На iOS при открытии клавиатуры браузер скроллит страницу вверх
+     * (offsetTop > 0). Обычный элемент остаётся там где был в документе —
+     * пользователь видит не его, а то что попало в сдвинутый viewport.
+     * position: fixed + top: var(--vp-offset-top) "следует" за viewport:
+     * layout всегда рендерится прямо в видимой области.
+     *
+     * На Android с interactive-widget=resizes-content: offsetTop всегда 0,
+     * position: fixed работает как обычно, высота -- vh уже корректна.
+     */
+    .chat-layout {
+        position: fixed;
+        top: var(--vp-offset-top, 0px);
+        left: 0;
+        right: 0;
+        height: var(--vh, 100dvh);
+        overflow: hidden;
     }
 
     /* Отключить pull-to-refresh и rubber band эффект */
     html, body {
         overscroll-behavior: none;
-        -webkit-overflow-scrolling: touch;
     }
 
     /* Убрать синюю подсветку при тапе (Android Chrome) */
