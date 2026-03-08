@@ -85,6 +85,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Windows code signing (активируется после добавления секретов WINDOWS_CERTIFICATE + WINDOWS_CERTIFICATE_PASSWORD)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ matrix.platform == 'windows-latest' && secrets.WINDOWS_CERTIFICATE || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ matrix.platform == 'windows-latest' && secrets.WINDOWS_CERTIFICATE_PASSWORD || '' }}
         with:
           projectPath: web
           tauriScript: npx tauri

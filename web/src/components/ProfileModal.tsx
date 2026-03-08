@@ -11,6 +11,20 @@ import { isTauri, isVSCode } from '../config';
 
 declare const __APP_VERSION__: string;
 
+async function openExternalUrl(url: string): Promise<void> {
+    if (isTauri) {
+        try {
+            const { open } = await import('@tauri-apps/plugin-shell');
+            await open(url);
+        } catch (err) {
+            console.error('[Uplink] shell.open failed:', err);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+    } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+}
+
 interface ProfileModalProps {
     onClose: () => void;
     onLogout: () => void;
@@ -125,14 +139,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose, onLogout })
                             <span className="profile-modal__update-note">
                                 Доступна версия {updateInfo.version}
                             </span>
-                            <a
-                                href={updateInfo.downloadUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <button
                                 className="profile-modal__btn profile-modal__btn--accent"
+                                onClick={() => openExternalUrl(updateInfo.downloadUrl)}
                             >
                                 {isVSCode ? 'Скачать .vsix' : 'Скачать обновление'}
-                            </a>
+                            </button>
                             {isVSCode && (
                                 <span className="profile-modal__update-hint">
                                     После скачивания: Extensions → ··· → Install from VSIX
