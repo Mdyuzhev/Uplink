@@ -32,3 +32,6 @@ web/public/*.wasm
 # Tauri
 web/src-tauri/target/
 web/src-tauri/gen/
+
+# Root workspace lockfile (platform-specific optional deps break CI)
+/package-lock.json
