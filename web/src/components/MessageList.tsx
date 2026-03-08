@@ -71,6 +71,23 @@ export const MessageList: React.FC<MessageListProps> = ({
         }
     }, []);
 
+    // Удерживать позицию «внизу» при изменении высоты контейнера (мобильная клавиатура)
+    useEffect(() => {
+        const el = listRef.current;
+        if (!el) return;
+
+        const observer = new ResizeObserver(() => {
+            if (isAtBottom.current) {
+                requestAnimationFrame(() => {
+                    el.scrollTop = el.scrollHeight;
+                });
+            }
+        });
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     // Скролл к сообщению по внешнему запросу (напр. из панели закреплённых)
     useEffect(() => {
         if (scrollToEventId) {
