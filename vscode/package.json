@@ -2,7 +2,7 @@
     "name": "uplink",
     "displayName": "Uplink",
     "description": "Командный мессенджер со звонками, встроенный в VS Code",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "publisher": "uplink-team",
     "engines": {
         "vscode": "^1.85.0"
