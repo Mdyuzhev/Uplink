@@ -36,6 +36,8 @@ interface SidebarProps {
     onRoomSettings: (roomId: string, isSpace: boolean) => void;
     onSelectSpace: (spaceId: string) => void;
     onSelectDMs: () => void;
+    isThreadsActive: boolean;
+    onSelectThreads: () => void;
     voiceChannels: VoiceRoomInfo[];
     activeVoiceRoomId: string | null;
     isVoiceConnecting: boolean;
@@ -48,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeRoomId, userName, isAdmin, activeSpaceId, isDMsMode,
     onSelectRoom, onOpenDM,
     onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel, onRoomSettings,
-    onSelectSpace, onSelectDMs,
+    onSelectSpace, onSelectDMs, isThreadsActive, onSelectThreads,
     voiceChannels, activeVoiceRoomId, isVoiceConnecting, onJoinVoiceChannel, onLeaveVoiceChannel,
 }) => {
     const [filter, setFilter] = useState('');
@@ -106,18 +108,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {/* Мобильный переключатель пространств (CSS показывает только на <=768px) */}
-            {!isDMsMode && spaces.length > 1 && (
+            {(spaces.length > 0 || isDMsMode || isThreadsActive) && (
                 <div className="sidebar-space-tabs">
                     {spaces.map(space => (
                         <button
                             key={space.id}
-                            className={`sidebar-space-tab ${space.id === activeSpaceId ? 'sidebar-space-tab--active' : ''}`}
+                            className={`sidebar-space-tab ${space.id === activeSpaceId && !isDMsMode && !isThreadsActive ? 'sidebar-space-tab--active' : ''}`}
                             onClick={() => onSelectSpace(space.id)}
                             title={space.name}
                         >
                             {getAbbr(space.name)}
                         </button>
                     ))}
+                    <button
+                        className={`sidebar-space-tab ${isThreadsActive ? 'sidebar-space-tab--active' : ''}`}
+                        onClick={onSelectThreads}
+                        title="Треды"
+                    >
+                        Тр
+                    </button>
                     <button
                         className={`sidebar-space-tab ${isDMsMode ? 'sidebar-space-tab--active' : ''}`}
                         onClick={onSelectDMs}

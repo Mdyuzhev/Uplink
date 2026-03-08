@@ -5,6 +5,7 @@ import { useVSCodeBridge, base64ToFile } from '../hooks/useVSCodeBridge';
 import { useViewportResize } from '../hooks/useViewportResize';
 import { matrixService } from '../matrix/MatrixService';
 import { Sidebar } from './Sidebar';
+import { SpaceInfo } from '../matrix/RoomsManager';
 import { VoiceBar } from './VoiceBar';
 import { useVoiceChannel } from '../hooks/useVoiceChannel';
 import { RoomHeader } from './RoomHeader';
@@ -40,6 +41,50 @@ import '../styles/stickers.css';
 import '../styles/voice-video.css';
 import '../styles/room-settings.css';
 import '../styles/voice-channels.css';
+
+function getAbbr(name: string): string {
+    return name.split(/[\s_-]+/).map(w => w[0]?.toUpperCase() || '').join('').slice(0, 2);
+}
+
+function MobileSpaceTabs({ spaces, activeSpaceId, isDMsMode, isThreadsActive, onSelectSpace, onSelectDMs, onSelectThreads }: {
+    spaces: SpaceInfo[];
+    activeSpaceId: string | null;
+    isDMsMode: boolean;
+    isThreadsActive: boolean;
+    onSelectSpace: (id: string) => void;
+    onSelectDMs: () => void;
+    onSelectThreads: () => void;
+}) {
+    if (spaces.length === 0 && !isDMsMode && !isThreadsActive) return null;
+    return (
+        <div className="sidebar-space-tabs">
+            {spaces.map(space => (
+                <button
+                    key={space.id}
+                    className={`sidebar-space-tab ${space.id === activeSpaceId && !isDMsMode && !isThreadsActive ? 'sidebar-space-tab--active' : ''}`}
+                    onClick={() => onSelectSpace(space.id)}
+                    title={space.name}
+                >
+                    {getAbbr(space.name)}
+                </button>
+            ))}
+            <button
+                className={`sidebar-space-tab ${isThreadsActive ? 'sidebar-space-tab--active' : ''}`}
+                onClick={onSelectThreads}
+                title="Треды"
+            >
+                Тр
+            </button>
+            <button
+                className={`sidebar-space-tab ${isDMsMode ? 'sidebar-space-tab--active' : ''}`}
+                onClick={onSelectDMs}
+                title="Личные сообщения"
+            >
+                ЛС
+            </button>
+        </div>
+    );
+}
 
 interface ChatLayoutProps {
     onLogout: () => void;
@@ -115,13 +160,25 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
 
             <div className={`chat-sidebar ${chat.mobileView === 'chat' ? 'chat-sidebar--hidden' : ''}`}>
                 {chat.isThreadsMode ? (
-                    <ThreadsPanel
-                        onOpenThread={(roomId, threadRootId) => {
-                            chat.handleSelectRoom(roomId);
-                            chat.setActiveThread({ roomId, threadRootId });
-                            chat.setIsThreadsMode(false);
-                        }}
-                    />
+                    <>
+                        {/* Мобильные tabs — видны и в режиме тредов */}
+                        <MobileSpaceTabs
+                            spaces={chat.spaces}
+                            activeSpaceId={chat.activeSpaceId}
+                            isDMsMode={chat.isDMsMode}
+                            isThreadsActive={chat.isThreadsMode}
+                            onSelectSpace={chat.handleSelectSpace}
+                            onSelectDMs={() => { chat.setIsDMsMode(true); chat.setIsThreadsMode(false); }}
+                            onSelectThreads={() => { chat.setIsThreadsMode(true); chat.setIsDMsMode(false); }}
+                        />
+                        <ThreadsPanel
+                            onOpenThread={(roomId, threadRootId) => {
+                                chat.handleSelectRoom(roomId);
+                                chat.setActiveThread({ roomId, threadRootId });
+                                chat.setIsThreadsMode(false);
+                            }}
+                        />
+                    </>
                 ) : (
                     <Sidebar
                         spaces={chat.spaces}
@@ -147,6 +204,8 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                         onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
                         onSelectSpace={chat.handleSelectSpace}
                         onSelectDMs={() => { chat.setIsDMsMode(true); chat.setIsThreadsMode(false); }}
+                        isThreadsActive={chat.isThreadsMode}
+                        onSelectThreads={() => { chat.setIsThreadsMode(true); chat.setIsDMsMode(false); }}
                         voiceChannels={chat.voiceChannels}
                         activeVoiceRoomId={voice.activeVoiceRoomId}
                         isVoiceConnecting={voice.isConnecting}

@@ -83,12 +83,7 @@ export function useChatState() {
         setIsDMsMode(false);
         setIsThreadsMode(false);
         storageSet('uplink_last_space', spaceId);
-
-        const space = spaces.find(s => s.id === spaceId);
-        if (space?.rooms[0]) {
-            handleSelectRoom(space.rooms[0].id);
-        }
-    }, [spaces, handleSelectRoom]);
+    }, []);
 
     const handleOpenThread = useCallback((threadRootId: string) => {
         if (activeRoomId) {
