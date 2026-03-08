@@ -86,10 +86,20 @@
    3. SIDEBAR — на мобильном как drawer
    ───────────────────────────────────────────────────────── */
 
+    /* Скрываем SpaceSwitcher — на мобильном переезжает в шапку sidebar */
+    .space-switcher {
+        display: none;
+    }
+
+    /* chat-main на всю ширину */
+    .chat-main {
+        width: 100%;
+    }
+
     .chat-sidebar {
-        width: 85vw;          /* не 100%, чтобы видно было край чата */
-        min-width: 85vw;
-        max-width: 320px;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
     }
 
     /* Overlay под sidebar — тап по нему закрывает sidebar */
@@ -151,6 +161,41 @@
     }
 
     /* Кнопка "назад" — крупный touch target */
+    /* Мобильный переключатель пространств в sidebar */
+    .sidebar-space-tabs {
+        display: flex;
+        gap: 6px;
+        padding: 8px 12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border-bottom: 1px solid var(--uplink-border);
+    }
+
+    .sidebar-space-tabs::-webkit-scrollbar { display: none; }
+
+    .sidebar-space-tab {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        background: var(--uplink-bg-hover);
+        color: var(--uplink-text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sidebar-space-tab--active {
+        border-color: var(--uplink-accent);
+        background: rgba(88, 101, 242, 0.15);
+        color: var(--uplink-text-primary);
+    }
+
     .room-header__back {
         display: flex;
         align-items: center;
@@ -716,6 +761,10 @@
     .message-bubble {
         padding-left: calc(52px + env(safe-area-inset-left, 0px));
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    }
+
+    .typing-indicator {
+        padding-left: calc(52px + env(safe-area-inset-left, 0px));
     }
 
     /* Call toast — горизонтально */

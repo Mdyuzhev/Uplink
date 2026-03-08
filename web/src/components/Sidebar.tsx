@@ -7,6 +7,14 @@ import { RoomItem } from './sidebar/RoomItem';
 import { UserItem } from './sidebar/UserItem';
 import { VoiceChannelItem } from './sidebar/VoiceChannelItem';
 
+function getAbbr(name: string): string {
+    return name
+        .split(/[\s_-]+/)
+        .map(w => w[0]?.toUpperCase() || '')
+        .join('')
+        .slice(0, 2);
+}
+
 interface SidebarProps {
     spaces: SpaceInfo[];
     channels: RoomInfo[];
@@ -26,6 +34,8 @@ interface SidebarProps {
     onCreateRoom: (spaceId: string) => void;
     onAdminPanel: () => void;
     onRoomSettings: (roomId: string, isSpace: boolean) => void;
+    onSelectSpace: (spaceId: string) => void;
+    onSelectDMs: () => void;
     voiceChannels: VoiceRoomInfo[];
     activeVoiceRoomId: string | null;
     isVoiceConnecting: boolean;
@@ -38,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeRoomId, userName, isAdmin, activeSpaceId, isDMsMode,
     onSelectRoom, onOpenDM,
     onProfileClick, onLogout, onCreateSpace, onCreateRoom, onAdminPanel, onRoomSettings,
+    onSelectSpace, onSelectDMs,
     voiceChannels, activeVoiceRoomId, isVoiceConnecting, onJoinVoiceChannel, onLeaveVoiceChannel,
 }) => {
     const [filter, setFilter] = useState('');
@@ -93,6 +104,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* Мобильный переключатель пространств (CSS показывает только на <=768px) */}
+            {!isDMsMode && spaces.length > 1 && (
+                <div className="sidebar-space-tabs">
+                    {spaces.map(space => (
+                        <button
+                            key={space.id}
+                            className={`sidebar-space-tab ${space.id === activeSpaceId ? 'sidebar-space-tab--active' : ''}`}
+                            onClick={() => onSelectSpace(space.id)}
+                            title={space.name}
+                        >
+                            {getAbbr(space.name)}
+                        </button>
+                    ))}
+                    <button
+                        className={`sidebar-space-tab ${isDMsMode ? 'sidebar-space-tab--active' : ''}`}
+                        onClick={onSelectDMs}
+                        title="Личные сообщения"
+                    >
+                        ЛС
+                    </button>
+                </div>
+            )}
 
             <div className="chat-sidebar__search">
                 <input

@@ -145,6 +145,8 @@ function ChatLayoutInner({ onLogout }: ChatLayoutProps) {
                         }}
                         onAdminPanel={() => chat.setShowAdminPanel(true)}
                         onRoomSettings={(roomId, isSpace) => setRoomSettingsTarget({ roomId, isSpace })}
+                        onSelectSpace={chat.handleSelectSpace}
+                        onSelectDMs={() => { chat.setIsDMsMode(true); chat.setIsThreadsMode(false); }}
                         voiceChannels={chat.voiceChannels}
                         activeVoiceRoomId={voice.activeVoiceRoomId}
                         isVoiceConnecting={voice.isConnecting}
