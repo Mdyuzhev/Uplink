@@ -99,6 +99,10 @@ else
     if echo "$CHANGED" | grep -q "^docker/deploy-webhook/"; then
         REBUILD="$REBUILD deploy-webhook"
     fi
+    # Pe4King Reviews API
+    if echo "$CHANGED" | grep -q "^docker/pe4king-reviews/"; then
+        REBUILD="$REBUILD pe4king-reviews"
+    fi
     # Docker compose / конфиги — пересобрать всё
     if echo "$CHANGED" | grep -q "^docker/docker-compose\|^docker/synapse/\|^docker/postgres/\|^docker/monitoring/"; then
         REBUILD="all"
@@ -174,7 +178,8 @@ for svc in "Synapse|http://127.0.0.1:8008/_matrix/client/versions" \
            "LiveKit Token|http://127.0.0.1:7890/health" \
            "Botservice|http://127.0.0.1:7891/health" \
            "Prometheus|http://127.0.0.1:9090/-/healthy" \
-           "Grafana|http://127.0.0.1:3000/api/health"; do
+           "Grafana|http://127.0.0.1:3000/api/health" \
+           "Pe4King Reviews|http://127.0.0.1:3002/health"; do
     NAME="${svc%%|*}"
     URL="${svc##*|}"
     CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$URL" 2>/dev/null || echo "000")
