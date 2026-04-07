@@ -261,3 +261,5 @@ mv Tasks/backlog/prod_NNN_*.md Tasks/done/
 | 2026-03-08 | task_055 | Мобильный layout fix: SpaceSwitcher скрыт на <=768px, sidebar 100% ширина, мобильные space tabs в шапке sidebar, landscape typing fix |
 | 2026-03-08 | task_056 | Кнопка обновления в Tauri: openExternalUrl через @tauri-apps/plugin-shell, метаданные publisher/copyright/homepage в tauri.conf.json, подготовка code signing в CI |
 | 2026-03-08 | task_058 | Мобильная навигация: tabs всегда видны (ЛС/Тр/пространства), убран auto-select канала, MobileSpaceTabs для ThreadsPanel |
+| 2026-03-08 | task_059 | Мобильный скролл: ResizeObserver в MessageList удерживает позицию внизу при клавиатуре, убран scrollIntoView из MessageInput onFocus |
+| 2026-03-08 | task_060 | Мобильная клавиатура iOS: interactive-widget=resizes-content, useViewportResize offsetTop→--vp-offset-top, chat-layout position:fixed |
